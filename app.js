@@ -9,7 +9,7 @@ function applySettings(){
 }
 function card(g){
   const b=document.createElement("button");b.className="card"+(g.ready?"":" soon");
-  b.innerHTML=`<div class="art" style="background:linear-gradient(135deg,${g.color[0]},${g.color[1]})">${g.emoji}</div><div class="txt"><b>${g.name}</b><small>${g.desc}</small><span class="tag">${g.ready?g.cat:"Bientôt"}</span></div>`;
+  b.innerHTML=`<div class="art" style="background:linear-gradient(135deg,${g.color[0]},${g.color[1]})">${g.emoji}</div><div class="txt"><b>${g.name}</b><small>${g.desc}</small>${g.ready?"":'<span class="tag">Bientôt</span>'}</div>`;
   if(g.ready)b.onclick=()=>play(g.id);return b;
 }
 function render(){
@@ -18,9 +18,6 @@ function render(){
   const f=!q&&G.find(g=>g.featured&&g.ready);
   if(f){const h=document.createElement("div");h.className="hero";h.innerHTML=`<div><h1>Prêt à jouer ?</h1><p>${f.name} : ${f.desc}</p></div><div class="big">${f.emoji}</div>`;h.onclick=()=>play(f.id);home.append(h)}
   if(!list.length){home.innerHTML='<p class="muted" style="margin:20px">Aucun jeu ne correspond à cette recherche.</p>';return}
-  [...new Set(list.map(g=>g.cat))].forEach(c=>{
-    const t=document.createElement("h2");t.className="row";t.textContent=c;
-    const r=document.createElement("div");r.className="rail";list.filter(g=>g.cat===c).forEach(g=>r.append(card(g)));home.append(t,r)});
   const t=document.createElement("h2");t.className="row";t.textContent="Tous les jeux";
   const gr=document.createElement("div");gr.className="grid";list.forEach(g=>gr.append(card(g)));home.append(t,gr);
 }
