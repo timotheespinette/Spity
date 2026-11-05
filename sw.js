@@ -1,7 +1,7 @@
 
 // Change VERSION à chaque mise à jour pour forcer le rafraîchissement du cache.
 
-const VERSION = "spity-1.4";
+const VERSION = "spity-1.5";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
