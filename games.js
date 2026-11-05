@@ -1,3 +1,4 @@
+
 // Registre des jeux Spity.
 window.SPITY_GAMES = [
   {
@@ -8,15 +9,14 @@ window.SPITY_GAMES = [
     desc: "Trouve l'intrus avant qu'il te trouve.",
     color: ["#7352A6", "#B99BEA"],
     emoji: "🕵️",
-    ready: true,
-    featured: true
+    ready: true
   },
   {
     id: "quiz-tv",
     file: "quiz-tv.html",
     name: "Quiz TV",
     cat: "Quiz",
-    desc: "Tour par tour ou vitesse & buzzer, en local ou avec un code.",
+    desc: "Trois modes de jeu : classique, buzzer et quiz rapide.",
     color: ["#7352A6", "#B99BEA"],
     emoji: "📺",
     ready: true
