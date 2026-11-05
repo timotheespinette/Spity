@@ -1,4 +1,5 @@
-const VERSION = "1.1",
+
+const VERSION = "1.2",
   G = window.SPITY_GAMES,
   $ = s => document.querySelector(s);
 
@@ -71,24 +72,24 @@ function render() {
     !q || (g.name + g.cat).toLowerCase().includes(q)
   );
 
-  const f = !q && G.find(
-    g => g.featured && g.ready
-  );
+  const available = G.filter(g => g.ready);
 
-  if (f) {
+  if (!q && available.length) {
     const h = document.createElement("div");
 
     h.className = "hero";
-
     h.innerHTML = `
       <div>
-        <h1>Prêt à jouer ?</h1>
-        <p>${f.name} : ${f.desc}</p>
+        <h1>Jeu aléatoire</h1>
+        <p>Appuie ici pour lancer un jeu au hasard.</p>
       </div>
-      <div class="big">${f.emoji}</div>
+      <div class="big">?</div>
     `;
 
-    h.onclick = () => play(f.id);
+    h.onclick = () => {
+      const randomGame = available[Math.floor(Math.random() * available.length)];
+      play(randomGame.id);
+    };
 
     home.append(h);
   }
