@@ -217,9 +217,9 @@ if(!d||net.role!=='client')return;
 if(d.type==='reject'){const r=d.reason;netClose();notify(r);renderJoin();return}
 if(d.type==='joined'){net.assigned=d.index;net.players=d.players;net.playerName=d.name||net.playerName;renderClient();renderClientWait();return}
 if(d.type==='index'){net.assigned=d.index;net.players=d.players;return}
-if(d.type==='lobby'){net.players=d.players;net.view='wait';renderClientWait();return}
+if(d.type==='lobby'){net.lastQ=-1;net.sent=false;phoneChoices=[];net.players=d.players;net.view='wait';renderClientWait();return}
 if(d.type==='state'){net.view='state';net.state=d;renderClientState(d);return}
-if(d.type==='end'){net.view='end';renderClientEnd(d);return}
+if(d.type==='end'){net.lastQ=-1;net.sent=false;phoneChoices=[];net.view='end';renderClientEnd(d);return}
 if(d.type==='closed'){netClose();notify('Le salon a été fermé par l’organisateur.');tab='play';render();return}
 if(d.type==='kicked'){netClose();notify('Tu as été retiré du salon.');tab='play';render()}}
 function renderClientState(d){
@@ -229,7 +229,7 @@ if(net.lastQ!==d.qIndex){net.lastQ=d.qIndex;phoneChoices=[];net.sent=false}
 const keep=$('phone-answer')?.value||'',hot=i=>d.mode===1?i===d.turn:d.mode===2?i===d.buzzer:false,verd=d.verdict===true||d.verdict===false;
 let h=`<p class="small">Question ${d.qIndex+1}/${d.total}</p><div class="scores">${d.players.map((n,i)=>`<div class="score ${hot(i)?'active':''}">${avatar(n,28)}<span class="small">${esc(n)}${i===me?' (toi)':''}</span><strong>${d.scores[i]}</strong></div>`).join('')}</div>`;
 if(d.power)h+=`<div class="power"><b>${esc(d.power.label)}</b><p>${esc(d.power.description)}</p></div>`;
-h+=d.hide?'<h2 class="question">👀 Regarde l\'écran principal</h2>':`<h2 class="question">${esc(d.question)}</h2>`;
+h+=d.hide?'':`<h2 class="question">${esc(d.question)}</h2>`;
 if(d.image)h+=`<img class="qphoto" src="${esc(d.image)}">`;
 const reveal=()=>{let r='';if(d.answerText)r+=`<div class="answerbox"><b>${d.mode===1&&d.turn===me?'Ta réponse':'Réponse de '+esc(d.players[d.turn])}</b><p>${esc(d.answerText)}</p></div>`;if(d.answer)r+=`<div class="answerbox"><div class="small">RÉPONSE ATTENDUE</div><b>${esc(d.answer)}</b></div>`;if(verd)r+=`<p style="text-align:center"><b>${d.verdict?'✅ Bonne réponse':'❌ Mauvaise réponse'}</b></p>`;return r};
 if(d.mode===1){
