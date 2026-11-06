@@ -1,5 +1,5 @@
 
-const VERSION = "1.3",
+const VERSION = "1.2",
   G = window.SPITY_GAMES,
   $ = s => document.querySelector(s);
 
