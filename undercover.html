@@ -34,7 +34,7 @@ input{width:100%;min-height:52px;border-radius:14px;border:1px solid rgba(255,25
 .tm{font-size:clamp(64px,14vw,120px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--p);text-shadow:0 0 24px var(--p)}
 .tm.ur{color:var(--r);text-shadow:0 0 24px var(--r);animation:pu .5s infinite alternate}
 @keyframes pu{to{transform:scale(1.1)}}
-.mt{margin-top:18px}.lst{max-height:60vh;overflow:auto}
+.mt{margin-top:18px}.lst{max-height:60vh;overflow:auto}.muted{opacity:.65;font-size:15px}
 .flip{width:260px;height:340px;perspective:900px}
 .fc{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:fl 1s .6s forwards}
 .ff,.fb{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:30px}
@@ -46,6 +46,7 @@ input{width:100%;min-height:52px;border-radius:14px;border:1px solid rgba(255,25
 table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid rgba(255,255,255,.12);text-align:left}
 #mu{position:fixed;top:max(10px,env(safe-area-inset-top));right:14px;z-index:20;width:56px;height:56px;padding:0;font-size:24px;border-radius:50%}
 .ap{display:flex;gap:8px;align-items:center}.ab{padding:0;min-width:52px;width:52px;border-radius:50%;overflow:hidden;flex:none}.ab+input{flex:1}.pl{display:flex;align-items:center;justify-content:center;gap:8px}.chip .av{margin-right:4px}
+.sm{min-height:40px;min-width:40px;font-size:15px;padding:0 12px}
 </style></head><body>
 <button id="mu" data-a="mute">🔊</button><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -53,14 +54,21 @@ table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px soli
 <script>
 const av=(n,s=44)=>SpityAvatar.html(n,s);
 const $=s=>document.querySelector(s),ls=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v===null?d:v}catch(e){return d}},sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
 const BASE="Chat|Chien;Café|Thé;Plage|Piscine;Pizza|Quiche;Vélo|Trottinette;Guitare|Violon;Pomme|Poire;Soleil|Lune;Train|Tramway;Avion|Hélicoptère;Football|Rugby;Cinéma|Théâtre;Lait|Crème;Beurre|Margarine;Montre|Horloge;Chaussette|Chaussure;Lunettes|Lentilles;Stylo|Crayon;Livre|Magazine;Piano|Orgue;Hôpital|Clinique;École|Université;Mer|Océan;Rivière|Fleuve;Forêt|Jungle;Voiture|Camion;Moto|Scooter;Roi|Empereur;Sorcier|Magicien;Pirate|Corsaire;Tigre|Lion;Loup|Renard;Fromage|Yaourt;Chocolat|Caramel;Glace|Sorbet;Bière|Vin;Douche|Bain;Savon|Shampoing;Brosse|Peigne;Canapé|Fauteuil;Lit|Hamac;Château|Palais;Pont|Tunnel;Tente|Caravane;Sac à dos|Valise;Ski|Snowboard;Noël|Nouvel An;Instagram|TikTok;Netflix|YouTube;Pompier|Policier".split(';').map(s=>s.split('|'));
-let cfg=ls('uc_cfg',{names:['','',''],uc:1,mw:0,timer:120}),custom=ls('uc_words',[]),scores=ls('uc_scores',{}),G=ls('uc_game',null),mute=ls('uc_mute',false),scr='home',msg='';cfg.ph=cfg.ph||[];
-let ucNet={role:'none',peer:null,connections:[],conn:null,code:'',index:-1,playerName:'',roleData:null,seen:{},votes:{},seenSent:false};if(new URLSearchParams(location.search).get('sound')==='0')mute=true;
+const RL={c:'Civil',u:'Undercover',w:'Mr. White'};
 const auto=n=>[Math.max(1,Math.floor(n/4)),n>=6?1:0];
+const fresh=()=>({names:['','',''],ph:[],uc:1,mw:0,man:0});
+const mk=()=>({role:'none',peer:null,conns:[],conn:null,code:'',idx:-1,name:'',photo:null,st:null,lj:'',sel:-1,lost:0,seen:{},votes:{}});
+// Rien n'est conservé entre deux lancements, sauf : mots perso, scores, son, réglages (timer, clé, modèle)
+['uc_cfg','uc_game'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+let set=Object.assign({timer:120,key:'',model:'gemini-3.6-flash'},ls('uc_set',{})),cfg=fresh(),custom=ls('uc_words',[]),scores=ls('uc_scores',{}),mute=ls('uc_mute',false);
+let G=null,net=mk(),scr='home',msg='',gmsg='',gbusy=0,gv={n:10,t:''},jv={c:'',n:''},ujPhoto=null,lk='';
+if(new URLSearchParams(location.search).get('sound')==='0')mute=true;
 const alive=()=>G.players.map((p,i)=>p.alive?i:-1).filter(i=>i>=0);
+const fixRoles=()=>{const n=cfg.names.length;if(!cfg.man||cfg.uc+cfg.mw>=n)[cfg.uc,cfg.mw]=auto(n)};
 // ---------- AUDIO ----------
 let AC;const au=()=>{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();return AC};
 function bp(f,d=.12,t='sine',v=.2,dl=0){if(mute)return;try{const a=au(),o=a.createOscillator(),g=a.createGain(),s=a.currentTime+dl;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+d)}catch(e){}}
@@ -68,154 +76,159 @@ const sfx={tick:()=>bp(880,.1,'square',.12),end:()=>bp(440,.7,'sawtooth',.2),fli
 const mu=()=>$('#mu').textContent=mute?'🔇':'🔊';
 // ---------- TIMER ----------
 const tm={t:0,id:0,run:0},fmt=t=>Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
-function tdraw(){const e=$('#tm');if(!e)return;e.textContent=fmt(tm.t);e.classList.toggle('ur',tm.run&&tm.t<=10&&tm.t>0);const g=$('#tg');if(g)g.textContent=tm.run?'⏸ Pause':'▶ Démarrer'}
-function ttog(){if(tm.run){clearInterval(tm.id);tm.run=0}else{if(tm.t<=0)tm.t=cfg.timer;tm.run=1;tm.id=setInterval(()=>{tm.t--;if(tm.t<=10&&tm.t>0)sfx.tick();if(tm.t<=0){tm.t=0;clearInterval(tm.id);tm.run=0;sfx.end()}tdraw()},1000)}tdraw()}
+function tdraw(){const e=$('#tm');if(!e)return;e.textContent=fmt(tm.t);e.classList.toggle('ur',!!tm.run&&tm.t<=10&&tm.t>0);const g=$('#tg');if(g)g.textContent=tm.run?'⏸ Pause':'▶ Démarrer'}
+function ttog(){if(tm.run){clearInterval(tm.id);tm.run=0}else{if(tm.t<=0)tm.t=set.timer;tm.run=1;tm.id=setInterval(()=>{tm.t--;if(tm.t<=10&&tm.t>0)sfx.tick();if(tm.t<=0){tm.t=0;clearInterval(tm.id);tm.run=0;sfx.end()}tdraw()},1000)}tdraw()}
+function enterDebate(){G.phase='debate';G.order=shuf(alive());clearInterval(tm.id);tm.run=0;tm.t=set.timer;render()}
 // ---------- VUES ----------
 const rr=(l,k,v)=>`<div class=row><span>${l}</span><span><button data-a=r data-v="${k}-">−</button> <b>${v}</b> <button data-a=r data-v="${k}+">+</button></span></div>`;
-const vHome=()=>`<div class=c><h1>🕵️ UNDERCOVER</h1><p>Trouve l'intrus parmi vous.</p>${G&&G.phase!='end'?'<button class="big2" data-a=res>▶ Reprendre la partie</button>':''}<button class="m big2" data-a=setup>🎮 Nouvelle partie</button><button class="big2" data-a=ucjoin>🔢 Rejoindre avec un code</button><div class=row><button data-a=words>📚 Mots</button><button data-a=scores>🏆 Scores</button></div></div>`;
-function vSetup(){const n=cfg.names.length,ci=n-cfg.uc-cfg.mw;return `<div class=top><button data-a=home>⬅</button><h1>Nouvelle partie</h1></div><div class=g2><div class=glass><div class=row><h2>Joueurs</h2><span><button data-a=np data-v=-1>−</button> <b>${n}</b> <button data-a=np data-v=1>+</button></span></div><div class=inp>${cfg.names.map((x,i)=>`<div class=ap><button class=ab data-a=av data-v=${i}>${cfg.ph[i]?`<img class=av src="${cfg.ph[i]}" width=52 height=52>`:'📷'}</button><input data-i=${i} maxlength=14 placeholder="Joueur ${i+1}" value="${esc(x)}">${cfg.ph[i]?`<button class=ab data-a=avx data-v=${i}>✕</button>`:''}</div>`).join('')}</div></div><div class=glass><h2>Rôles</h2>${rr('Civils','ci',ci)}${rr('Undercover','uc',cfg.uc)}${rr('Mr. White','mw',cfg.mw)}<div class=row><button data-a=auto>↺ Répartition auto</button></div><button class="big2" data-a=ucroom>📱 Créer un salon téléphone</button><button class="m big2" data-a=start>▶ Lancer en local</button></div></div>`}
-function vWords(){return `<div class=top><button data-a=home>⬅</button><h1>Mots</h1></div><div class=g2><div><div class=glass><h2>Ajouter une paire</h2><div class=row2><input id=wc placeholder="Mot Civil"><input id=wu placeholder="Mot Undercover"></div><button data-a=wadd>＋ Ajouter</button></div><div class="glass mt"><div class=row><button data-a=exp>⬇ Exporter en JSON</button><button data-a=imp>⬆ Importer un JSON</button></div><input id=fi type=file accept=".json,application/json" hidden></div></div><div class=glass><h2>Mes mots (${custom.length})</h2><p>+ ${BASE.length} paires de base</p><div class=lst>${custom.map((p,i)=>`<div class=row><span>${esc(p[0])} / ${esc(p[1])}</span><button data-a=wdel data-v=${i}>🗑</button></div>`).join('')||'<p>Aucun mot personnalisé.</p>'}</div></div></div>`}
+const vHome=()=>`<div class=c><h1>🕵️ UNDERCOVER</h1><p>Trouve l'intrus parmi vous.</p><button class="m big2" data-a=setup>🎮 Partie sur cet appareil</button><button class=big2 data-a=ucroom>📱 Créer un salon (téléphones)</button><button class=big2 data-a=ucjoin>🔢 Rejoindre avec un code</button><div class=row><button data-a=words>📚 Mots</button><button data-a=scores>🏆 Scores</button></div><p>${esc(msg)}</p></div>`;
+function vSetup(){const n=cfg.names.length,ci=n-cfg.uc-cfg.mw;return `<div class=top><button data-a=home>⬅</button><h1>Nouvelle partie</h1></div><div class=g2><div class=glass><div class=row><h2>Joueurs</h2><span><button data-a=np data-v=-1>−</button> <b>${n}</b> <button data-a=np data-v=1>+</button></span></div><div class=inp>${cfg.names.map((x,i)=>`<div class=ap><button class=ab data-a=av data-v=${i}>${cfg.ph[i]?`<img class=av src="${cfg.ph[i]}" width=52 height=52>`:'📷'}</button><input data-i=${i} maxlength=14 placeholder="Joueur ${i+1}" value="${esc(x)}">${cfg.ph[i]?`<button class=ab data-a=avx data-v=${i}>✕</button>`:''}</div>`).join('')}</div></div><div class=glass><h2>Rôles</h2>${rr('Civils','ci',ci)}${rr('Undercover','uc',cfg.uc)}${rr('Mr. White','mw',cfg.mw)}<div class=row><button data-a=auto>↺ Répartition auto</button></div><button class="m big2" data-a=start>▶ Lancer</button></div></div>`}
+function vWords(){const m=['gemini-3.6-flash','gemini-3.6-pro','gemini-2.5-flash','gemini-2.5-pro'];return `<div class=top><button data-a=home>⬅</button><h1>Mots</h1></div><div class=g2><div><div class=glass><h2>Ajouter une paire</h2><div class=row2><input id=wc placeholder="Mot Civil"><input id=wu placeholder="Mot Undercover"></div><button data-a=wadd>＋ Ajouter</button><p class=muted>${esc(msg)}</p></div><div class="glass mt"><h2>✨ Générer avec Gemini</h2><input id=gk type=password autocomplete=off placeholder="Clé API Gemini" value="${esc(set.key)}"><input id=gm list=gl placeholder="Modèle" value="${esc(set.model)}"><datalist id=gl>${m.map(x=>`<option value="${x}">`).join('')}</datalist><div class=row2><input id=gn type=number min=1 max=40 value="${esc(gv.n)}" style="max-width:110px"><input id=gt placeholder="Thème (facultatif)" value="${esc(gv.t)}"></div><button class=m data-a=gen ${gbusy?'disabled':''}>✨ Générer</button><p id=gs class=muted>${esc(gmsg)}</p><p class=muted>Nombre de paires à ajouter. Aucun mot déjà présent n'est recréé.</p></div><div class="glass mt"><div class=row><button data-a=exp>⬇ Exporter</button><button data-a=imp>⬆ Importer</button></div><input id=fi type=file accept=".json,application/json" hidden></div></div><div class=glass><h2>Mes mots (${custom.length})</h2><p>+ ${BASE.length} paires de base</p><div class=lst>${custom.map((p,i)=>`<div class=row><span>${esc(p[0])} / ${esc(p[1])}</span><button data-a=wdel data-v=${i}>🗑</button></div>`).join('')||'<p>Aucun mot personnalisé.</p>'}</div></div></div>`}
 function vScores(){const L=Object.entries(scores).sort((a,b)=>b[1]-a[1]);return `<div class=top><button data-a=home>⬅</button><h1>🏆 Scores de la soirée</h1></div><div class=glass><table>${L.map(([n,s],i)=>`<tr><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${av(n,32)} ${esc(n)}</td><td><b>${s} pts</b></td></tr>`).join('')||'<tr><td>Aucune partie jouée.</td></tr>'}</table></div><div class=row><button class=m data-a=rs>Réinitialiser la soirée</button></div>`}
-const vDeal=()=>{if(ucNet.role==='host')return `<div class=c><h1>Rôles distribués</h1><p>Chaque joueur consulte son rôle sur son téléphone.</p><div class=glass style=width:100%>${G.players.map((p,i)=>`<p>${esc(p.n)} · ${ucNet.seen[i]?'prêt':'en attente'}</p>`).join('')}</div><button class="m big2" data-a=ucdebate>Commencer le débat</button></div>`;const p=G.players[G.i];return `<div class=c><small>Joueur ${G.i+1}/${G.players.length}</small><h2>Passe l'iPad à</h2><div class=big>${av(p.n,96)}<br>${esc(p.n)}</div><div id=card class=card>•••</div><button id=hold class="m hold">👁 Maintiens pour voir</button><button id=nx data-a=nx ${G.seen?'':'disabled'}>Suivant ➜</button></div>`};
-function bindHold(){const b=$('#hold');if(!b)return;const p=G.players[G.i],c=$('#card');b.onpointerdown=e=>{e.preventDefault();c.innerHTML=p.r=='w'?'🎭 Mr. White<br><small>Pas de mot : bluffe !</small>':`<span style="font-size: clamp(30px, 8vw, 50px)">${esc(p.w)}</span>`;c.classList.add('on');if(!G.seen){G.seen=1;$('#nx').disabled=false;sv('uc_game',G)}try{sfx.flip()}catch(x){}};const off=()=>{c.textContent='•••';c.classList.remove('on')};['pointerup','pointercancel','pointerleave'].forEach(ev=>b['on'+ev]=off);b.oncontextmenu=e=>e.preventDefault()}
-const vDebate=()=>{tm.t=cfg.timer;return `<div class=top><h1>🗣 Débat — manche ${G.round}</h1></div><div class=g2><div class=glass><h2>Ordre de parole</h2><div class=gr>${G.order.map((i,k)=>`<div class=chip><b>${k+1}.</b> ${av(G.players[i].n,28)} ${esc(G.players[i].n)}</div>`).join('')}</div></div><div class="glass c"><div id=tm class=tm>${fmt(tm.t)}</div><div class=row><button data-a=tt data-v=-30>−30 s</button><button id=tg data-a=tg>▶ Démarrer</button><button data-a=tt data-v=30>+30 s</button></div><button class="m big2" data-a=tov>🗳 Passer au vote</button></div></div>`};
+const isOn=i=>net.conns.some(c=>c.open&&c.ucIndex===i);
+const H=()=>net.role=='host';
+const vDeal=()=>{if(H()){const all=G.players.every((p,i)=>net.seen[i]);return `<div class=c><h1>Rôles distribués</h1><p>Chaque joueur maintient le bouton sur son téléphone pour voir son rôle.</p><div class=glass style=width:100%>${G.players.map((p,i)=>`<p>${av(p.n,28)} ${esc(p.n)} · ${net.seen[i]?'✅ rôle vu':isOn(i)?'⏳ n\'a pas encore regardé':'⚠️ déconnecté'}</p>`).join('')}</div><button class="m big2" data-a=ucdebate>${all?'Commencer le débat':'Commencer quand même'}</button><button class=sm data-a=home>Quitter</button></div>`}const p=G.players[G.i];return `<div class=c><small>Joueur ${G.i+1}/${G.players.length}</small><h2>Passe l'iPad à</h2><div class=big>${av(p.n,96)}<br>${esc(p.n)}</div><div id=card class=card>•••</div><button id=hold class="m hold">👁 Maintiens pour voir</button><button id=nx data-a=nx ${G.seen?'':'disabled'}>Suivant ➜</button></div>`};
+function bindHold(){const b=$('#hold');if(!b)return;const p=G.players[G.i],c=$('#card');b.onpointerdown=e=>{e.preventDefault();c.innerHTML=p.r=='w'?'🎭 Mr. White<br><small>Pas de mot : bluffe !</small>':`<span style="font-size:clamp(30px,8vw,50px)">${esc(p.w)}</span>`;c.classList.add('on');if(!G.seen){G.seen=1;$('#nx').disabled=false}try{sfx.flip()}catch(x){}};const off=()=>{c.textContent='•••';c.classList.remove('on')};['pointerup','pointercancel','pointerleave'].forEach(ev=>b['on'+ev]=off);b.oncontextmenu=e=>e.preventDefault()}
+const vDebate=()=>`<div class=top><button class=sm data-a=home>✕</button><h1>🗣 Débat — manche ${G.round}</h1></div><div class=g2><div class=glass><h2>Ordre de parole</h2><div class=gr>${G.order.map((i,k)=>`<div class=chip><b>${k+1}.</b> ${av(G.players[i].n,28)} ${esc(G.players[i].n)}</div>`).join('')}</div></div><div class="glass c"><div id=tm class=tm>${fmt(tm.t)}</div><div class=row><button data-a=tt data-v=-30>−30 s</button><button id=tg data-a=tg>▶ Démarrer</button><button data-a=tt data-v=30>+30 s</button></div><button class="m big2" data-a=tov>🗳 Passer au vote</button></div></div>`;
 const grid=(l,a,s)=>`<div class=gr>${l.map(i=>`<button class="pl ${s==i?'on':''}" data-a=${a} data-v=${i}>${av(G.players[i].n,32)} ${esc(G.players[i].n)}</button>`).join('')}</div>`;
-function vVote(){if(ucNet.role==='host')return `<div class=c><h2>Votes reçus</h2><p>${Object.keys(ucNet.votes).length} / ${alive().length}</p><div class=glass style=width:100%>${G.players.map((p,i)=>p.alive?`<p>${esc(p.n)} · ${ucNet.votes[i]!==undefined?'a voté':'en attente'}</p>`:'').join('')}</div></div>`;const V=G.vote;if(!V)return `<div class=c><h2>Comment voter ?</h2><button class=big2 data-a=vm data-v=s>🗳 Vote secret (Pass-the-iPad)</button><button class="m big2" data-a=vm data-v=d>👆 Élimination directe</button></div>`;
+function vVote(){if(H()){const nv=Object.keys(net.votes).length;return `<div class=c><h2>🗳 Votes reçus</h2><div class=big>${nv} / ${alive().length}</div><div class=glass style=width:100%>${G.players.map((p,i)=>p.alive?`<p>${av(p.n,28)} ${esc(p.n)} · ${net.votes[i]!==undefined?'✅ a voté':isOn(i)?'⏳ en attente':'⚠️ déconnecté'}</p>`:'').join('')}</div><button class="m big2" data-a=force ${nv?'':'disabled'}>Dépouiller maintenant</button></div>`}
+const V=G.vote;if(!V)return `<div class=c><h2>Comment voter ?</h2><button class=big2 data-a=vm data-v=s>🗳 Vote secret (Pass-the-iPad)</button><button class="m big2" data-a=vm data-v=d>👆 Élimination directe</button></div>`;
 if(V.d)return `<div class=c><h2>Qui est éliminé ?</h2>${grid(alive(),'sel',V.sel)}<button class="m big2" data-a=kill ${V.sel>=0?'':'disabled'}>☠️ Éliminer</button></div>`;
 const vi=V.l[V.k],p=G.players[vi];if(V.step=='pass')return `<div class=c><h2>Passe l'iPad à</h2><div class=big>${av(p.n,96)}<br>${esc(p.n)}</div><button class=big2 data-a=vp>Je suis ${esc(p.n)} — Voter</button></div>`;
 return `<div class=c><h2>${esc(p.n)}, qui éliminer ?</h2>${grid(alive().filter(i=>i!=vi),'vc')}</div>`}
-function vReveal(){const p=G.players[G.last],L={c:'Civil',u:'Undercover',w:'Mr. White'}[p.r],I={c:'🙂',u:'🕵️',w:'🎭'}[p.r];return `<div class=c>${G.tie?'<p>⚖️ Égalité : tirage au sort</p>':''}${av(p.n,96)}<h2>${esc(p.n)} est éliminé…</h2><div class=flip><div class=fc><div class=ff>?</div><div class=fb><span style="font-size:70px">${I}</span><b>${L}</b><small>${p.w?esc(p.w):''}</small></div></div></div>${p.r=='w'&&!G.gd&&ucNet.role!=='host'?`<div class=modal><div class="glass c"><h2>🎭 ${esc(p.n)}, devine le mot des Civils !</h2><input id=gs placeholder="Ton mot…" autocomplete=off><button class="m big2" data-a=guess>Valider</button></div></div>`:`${p.r=='w'&&!G.gd&&ucNet.role==='host'?'<p>En attente de la réponse de Mr. White sur son téléphone…</p>':''}${G.gd?'<p>❌ Mauvaise réponse !</p>':''}<button class=big2 data-a=cont ${p.r=='w'&&!G.gd&&ucNet.role==='host'?'disabled':''}>Continuer ➜</button>`}</div>`}
-function vEnd(){const T={c:'🎉 Les Civils gagnent !',b:'🕵️ Les infiltrés gagnent !',w:'🎭 Mr. White a deviné le mot !'},L={c:'Civil',u:'Undercover',w:'Mr. White'};return `<div class=c><h1>${T[G.res]}</h1><div class=glass style=width:100%><p>Civils : <b>${esc(G.cw)}</b> · Undercover : <b>${esc(G.uw)}</b></p><table>${G.players.map((p,i)=>`<tr><td>${av(p.n,32)} ${esc(p.n)}</td><td>${L[p.r]}</td><td>${p.alive?'':'☠️'}</td><td>+${G.pts[i]}</td><td><b>${scores[p.n]||0} pts</b></td></tr>`).join('')}</table></div><div class=row><button class=m data-a=again>🔁 Rejouer</button><button data-a=scores>🏆 Scores</button><button data-a=home>Accueil</button></div></div>`}
-// ---------- Multijoueur téléphone Undercover ----------
-let ucJoinAvatar=null;
-function vUcJoin(){return `<div class=c><h1>Rejoindre Undercover</h1><div class=glass style=width:min(420px,100%)><input id="uc-code" placeholder="Code à 6 chiffres" inputmode="numeric" maxlength="6"><input id="uc-name" placeholder="Ton pseudo" autocomplete="off" maxlength="18"><div class=row><button data-a=ucphoto>Ajouter une photo</button><button data-a=ucphotox>Retirer</button><span id="uc-photo-preview"></span></div><button class="m big2" data-a=ucjoinnow>Rejoindre</button><p>${esc(msg)}</p></div><button data-a=home>Retour</button></div>`}
-function vUcLobby(){const n=cfg.names.length,ci=n-cfg.uc-cfg.mw;return `<div class=c><h1>Salon Undercover</h1><p>Les joueurs rejoignent avec leur pseudo et ce code.</p><div class=glass style=width:min(500px,100%)><div class=tm>${ucNet.code}</div><p>${n} joueur(s) connecté(s)</p><div style="text-align:left;margin:10px 0;max-height:25vh;overflow:auto">${cfg.names.map((x,i)=>`<div class=row style="justify-content:flex-start"><button data-a=kick data-v=${i} style="min-width:36px;height:36px;padding:0;border-radius:8px">✕</button> ${av(x,30)} ${esc(x)}</div>`).join('')||'<p>En attente des joueurs…</p>'}</div><hr style="border:0;border-top:1px solid rgba(255,255,255,.2);margin:15px 0">${rr('Civils','ci',ci)}${rr('Undercover','uc',cfg.uc)}${rr('Mr. White','mw',cfg.mw)}<div class=row><button data-a=auto>↺ Répartition auto</button></div><p class=muted>Minimum 3 joueurs.</p><button class="m big2" data-a=start>Distribuer les rôles</button></div><button data-a=home>Annuler</button></div>`}
-function createUcRoom(){if(!window.Peer){alert('Le service de connexion ne se charge pas. Vérifie Internet puis réessaie.');return;}ucNet.role='host';ucNet.code=String(Math.floor(100000+Math.random()*900000));ucNet.connections=[];ucNet.seen={};ucNet.votes={};cfg.names=[];cfg.ph=[];G=null;sv('uc_game',null);ucNet.peer=new Peer('spity-'+ucNet.code);ucNet.peer.on('open',()=>{scr='uclobby';render()});ucNet.peer.on('connection',c=>{c.on('data',d=>ucHostMessage(c,d));c.on('open',()=>ucNet.connections.push(c))});ucNet.peer.on('error',e=>{msg='Connexion impossible : '+e.type;render()})}
-function ucHostMessage(c,d){if(d.type==='join'){const name=String(d.name||'').trim().slice(0,18);if(!name||cfg.names.length>=16){c.send({type:'reject',reason:'Pseudo vide ou salon complet.'});return}let i=cfg.names.findIndex(n=>norm(n)===norm(name));if(i>=0){c.ucIndex=i;if(d.avatar){cfg.ph[i]=d.avatar;SpityAvatar.set(name,d.avatar)}c.send({type:'joined',index:i,name:cfg.names[i],names:cfg.names.slice()});if(G&&G.phase!=='end'){const p=G.players[i];if(p)c.send({type:'role',name:p.n,role:p.r,word:p.w||''})}broadcastUcState();render();return}i=cfg.names.length;cfg.names.push(name);cfg.ph.push(d.avatar||null);if(d.avatar)SpityAvatar.set(name,d.avatar);c.ucIndex=i;c.send({type:'joined',index:i,name,names:cfg.names.slice()});if(G&&G.phase!=='end'){const p=G.players[i];if(p)c.send({type:'role',name:p.n,role:p.r,word:p.w||''})}broadcastUcState();render()}if(d.type==='profile'){const i=c.ucIndex;if(i>=0&&i<cfg.names.length){if(d.avatar){cfg.ph[i]=d.avatar;SpityAvatar.set(cfg.names[i],d.avatar)}else{cfg.ph[i]=null;SpityAvatar.remove(cfg.names[i])}render()}}if(d.type==='seen'){ucNet.seen[c.ucIndex]=true;render()}if(d.type==='vote'&&G?.phase==='vote'&&G.players[d.target]?.alive&&d.target!==c.ucIndex){ucNet.votes[c.ucIndex]=Number(d.target);c.send({type:'voted'});const living=alive();if(living.every(i=>ucNet.votes[i]!==undefined)){const tally={};Object.values(ucNet.votes).forEach(i=>tally[i]=(tally[i]||0)+1);const max=Math.max(...Object.values(tally)),top=Object.keys(tally).filter(k=>tally[k]===max);G.tie=top.length>1;elim(Number(shuf(top)[0]))}else render()}if(d.type==='guess'&&G?.phase==='reveal'&&G.players[G.last]?.r==='w'&&c.ucIndex===G.last){G.gd=1;if(norm(d.word)===norm(G.cw))finish('w');else render()}}
-function ucPickPhoto(){SpityAvatar.pick(u=>{ucJoinAvatar=u;const p=$('#uc-photo-preview');if(p)p.innerHTML=`<img class=av src="${u}" width=48 height=48>`})}function ucRemovePhoto(){ucJoinAvatar=null;const p=$('#uc-photo-preview');if(p)p.innerHTML=''}
-function ucStartJoin(){if(!window.Peer){alert('Le service de connexion ne se charge pas. Vérifie Internet puis réessaie.');return;}const code=$('#uc-code').value.replace(/\D/g,'').slice(0,6),name=$('#uc-name').value.trim();if(code.length!==6||!name)return;ucNet.role='client';ucNet.playerName=name;ucNet.peer=new Peer();ucNet.peer.on('open',()=>{ucNet.conn=ucNet.peer.connect('spity-'+code,{reliable:true});ucNet.conn.on('open',()=>ucNet.conn.send({type:'join',name,avatar:ucJoinAvatar}));ucNet.conn.on('data',ucClientMessage)});ucNet.peer.on('error',e=>{msg='Erreur de connexion : '+e.type;render()});$('#app').innerHTML='<div class=c><h2>Connexion au salon…</h2></div>'}
-function ucClientMessage(d){if(d.type==='reject'){ucNet.role='none';scr='ucjoin';msg=d.reason;render();return}if(d.type==='joined'){ucNet.index=d.index;ucNet.playerName=d.name;if(Array.isArray(d.names))cfg.names=d.names;renderUcClient()}if(d.type==='role'){ucNet.roleData=d;ucNet.seenSent=false;ucNet.voted=false;renderUcClient()}if(d.type==='voted'){ucNet.voted=true;renderUcClient()}if(d.type==='state'){ucNet.state=d;if(d.phase!=='vote')ucNet.voted=false;renderUcClient()} }
-function broadcastUcState(){if(ucNet.role!=='host'||!G)return;const state={type:'state',names:cfg.names,photos:cfg.ph,phase:G.phase,round:G.round,alive:alive(),order:G.order||[],last:G.last,lastRole:G.last!=null?G.players[G.last].r:null,lastWord:G.last!=null?G.players[G.last].w:'',res:G.res,gd:G.gd||0,vote:G.phase==='vote',winner:G.res};ucNet.connections.forEach(c=>{if(c.open)c.send(state)})}
-function broadcastUcRoles(){ucNet.connections.forEach(c=>{const p=G.players[c.ucIndex];if(c.open&&p)c.send({type:'role',name:p.n,role:p.r,word:p.w||''})});broadcastUcState()}
-window.ucReveal = (show, e) => {
-    if(e) e.preventDefault();
-    const c = document.getElementById('client-card');
-    if(!c) return;
-    if(show) {
-        c.style.display = 'flex';
-        const r = ucNet.roleData;
-        if(!r) return;
-        c.innerHTML = r.role === 'w' ? '🎭 Mr. White<br><small>Pas de mot : bluffe !</small>' : `<span style="font-size: clamp(30px, 8vw, 50px)">${esc(r.word)}</span>`;
-        c.classList.add('on');
-        if(!ucNet.seenSent && ucNet.conn) {
-            ucNet.seenSent = true;
-            ucNet.conn.send({type:'seen'});
-        }
-        try{sfx.flip()}catch(x){}
-    } else {
-        c.textContent = '•••';
-        c.classList.remove('on');
-    }
-};
-function renderUcClient(){
-    const d=ucNet.state||{},r=ucNet.roleData;
-    if(Array.isArray(d.names))cfg.names=d.names;
-    if(Array.isArray(d.photos))cfg.ph=d.photos;
-    let body='';
-    if(!r) body='<p>Connecté. En attente de la distribution des rôles…</p>';
-    else if(d.phase==='deal' || !d.phase) {
-        body=`<h2>Salut ${esc(r.name)}</h2><p class="muted">Garde ton écran caché.</p>
-        <div id="client-card" class="card mt" style="min-height:160px">•••</div>
-        <button class="m big2 hold mt" onpointerdown="ucReveal(true,event)" onpointerup="ucReveal(false,event)" onpointercancel="ucReveal(false,event)" onpointerleave="ucReveal(false,event)" oncontextmenu="event.preventDefault()">👁 Maintiens pour voir</button>`;
-    }
-    else if(d.phase==='debate') {
-        body=`<h2>Débat · manche ${d.round}</h2><p>${d.order.map(i=>esc(cfg.names[i])).join(' → ')}</p><p class="muted">Écoute les autres et défends-toi.</p>
-        <div id="client-card" class="card mt" style="min-height:100px; display:none">•••</div>
-        <button class="hold mt" style="font-size:18px; min-height:48px" onpointerdown="ucReveal(true,event)" onpointerup="ucReveal(false,event)" onpointercancel="ucReveal(false,event)" onpointerleave="ucReveal(false,event)" oncontextmenu="event.preventDefault()">👁 Rappel de mon mot</button>`;
-    }
-    else if(d.phase==='vote') {
-        const opts=(d.alive||[]).filter(i=>i!==ucNet.index);
-        body=ucNet.voted?'<h2>Vote enregistré</h2><p>Attends que les autres joueurs aient voté.</p>':`<h2>Vote secret</h2><p>Choisis le joueur que tu souhaites éliminer.</p><div class=gr>${opts.map(i=>`<button class=pl onclick="sendUcVote(${i})">${esc(cfg.names[i])}</button>`).join('')}</div>`;
-    }
-    else if(d.phase==='reveal') {
-        const lastName=cfg.names[d.last]||'';
-        if(d.last===ucNet.index&&r?.role==='w'&&!d.gd) {
-            body=`<h2>Tu es Mr. White. Devine le mot des Civils.</h2><input id=uc-guess placeholder="Ton mot…"><button class="m big2" onclick="sendUcGuess()">Valider</button>`;
-        } else {
-            body=`<h2>${esc(lastName)} a été éliminé.</h2><p>Rôle : <b>${d.lastRole==='c'?'Civil':d.lastRole==='u'?'Undercover':'Mr. White'}</b></p>${d.lastWord?`<p>Mot : ${esc(d.lastWord)}</p>`:''}`;
-        }
-    }
-    else if(d.phase==='end') {
-        body=`<h1>${d.winner==='c'?'Les Civils gagnent !':d.winner==='w'?'Mr. White a deviné !':'Les infiltrés gagnent !'}</h1>`;
-    }
-    $('#app').innerHTML=`<div class="c"><div class="brand" style="opacity:0.5; font-size:14px; letter-spacing:2px; margin-bottom:10px">UNDERCOVER</div><div class="glass" style="width:min(500px,100%)">${body}</div></div>`;
-}
-function sendUcVote(i){ucNet.conn.send({type:'vote',target:i});$('#app').innerHTML='<div class=c><h2>Vote enregistré</h2><p>Attends la fin du vote.</p></div>'}function sendUcGuess(){const word=$('#uc-guess').value.trim();ucNet.conn.send({type:'guess',word});$('#app').innerHTML='<div class=c><h2>Réponse envoyée</h2><p>Attends le résultat.</p></div>'}
-function start(){
-    if(ucNet.role==='host'&&cfg.names.length<3){alert('Il faut au moins 3 joueurs connectés.');return}
-    const n=cfg.names.length;
-    if(cfg.uc+cfg.mw>=n){
-        alert("Erreur : Il y a trop d'infiltrés. Il doit y avoir au moins un Civil.");
-        return;
-    }
-    const names=cfg.names.map((x,i)=>x.trim()||'Joueur '+(i+1)),pool=[...BASE,...custom];
-    names.forEach((x,i)=>{if(cfg.ph[i])SpityAvatar.set(x,cfg.ph[i])});
-    let k;do{k=Math.random()*pool.length|0}while(pool.length>1&&k==ls('uc_last',-1));sv('uc_last',k);
-    let [a,b]=pool[k];if(Math.random()<.5)[a,b]=[b,a];
-    const roles=shuf([...Array(n-cfg.uc-cfg.mw).fill('c'),...Array(cfg.uc).fill('u'),...Array(cfg.mw).fill('w')]);
-    G={players:names.map((x,i)=>({n:x,r:roles[i],w:roles[i]=='c'?a:roles[i]=='u'?b:'',alive:true})),cw:a,uw:b,phase:'deal',i:0,round:1,vote:null,seen:0};ucNet.votes={};
-    scr='game';if(ucNet.role==='host'){broadcastUcRoles();}render()
-}
+function vReveal(){const p=G.players[G.last],I={c:'🙂',u:'🕵️',w:'🎭'}[p.r],wait=p.r=='w'&&!G.gd;return `<div class=c>${G.tie?'<p>⚖️ Égalité : tirage au sort</p>':''}${av(p.n,96)}<h2>${esc(p.n)} est éliminé…</h2><div class=flip><div class=fc><div class=ff>?</div><div class=fb><span style="font-size:70px">${I}</span><b>${RL[p.r]}</b><small>${p.w?esc(p.w):''}</small></div></div></div>${wait&&!H()?`<div class=modal><div class="glass c"><h2>🎭 ${esc(p.n)}, devine le mot des Civils !</h2><input id=gs2 placeholder="Ton mot…" autocomplete=off><button class="m big2" data-a=guess>Valider</button></div></div>`:`${wait&&H()?'<p>En attente de la réponse de Mr. White sur son téléphone…</p><button class=sm data-a=skipg>Passer (il n\'a pas de réponse)</button>':''}${G.gd?'<p>❌ Mauvaise réponse !</p>':''}<button class=big2 data-a=cont ${wait&&H()?'disabled':''}>Continuer ➜</button>`}</div>`}
+function vEnd(){const T={c:'🎉 Les Civils gagnent !',b:'🕵️ Les infiltrés gagnent !',w:'🎭 Mr. White a deviné le mot !'};return `<div class=c><h1>${T[G.res]}</h1><div class=glass style=width:100%><p>Civils : <b>${esc(G.cw)}</b> · Undercover : <b>${esc(G.uw)}</b></p><table>${G.players.map((p,i)=>`<tr><td>${av(p.n,32)} ${esc(p.n)}</td><td>${RL[p.r]}</td><td>${p.alive?'':'☠️'}</td><td>+${G.pts[i]}</td><td><b>${scores[p.n]||0} pts</b></td></tr>`).join('')}</table></div><div class=row><button class=m data-a=again>🔁 Rejouer</button>${H()?'<button data-a=lobby>↩ Salon</button>':''}<button data-a=scores>🏆 Scores</button><button data-a=home>Accueil</button></div></div>`}
+function vLobby(){const n=cfg.names.length,ci=n-cfg.uc-cfg.mw;return `<div class=c><h1>Salon Undercover</h1><p>Sur leur téléphone : « Rejoindre avec un code ».</p><div class=glass style=width:min(500px,100%)><div class=tm>${net.code}</div><p>${n} joueur(s)</p><div style="text-align:left;margin:10px 0;max-height:25vh;overflow:auto">${cfg.names.map((x,i)=>`<div class=row style="justify-content:flex-start"><button class=sm data-a=kick data-v=${i}>✕</button> ${av(x,30)} ${esc(x)} <span>${isOn(i)?'🟢':'⚪'}</span></div>`).join('')||'<p>En attente des joueurs…</p>'}</div><hr style="border:0;border-top:1px solid rgba(255,255,255,.2);margin:15px 0">${rr('Civils','ci',Math.max(0,ci))}${rr('Undercover','uc',cfg.uc)}${rr('Mr. White','mw',cfg.mw)}<div class=row><button data-a=auto>↺ Répartition auto</button></div><p class=muted>Minimum 3 joueurs.</p><button class="m big2" data-a=start ${n<3?'disabled':''}>Distribuer les rôles</button></div><button data-a=home>Annuler</button></div>`}
+const vJoin=()=>`<div class=c><h1>Rejoindre Undercover</h1><div class=glass style=width:min(420px,100%)><input id="uc-code" placeholder="Code à 6 chiffres" inputmode="numeric" maxlength="6" value="${esc(jv.c)}"><input id="uc-name" placeholder="Ton pseudo" autocomplete="off" maxlength="18" value="${esc(jv.n)}"><div class=row><button data-a=ucphoto>📷 Photo</button><button data-a=ucphotox>Retirer</button><span id="uc-photo-preview">${ujPhoto?`<img class=av src="${ujPhoto}" width=48 height=48>`:''}</span></div><button class="m big2" data-a=ucjoinnow>Rejoindre</button><p>${esc(msg)}</p></div><button data-a=home>Retour</button></div>`;
+// ---------- EN LIGNE : HÔTE ----------
+function leave(){try{net.peer&&net.peer.destroy()}catch(e){}net=mk()}
+function createRoom(){if(!window.Peer){alert('Le service de connexion ne se charge pas. Vérifie Internet puis réessaie.');return}
+leave();cfg=fresh();cfg.names=[];G=null;net.role='host';net.code=String(Math.floor(1e5+Math.random()*9e5));
+const p=net.peer=new Peer('spity-'+net.code);
+p.on('open',()=>{scr='uclobby';render()});
+p.on('connection',c=>{c.on('open',()=>{if(!net.conns.includes(c))net.conns.push(c)});c.on('data',d=>hostMsg(c,d));c.on('close',()=>{net.conns=net.conns.filter(x=>x!==c);if(net.role=='host')render()});c.on('error',()=>{})});
+p.on('error',e=>{if(e.type=='unavailable-id'){createRoom();return}leave();msg='Connexion impossible : '+e.type;scr='home';render()});
+p.on('disconnected',()=>{try{p.reconnect()}catch(x){}})}
+const send=(c,d)=>{try{c.open&&c.send(d)}catch(e){}};
+function roster(){net.conns.forEach(c=>send(c,{type:'roster',names:cfg.names,photos:cfg.ph}))}
+function stateFor(i){const g=G,s={type:'s',ph:g?g.phase:'lobby',n:g?g.players.map(p=>p.n):cfg.names},p=g&&g.players[i];
+if(g){Object.assign(s,{round:g.round,order:g.order||[],alive:alive(),last:g.last,lr:g.last!=null?g.players[g.last].r:null,lw:g.last!=null?g.players[g.last].w:'',gd:g.gd||0,tie:g.tie||0,res:g.res});
+if(p)Object.assign(s,{me:{r:p.r,w:p.w,a:p.alive},voted:net.votes[i]!==undefined,seen:!!net.seen[i]});
+if(g.phase=='end'){s.all=g.players.map(q=>({n:q.n,r:q.r,a:q.alive}));s.cw=g.cw;s.uw=g.uw}}return s}
+function sync(){net.conns.forEach(c=>{if(c.open&&c.ucIndex>=0)send(c,stateFor(c.ucIndex))})}
+function hostMsg(c,d){
+if(d.type=='join'){const name=String(d.name||'').trim().slice(0,18);if(!name)return send(c,{type:'reject',reason:'Pseudo vide.'});
+let i=cfg.names.findIndex(n=>norm(n)==norm(name));
+if(i<0){if(G&&G.phase!='end')return send(c,{type:'reject',reason:'La partie a déjà commencé.'});if(cfg.names.length>=16)return send(c,{type:'reject',reason:'Salon complet.'});i=cfg.names.length;cfg.names.push(name);cfg.ph.push(null);fixRoles()}
+net.conns.forEach(o=>{if(o!==c&&o.ucIndex===i){o.ucIndex=-1;send(o,{type:'reject',reason:'Connecté depuis un autre appareil.'});setTimeout(()=>o.close(),300)}});
+c.ucIndex=i;if(d.avatar){cfg.ph[i]=d.avatar;SpityAvatar.set(cfg.names[i],d.avatar)}
+send(c,{type:'joined',index:i,name:cfg.names[i]});roster();render();return}
+const i=c.ucIndex;if(i==null||i<0)return;
+if(d.type=='profile'){if(d.avatar){cfg.ph[i]=d.avatar;SpityAvatar.set(cfg.names[i],d.avatar)}else{cfg.ph[i]=null;SpityAvatar.remove(cfg.names[i])}roster();render()}
+if(d.type=='seen'&&G&&G.phase=='deal'){net.seen[i]=1;render()}
+if(d.type=='vote'&&G&&G.phase=='vote'&&G.players[i]&&G.players[i].alive&&G.players[d.target]&&G.players[d.target].alive&&Number(d.target)!==i){net.votes[i]=Number(d.target);if(alive().every(k=>net.votes[k]!==undefined))resolve();else render()}
+if(d.type=='guess'&&G&&G.phase=='reveal'&&G.last===i&&G.players[i].r=='w'&&!G.gd){G.gd=1;norm(d.word)==norm(G.cw)?finish('w'):render()}}
+function resolve(){const t={};Object.values(net.votes).forEach(k=>t[k]=(t[k]||0)+1);const m=Math.max(...Object.values(t)),top=Object.keys(t).filter(k=>t[k]==m);G.tie=top.length>1;elim(Number(shuf(top)[0]))}
+// ---------- EN LIGNE : CLIENT ----------
+function joinNet(code,name,photo){if(!window.Peer){alert('Le service de connexion ne se charge pas. Vérifie Internet puis réessaie.');return}
+leave();net.role='client';net.name=name;net.code=code;net.photo=photo;$('#app').innerHTML='<div class=c><h2>Connexion au salon…</h2></div>';
+const fail=m=>{clearTimeout(t);leave();scr='ucjoin';msg=m;render()},t=setTimeout(()=>fail('Salon introuvable ou injoignable.'),12000),p=net.peer=new Peer();
+p.on('open',()=>{const c=net.conn=p.connect('spity-'+code,{reliable:true});c.on('open',()=>c.send({type:'join',name,avatar:photo}));c.on('data',d=>{if(d.type=='joined')clearTimeout(t);clientMsg(d)});c.on('close',()=>{if(net.role=='client'&&net.conn===c){net.lost=1;render()}})});
+p.on('error',e=>fail(e.type=='peer-unavailable'?'Code introuvable.':'Erreur de connexion : '+e.type))}
+function clientMsg(d){
+if(d.type=='reject'){const m=d.reason;leave();scr='ucjoin';msg=m;render();return}
+if(d.type=='joined'){net.idx=d.index;net.name=d.name;net.lost=0}
+if(d.type=='roster'){cfg.names=d.names;cfg.ph=d.photos;d.names.forEach((n,i)=>d.photos[i]&&SpityAvatar.set(n,d.photos[i]));return}
+if(d.type=='s'){const j=JSON.stringify({...d,seen:0}),old=net.st;net.st=d;if(j==net.lj)return;net.lj=j;if(old&&old.ph!=d.ph){net.sel=-1;if(navigator.vibrate)navigator.vibrate(60)}}
+render()}
+const HOLD='onpointerdown="ucReveal(1,event)" onpointerup="ucReveal(0,event)" onpointercancel="ucReveal(0,event)" onpointerleave="ucReveal(0,event)" oncontextmenu="event.preventDefault()"';
+window.ucReveal=(on,e)=>{e&&e.preventDefault();const c=$('#cc'),d=net.st,m=d&&d.me;if(!c||!m)return;
+if(on){c.style.display='flex';c.innerHTML=m.r=='w'?'🎭 Mr. White<br><small>Pas de mot : bluffe !</small>':`<span style="font-size:clamp(30px,8vw,50px)">${esc(m.w)}</span>`;c.classList.add('on');
+if(d.ph=='deal'&&!d.seen&&net.conn){d.seen=1;send(net.conn,{type:'seen'});const s=$('#ss');if(s)s.textContent='✅ Rôle vu — attends les autres joueurs…'}try{sfx.flip()}catch(x){}}
+else{c.textContent='•••';c.classList.remove('on');if(d.ph=='debate')c.style.display='none'}};
+function rc(){const d=net.st,me=d&&d.me,n=(d&&d.n)||[],nm=i=>esc(n[i]||'?'),T={c:'🎉 Les Civils gagnent !',b:'🕵️ Les infiltrés gagnent !',w:'🎭 Mr. White a deviné le mot !'};let b;
+if(net.lost)b=`<h2>Connexion perdue 😕</h2><button class="m big2" data-a=rejoin>Se reconnecter</button>`;
+else if(!d||d.ph=='lobby'||(!me&&d.ph!='end'))b=`<h2>Salut ${esc(net.name)} 👋</h2><p>Tu es dans le salon.<br>En attente du lancement de la partie…</p>`;
+else if(d.ph=='deal')b=`<h2>Ton rôle</h2><p class=muted>Garde ton écran caché.</p><div id=cc class="card mt">•••</div><button class="m big2 hold mt" ${HOLD}>👁 Maintiens pour voir</button><p id=ss>${d.seen?'✅ Rôle vu — attends les autres joueurs…':'Maintiens le bouton pour découvrir ton rôle.'}</p>`;
+else if(d.ph=='debate')b=`<h2>Débat · manche ${d.round}</h2><div class=gr>${d.order.map((i,k)=>`<div class=chip><b>${k+1}.</b> ${av(n[i],28)} ${nm(i)}</div>`).join('')}</div>${me&&me.a?`<div id=cc class="card mt" style="min-height:100px;display:none">•••</div><button class="hold mt" style="font-size:18px;min-height:48px" ${HOLD}>👁 Rappel de mon mot</button>`:'<p>☠️ Tu es éliminé : tu observes.</p>'}`;
+else if(d.ph=='vote'){if(!me||!me.a)b='<h2>☠️ Tu es éliminé</h2><p>Regarde les autres voter…</p>';else{const o=d.alive.filter(i=>i!=net.idx);b=`<h2>Qui éliminer ?</h2><div class=gr>${o.map(i=>`<button class="pl ${net.sel==i?'on':''}" data-a=csel data-v=${i}>${av(n[i],32)} ${nm(i)}</button>`).join('')}</div><button class="m big2 mt" data-a=cvote ${net.sel>=0?'':'disabled'}>${d.voted?'Changer mon vote':'Valider mon vote'}</button>${d.voted?'<p>✅ Vote enregistré — attends les autres.</p>':''}`}}
+else if(d.ph=='reveal'){if(d.last==net.idx&&me&&me.r=='w'&&!d.gd)b=`<h2>🎭 Tu es Mr. White. Devine le mot des Civils !</h2><input id=uc-guess placeholder="Ton mot…" autocomplete=off><button class="m big2" data-a=cguess>Valider</button>`;
+else b=`${av(n[d.last],64)}<h2>${nm(d.last)} est éliminé</h2>${d.tie?'<p>⚖️ Égalité : tirage au sort</p>':''}<p>Rôle : <b>${RL[d.lr]}</b></p>${d.lw?`<p>Mot : <b>${esc(d.lw)}</b></p>`:''}${d.lr=='w'&&!d.gd?'<p>Mr. White tente de deviner le mot…</p>':''}${d.gd?'<p>❌ Mr. White s\'est trompé !</p>':''}<p class=muted>En attente de l'hôte…</p>`}
+else if(d.ph=='end')b=`<h1>${T[d.res]||''}</h1><p>Civils : <b>${esc(d.cw)}</b> · Undercover : <b>${esc(d.uw)}</b></p><table>${(d.all||[]).map(q=>`<tr><td>${av(q.n,28)} ${esc(q.n)}</td><td>${RL[q.r]}</td><td>${q.a?'':'☠️'}</td></tr>`).join('')}</table><p class=muted>En attente de l'hôte…</p>`;
+$('#app').innerHTML=`<div class=c><div style="opacity:.5;font-size:14px;letter-spacing:2px">UNDERCOVER · ${esc(net.name)}</div><div class=glass style="width:min(500px,100%)">${b}</div><button class=sm data-a=home>Quitter le salon</button></div>`}
 // ---------- LOGIQUE ----------
-function render(){clearInterval(tm.id);tm.run=0;sv('uc_cfg',cfg);if(G)sv('uc_game',G);if(ucNet.role==='client'){renderUcClient();return}let v;
-if(scr=='uclobby')v=vUcLobby();else if(scr=='game')v={deal:vDeal,debate:vDebate,vote:vVote,reveal:vReveal,end:vEnd}[G.phase]();else if(scr==='ucjoin')v=vUcJoin();else v={home:vHome,setup:vSetup,words:vWords,scores:vScores}[scr]();
-$('#app').innerHTML=v;$('#app').scrollTop=0;if(scr=='game'){if(G.phase=='deal'&&ucNet.role!=='host')bindHold();if(G.phase=='debate')tdraw();if(ucNet.role==='host')broadcastUcState()}}
+function render(){if(!(scr=='game'&&G&&G.phase=='debate')){clearInterval(tm.id);tm.run=0}
+if(net.role=='client'){rc();return}
+let v;if(scr=='uclobby')v=vLobby();else if(scr=='game')v={deal:vDeal,debate:vDebate,vote:vVote,reveal:vReveal,end:vEnd}[G.phase]();else if(scr=='ucjoin')v=vJoin();else v={home:vHome,setup:vSetup,words:vWords,scores:vScores}[scr]();
+const k=scr+(G?G.phase+G.round+(G.last??''):'')+(G&&G.vote?'v':'');$('#app').innerHTML=v;if(k!=lk){$('#app').scrollTop=0;lk=k}
+if(scr=='game'){if(G.phase=='deal'&&!H())bindHold();if(G.phase=='debate')tdraw()}
+if(H())sync()}
 const go=s=>{scr=s;msg='';render()};
-
 function chk(){const A=G.players.filter(p=>p.alive),b=A.filter(p=>p.r!='c').length;if(!b)return'c';if(A.length-b<=b)return'b';return null}
 function finish(w){G.res=w;G.phase='end';if(!G.sc){G.sc=1;G.pts=G.players.map(p=>{let x=0;if(w=='c'&&p.r=='c')x=2;else if(p.r=='u'&&w=='b'&&p.alive)x=3;else if(p.r=='w'&&(w=='w'||(w=='b'&&p.alive)))x=5;scores[p.n]=(scores[p.n]||0)+x;return x});sv('uc_scores',scores)}render();sfx.win()}
 function elim(i){G.players[i].alive=false;G.last=i;G.gd=0;G.vote=null;G.phase='reveal';render();sfx.elim()}
-function merge(a){let n=0;const ks=new Set([...BASE,...custom].map(p=>p.join('|').toLowerCase()));for(const p of a){const x=Array.isArray(p)?p:[p&&(p.civil??p.c),p&&(p.undercover??p.u)];if(!x[0]||!x[1])continue;const c=String(x[0]).trim(),u=String(x[1]).trim(),k=c.toLowerCase()+'|'+u.toLowerCase(),k2=u.toLowerCase()+'|'+c.toLowerCase();if(c&&u&&!ks.has(k)&&!ks.has(k2)){ks.add(k);custom.push([c,u]);n++}}sv('uc_words',custom);return n}
-const A={home:()=>go('home'),setup:()=>go('setup'),words:()=>go('words'),scores:()=>go('scores'),res:()=>{scr='game';render()},
-kick:v=>{
-    const i=Number(v);
-    cfg.names.splice(i,1);
-    cfg.ph.splice(i,1);
-    ucNet.connections.forEach(c=>{
-        if(c.ucIndex===i){c.send({type:'reject',reason:'Exclu.'});c.close()}
-        else if(c.ucIndex>i)c.ucIndex--
-    });
-    broadcastUcState();
-    render()
-},
+function start(){const n=cfg.names.length;
+if(H()&&n<3){alert('Il faut au moins 3 joueurs connectés.');return}
+if(cfg.uc+cfg.mw>=n){alert("Erreur : il doit y avoir au moins un Civil.");return}
+const seen=new Set(),names=cfg.names.map((x,i)=>{const b=x.trim()||'Joueur '+(i+1);let t=b,k=2;while(seen.has(norm(t)))t=b+' '+k++;seen.add(norm(t));return t}),pool=[...BASE,...custom];
+names.forEach((x,i)=>{if(cfg.ph[i])SpityAvatar.set(x,cfg.ph[i])});
+let k;do{k=Math.random()*pool.length|0}while(pool.length>1&&k==ls('uc_last',-1));sv('uc_last',k);
+let [a,b]=pool[k];if(Math.random()<.5)[a,b]=[b,a];
+const roles=shuf([...Array(n-cfg.uc-cfg.mw).fill('c'),...Array(cfg.uc).fill('u'),...Array(cfg.mw).fill('w')]);
+G={players:names.map((x,i)=>({n:x,r:roles[i],w:roles[i]=='c'?a:roles[i]=='u'?b:'',alive:true})),cw:a,uw:b,phase:'deal',i:0,round:1,vote:null,seen:0,last:null};net.seen={};net.votes={};scr='game';render()}
+// ---------- MOTS + GEMINI ----------
+function merge(a,strict,lim=1e9){let n=0;const used=new Set(),pk=new Set();[...BASE,...custom].forEach(p=>{p.forEach(w=>used.add(norm(w)));pk.add(norm(p[0])+'|'+norm(p[1]));pk.add(norm(p[1])+'|'+norm(p[0]))});
+for(const p of a){if(n>=lim)break;const x=Array.isArray(p)?p:[p&&(p.civil??p.c),p&&(p.undercover??p.u)];if(!x[0]||!x[1])continue;const c=String(x[0]).trim(),u=String(x[1]).trim(),nc=norm(c),nu=norm(u);if(!c||!u||nc==nu||pk.has(nc+'|'+nu)||(strict&&(used.has(nc)||used.has(nu))))continue;custom.push([c,u]);pk.add(nc+'|'+nu);pk.add(nu+'|'+nc);used.add(nc);used.add(nu);n++}
+sv('uc_words',custom);return n}
+const gst=t=>{gmsg=t;const e=$('#gs');if(e)e.textContent=t};
+async function gen(){if(gbusy)return;const key=(set.key||'').trim(),model=(set.model||'gemini-3.6-flash').trim(),N=Math.min(40,Math.max(1,parseInt(gv.n)||10));
+if(!key){gst("Colle d'abord ta clé API Gemini.");return}
+gbusy=1;let added=0;const b=$('[data-a=gen]');if(b)b.disabled=true;
+try{for(let t=0;t<4&&added<N;t++){const need=N-added,ask=need+Math.ceil(need/2)+2;gst(`Génération… ${added}/${N} (essai ${t+1}/4)`);
+const known=[...BASE,...custom].flat().join(', ');
+const prompt=`Génère ${ask} paires de mots français pour le jeu Undercover. Chaque paire = un mot "civil" et un mot "undercover" proches mais différents (même catégorie, assez ressemblants pour qu'on puisse décrire l'un sans trahir la différence). Mots courants, 1 à 2 mots, sans nom propre obscur.${gv.t?` Thème : ${gv.t}.`:''} Chaque mot doit être unique, jamais répété dans une autre paire. INTERDIT d'utiliser un seul de ces mots déjà existants (même dans une autre paire) : ${known}.`;
+const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:1,responseSchema:{type:'ARRAY',items:{type:'OBJECT',properties:{civil:{type:'STRING'},undercover:{type:'STRING'}},required:['civil','undercover']}}}})});
+const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||('HTTP '+r.status));
+const txt=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(p=>p.text||'').join('');
+added+=merge(JSON.parse(txt.replace(/```json|```/g,'')),1,N-added)}
+gmsg=added>=N?`✅ ${added} paire(s) ajoutée(s).`:`${added}/${N} ajoutée(s) : trop de doublons, relance.`}
+catch(e){gmsg='❌ '+(e.message||e)}
+gbusy=0;render()}
+// ---------- ACTIONS ----------
+const A={home:()=>{if((net.role!='none'||(G&&G.phase!='end'))&&!confirm('Quitter la partie en cours ?'))return;leave();G=null;go('home')},
+setup:()=>{cfg=fresh();G=null;go('setup')},words:()=>go('words'),scores:()=>go('scores'),
+ucroom:()=>createRoom(),ucjoin:()=>go('ucjoin'),
+ucjoinnow:()=>{const c=jv.c.replace(/\D/g,'').slice(0,6),n=jv.n.trim();if(c.length!=6||!n){msg='Entre le code à 6 chiffres et ton pseudo.';render();return}joinNet(c,n,ujPhoto)},
+rejoin:()=>joinNet(net.code,net.name,net.photo),
+ucphoto:()=>SpityAvatar.pick(u=>{ujPhoto=u;const p=$('#uc-photo-preview');if(p)p.innerHTML=`<img class=av src="${u}" width=48 height=48>`}),
+ucphotox:()=>{ujPhoto=null;const p=$('#uc-photo-preview');if(p)p.innerHTML=''},
+csel:v=>{net.sel=Number(v);render()},cvote:()=>{if(net.sel>=0)send(net.conn,{type:'vote',target:net.sel})},
+cguess:()=>{const w=($('#uc-guess').value||'').trim();send(net.conn,{type:'guess',word:w});$('#app').innerHTML='<div class=c><h2>Réponse envoyée</h2><p>Attends le résultat.</p></div>'},
+kick:v=>{const i=Number(v);cfg.names.splice(i,1);cfg.ph.splice(i,1);net.conns.forEach(c=>{if(c.ucIndex===i){c.ucIndex=-1;send(c,{type:'reject',reason:'Tu as été exclu du salon.'});setTimeout(()=>c.close(),300)}else if(c.ucIndex>i){c.ucIndex--;send(c,{type:'joined',index:c.ucIndex,name:cfg.names[c.ucIndex]})}});fixRoles();roster();render()},
 av:v=>SpityAvatar.pick(url=>{cfg.ph[Number(v)]=url;render()}),avx:v=>{const i=Number(v),n=(cfg.names[i]||'').trim();if(n)SpityAvatar.remove(n);cfg.ph[i]=null;render()},
 mute:()=>{mute=!mute;sv('uc_mute',mute);mu()},
-np:v=>{
-    const n=cfg.names.length+Number(v);
-    if(n<3||n>16)return;
-    v>0?cfg.names.push(''):(cfg.names.pop(),cfg.ph.length=Math.min(cfg.ph.length,cfg.names.length));
-    if(cfg.uc+cfg.mw>=n){[cfg.uc,cfg.mw]=auto(n);}
-    render()
-},
-auto:()=>{[cfg.uc,cfg.mw]=auto(cfg.names.length);render()},
-r:v=>{const ci=cfg.names.length-cfg.uc-cfg.mw;if(v=='uc+'&&ci>1)cfg.uc++;if(v=='uc-'&&cfg.uc>1)cfg.uc--;if(v=='mw+'&&ci>1)cfg.mw++;if(v=='mw-'&&cfg.mw>0)cfg.mw--;if(v=='ci+'){if(cfg.mw>0)cfg.mw--;else if(cfg.uc>1)cfg.uc--}if(v=='ci-'&&ci>1)cfg.uc++;render()},
-start,again:start,
-nx:()=>{G.seen=0;G.i++;if(G.i>=G.players.length){G.phase='debate';G.order=shuf(alive())}render()},ucdebate:()=>{G.phase='debate';G.order=shuf(alive());render()},ucroom:createUcRoom,ucjoin:()=>{scr='ucjoin';render()},ucjoinnow:ucStartJoin,ucphoto:ucPickPhoto,ucphotox:ucRemovePhoto,
-tg:ttog,tt:v=>{cfg.timer=Math.min(900,Math.max(30,cfg.timer+Number(v)));if(!tm.run){tm.t=cfg.timer;tdraw()}sv('uc_cfg',cfg)},
-tov:()=>{G.phase='vote';ucNet.votes={};render()},
-vm:v=>{G.tie=0;ucNet.votes={};G.vote=v=='s'?{l:shuf(alive()),k:0,step:'pass',v:{}}:{d:1,sel:-1};render()},
+np:v=>{const n=cfg.names.length+Number(v);if(n<3||n>16)return;if(Number(v)>0)cfg.names.push('');else{cfg.names.pop();cfg.ph.length=Math.min(cfg.ph.length,cfg.names.length)}fixRoles();render()},
+auto:()=>{cfg.man=0;fixRoles();render()},
+r:v=>{const ci=cfg.names.length-cfg.uc-cfg.mw;cfg.man=1;if(v=='uc+'&&ci>1)cfg.uc++;if(v=='uc-'&&cfg.uc>1)cfg.uc--;if(v=='mw+'&&ci>1)cfg.mw++;if(v=='mw-'&&cfg.mw>0)cfg.mw--;if(v=='ci+'){if(cfg.mw>0)cfg.mw--;else if(cfg.uc>1)cfg.uc--}if(v=='ci-'&&ci>1)cfg.uc++;render()},
+start,again:start,lobby:()=>{G=null;net.seen={};net.votes={};scr='uclobby';render()},
+nx:()=>{G.seen=0;G.i++;if(G.i>=G.players.length)enterDebate();else render()},ucdebate:()=>enterDebate(),
+tg:ttog,tt:v=>{set.timer=Math.min(900,Math.max(30,set.timer+Number(v)));sv('uc_set',set);if(!tm.run){tm.t=set.timer;tdraw()}},
+tov:()=>{G.phase='vote';net.votes={};G.tie=0;G.vote=null;render()},
+force:()=>{if(Object.keys(net.votes).length)resolve()},
+vm:v=>{G.tie=0;G.vote=v=='s'?{l:shuf(alive()),k:0,step:'pass',v:{}}:{d:1,sel:-1};render()},
 vp:()=>{G.vote.step='pick';render()},
 vc:v=>{const V=G.vote;V.v[v]=(V.v[v]||0)+1;V.k++;sfx.flip();if(V.k>=V.l.length){const m=Math.max(...Object.values(V.v)),t=Object.keys(V.v).filter(k=>V.v[k]==m);G.tie=t.length>1;elim(Number(shuf(t)[0]))}else{V.step='pass';render()}},
 sel:v=>{G.vote.sel=Number(v);render()},kill:()=>{if(G.vote.sel>=0)elim(G.vote.sel)},
-guess:()=>{const g=norm($('#gs').value);G.gd=1;if(g&&g==norm(G.cw))finish('w');else render()},
-cont:()=>{const w=chk();if(w)finish(w);else{G.phase='debate';G.order=shuf(alive());G.round++;render()}},
+guess:()=>{const g=norm($('#gs2').value);G.gd=1;if(g&&g==norm(G.cw))finish('w');else render()},skipg:()=>{G.gd=1;render()},
+cont:()=>{const w=chk();if(w)finish(w);else{G.round++;enterDebate()}},
 wadd:()=>{const c=$('#wc').value,u=$('#wu').value;msg=merge([[c,u]])?'Paire ajoutée.':'Paire vide ou déjà existante.';render()},
-wdel:v=>{custom.splice(Number(v),1);sv('uc_words',custom);render()},
+wdel:v=>{custom.splice(Number(v),1);sv('uc_words',custom);render()},gen,
 imp:()=>$('#fi').click(),
 exp:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(custom,null,1)],{type:'application/json'}));a.download='undercover-mots.json';a.click()},
 rs:()=>{if(confirm('Remettre tous les scores à zéro ?')){scores={};sv('uc_scores',scores);render()}}};
-document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;try{au()}catch(x){}A[b.dataset.a]&&A[b.dataset.a](b.dataset.v)});
-document.addEventListener('input',e=>{const t=e.target;if(t.dataset.i!=null){cfg.names[Number(t.dataset.i)]=t.value;sv('uc_cfg',cfg)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;try{au()}catch(x){}A[b.dataset.a]&&A[b.dataset.a](b.dataset.v)});
+const IN={gk:v=>{set.key=v;sv('uc_set',set)},gm:v=>{set.model=v;sv('uc_set',set)},gn:v=>gv.n=v,gt:v=>gv.t=v,'uc-code':v=>jv.c=v,'uc-name':v=>jv.n=v};
+document.addEventListener('input',e=>{const t=e.target;if(IN[t.id])IN[t.id](t.value);else if(t.dataset.i!=null)cfg.names[Number(t.dataset.i)]=t.value});
 document.addEventListener('change',e=>{if(e.target.dataset.i!=null){const i=Number(e.target.dataset.i),url=SpityAvatar.get(e.target.value);if(url&&!cfg.ph[i]){cfg.ph[i]=url;render()}return}if(e.target.id!='fi')return;const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);msg=merge(Array.isArray(j)?j:j.words||[])+' paire(s) importée(s).'}catch(x){msg='Fichier JSON invalide.'}render()};r.readAsText(f)});
 mu();render();
 </script></body></html>
