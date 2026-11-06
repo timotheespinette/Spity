@@ -1,4 +1,3 @@
-
 // Registre des jeux Spity.
 window.SPITY_GAMES = [
   {
@@ -19,6 +18,16 @@ window.SPITY_GAMES = [
     desc: "Trois modes de jeu : classique, buzzer et quiz rapide.",
     color: ["#7352A6", "#B99BEA"],
     emoji: "📺",
+    ready: true
+  },
+  {
+    id: "manoir",
+    file: "manoir.html",
+    name: "Le Manoir",
+    cat: "Survie & Trahison",
+    desc: "Échappez aux Cultistes ou éliminez les Invités.",
+    color: ["#4A00E0", "#8E2DE2"],
+    emoji: "🏰",
     ready: true
   }
 ];
