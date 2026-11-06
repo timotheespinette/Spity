@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Le Manoir - Spity</title>
+<link rel="stylesheet" href="app.css">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="spity-avatar.js"></script>
+<style>
+  :root {
+    --cultist: #ff4d6d;
+    --guest: #4cc9f0;
+  }
+  body {
+    background: #110b17; /* Un peu plus sombre que le Spity classique pour l'ambiance */
+    color: #F0ECF5;
+    margin: 0;
+    overflow: hidden;
+  }
+  #app {
+    height: 100vh;
+    overflow-y: auto;
+    padding: max(16px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom));
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel {
+    background: rgba(46, 34, 64, 0.7);
+    border: 1px solid rgba(185, 155, 234, 0.2);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .title-brand {
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 900;
+    text-align: center;
+    background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 30px;
+  }
+  button {
+    background: rgba(185, 155, 234, 0.15);
+    border: 1px solid #B99BEA;
+    color: #fff;
+    border-radius: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 16px 24px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 12px;
+    transition: transform 0.1s;
+  }
+  button:active { transform: scale(0.97); }
+  button.primary {
+    background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+    border: none;
+    box-shadow: 0 4px 15px rgba(74, 0, 224, 0.4);
+  }
+  button:disabled { opacity: 0.5; pointer-events: none; }
+  
+  .row { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; }
+  .row-btn { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 50%; }
+  input {
+    width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 16px; color: #fff; font-size: 18px; margin-bottom: 16px;
+  }
+  
+  .player-chip {
+    display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1);
+    padding: 6px 14px 6px 6px; border-radius: 99px; margin: 4px; font-weight: 600;
+  }
+  .role-config { max-height: 40vh; overflow-y: auto; padding-right: 10px; margin-bottom: 16px;}
+  .role-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  
+  /* REVEAL SCREEN */
+  .reveal-container {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; animation: fadeIn 1s ease-out;
+  }
+  .role-icon { font-size: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 20px currentColor); }
+  .role-name { font-size: 42px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+  .role-team { font-size: 20px; font-weight: 700; opacity: 0.8; margin-bottom: 24px; }
+  .role-desc { font-size: 18px; line-height: 1.5; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 16px; max-width: 400px;}
+  
+  .team-cultist { color: var(--cultist); }
+  .team-guest { color: var(--guest); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  
+  #code-display { font-size: 64px; font-weight: 900; letter-spacing: 8px; text-align: center; margin: 10px 0; color: #B99BEA; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ==========================================
+// DÉFINITION DES RÔLES
+// ==========================================
+const ROLES = {
+  // Cultistes (Imposteurs)
+  cultist: { id: 'cultist', name: 'Le Cultiste', team: 'cultist', icon: '🔪', desc: 'Élimine les invités discrètement. Tu peux utiliser les passages secrets du manoir.' },
+  poisoner: { id: 'poisoner', name: 'L\'Empoisonneur', team: 'cultist', icon: '🧪', desc: 'Ton attaque n\'est pas immédiate. La victime s\'effondrera 15 secondes après avoir été touchée.' },
+  shapeshifter: { id: 'shapeshifter', name: 'Le Métamorphe', team: 'cultist', icon: '🎭', desc: 'Tu peux prendre l\'apparence d\'un autre joueur pendant quelques secondes pour commettre tes crimes.' },
+  
+  // Invités (Civils)
+  innocent: { id: 'innocent', name: 'L\'Innocent', team: 'guest', icon: '🕯️', desc: 'Accomplis tes tâches pour t\'échapper. Ouvre l\'œil et signale les corps.' },
+  detective: { id: 'detective', name: 'Le Détective', team: 'guest', icon: '🔍', desc: 'Active ta vision infrarouge pour voir les traces de pas récentes des autres joueurs.' },
+  medium: { id: 'medium', name: 'Le Médium', team: 'guest', icon: '🔮', desc: 'Ton téléphone émettra un flash rouge au moment exact où un meurtre est commis.' },
+  bodyguard: { id: 'bodyguard', name: 'Garde du Corps', team: 'guest', icon: '🛡️', desc: 'Tu peux cibler un joueur pour le protéger d\'une attaque. Le bouclier se brisera.' },
+  watcher: { id: 'watcher', name: 'Le Veilleur', team: 'guest', icon: '👁️', desc: 'Tu as accès aux caméras de sécurité du manoir depuis ton téléphone.' },
+  hunter: { id: 'hunter', name: 'Le Chasseur', team: 'guest', icon: '🏹', desc: 'Si le manoir vote contre toi, tu auras 5 secondes pour emporter un joueur avec toi dans la mort.' },
+  cartographer: { id: 'cartographer', name: 'Cartographe', team: 'guest', icon: '🗺️', desc: 'Appuie sur ton pouvoir pour révéler brièvement la position de tous les joueurs sur l\'écran principal.' },
+  martyr: { id: 'martyr', name: 'Le Martyr', team: 'guest', icon: '🩸', desc: 'Si tu te fais assassiner, une alarme retentit immédiatement sur l\'écran principal et lance une réunion.' }
+};
+
+// Ordre d'affichage dans les réglages
+const ROLE_ORDER = ['cultist', 'poisoner', 'shapeshifter', 'detective', 'medium', 'bodyguard', 'watcher', 'hunter', 'cartographer', 'martyr'];
+
+// ==========================================
+// ÉTAT DU JEU & RÉSEAU
+// ==========================================
+let scr = 'home'; 
+let net = { role: 'none', peer: null, conns: [], code: '', name: '', players: [] };
+let myRole = null; // Rôle assigné à ce client
+
+// Configuration par défaut de l'hôte
+let config = {
+  cultist: 1, poisoner: 0, shapeshifter: 0,
+  detective: 0, medium: 0, bodyguard: 0, watcher: 0, hunter: 0, cartographer: 0, martyr: 0
+};
+
+// ==========================================
+// MOTEUR DE RENDU (VUES)
+// ==========================================
+function render() {
+  const app = $('#app');
+  if (scr === 'home') {
+    app.innerHTML = `
+      <div class="reveal-container">
+        <div class="title-brand">LE MANOIR</div>
+        <div class="panel" style="width: 100%">
+          <button class="primary" onclick="createRoom()">🏰 Héberger (Écran Principal)</button>
+          <button onclick="scr='join'; render()">📱 Rejoindre (Téléphone)</button>
+          <button onclick="history.back()" style="background: transparent; border: none; opacity: 0.7; margin-top: 10px;">Retour à Spity</button>
+        </div>
+      </div>
+    `;
+  } 
+  else if (scr === 'join') {
+    app.innerHTML = `
+      <div class="panel" style="margin-top: 20px;">
+        <h2>Rejoindre le Manoir</h2>
+        <input id="j-code" placeholder="Code à 6 chiffres" type="number">
+        <input id="j-name" placeholder="Ton pseudo" maxlength="15">
+        <button class="primary" onclick="joinRoom()">Rejoindre</button>
+        <button onclick="scr='home'; render()">Annuler</button>
+      </div>
+    `;
+  }
+  else if (scr === 'lobby-host') {
+    const totalPlayers = net.players.length;
+    let specialCount = 0;
+    Object.values(config).forEach(v => specialCount += v);
+    const innocents = Math.max(0, totalPlayers - specialCount);
+    const canStart = totalPlayers >= 4 && specialCount <= totalPlayers;
+    const errorMsg = totalPlayers < 4 ? "4 joueurs minimum." : (specialCount > totalPlayers ? "Trop de rôles spéciaux !" : "");
+
+    let configHTML = ROLE_ORDER.map(id => `
+      <div class="role-item">
+        <div>
+          <span style="font-size: 20px">${ROLES[id].icon}</span>
+          <b style="color: ${ROLES[id].team === 'cultist' ? 'var(--cultist)' : 'var(--guest)'}">${ROLES[id].name}</b>
+        </div>
+        <div class="row" style="margin: 0; width: 100px;">
+          <button class="row-btn" onclick="changeRole('${id}', -1)">-</button>
+          <b>${config[id]}</b>
+          <button class="row-btn" onclick="changeRole('${id}', 1)">+</button>
+        </div>
+      </div>
+    `).join('');
+
+    app.innerHTML = `
+      <div style="text-align: center;">
+        <p class="role-team" style="margin:0">CODE D'INVITATION</p>
+        <div id="code-display">${net.code}</div>
+      </div>
+      <div class="panel">
+        <h2>Joueurs connectés (${totalPlayers})</h2>
+        <div style="margin-bottom: 16px;">
+          ${net.players.map(p => `<span class="player-chip">${SpityAvatar.html(p.name, 24)} ${esc(p.name)}</span>`).join('') || '<p style="opacity:0.5">En attente de joueurs...</p>'}
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Composition de la partie</h2>
+        <div class="role-config">${configHTML}</div>
+        <div class="role-item" style="border: none; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px;">
+          <div><span style="font-size: 20px">🕯️</span> <b style="color: var(--guest)">Innocents (Remplissage)</b></div>
+          <b style="font-size: 20px">${innocents}</b>
+        </div>
+      </div>
+      <button class="primary" onclick="startGame()" ${!canStart ? 'disabled' : ''}>Démarrer la partie</button>
+      <p style="text-align:center; color: #ff4d6d; margin: 0">${errorMsg}</p>
+    `;
+  }
+  else if (scr === 'lobby-client') {
+    app.innerHTML = `
+      <div class="reveal-container">
+        <h2>Tu es dans le Manoir</h2>
+        <p>Attends que l'hôte lance la partie...</p>
+        <div style="margin-top: 20px;">
+          ${net.players.map(p => `<span class="player-chip">${SpityAvatar.html(p.name, 24)} ${esc(p.name)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+  else if (scr === 'reveal') {
+    const role = ROLES[myRole];
+    app.innerHTML = `
+      <div class="reveal-container team-${role.team}">
+        <div class="role-icon">${role.icon}</div>
+        <h1 class="role-name">${role.name}</h1>
+        <div class="role-team">${role.team === 'cultist' ? 'CULTISTE (Imposteur)' : 'INVITÉ (Civil)'}</div>
+        <div class="role-desc">${role.desc}</div>
+        <p style="opacity: 0.5; margin-top: 30px;">Prépare-toi. Le jeu commence sur l'écran principal...</p>
+      </div>
+    `;
+  }
+}
+
+// ==========================================
+// LOGIQUE DE CONFIGURATION
+// ==========================================
+function changeRole(id, delta) {
+  config[id] = Math.max(0, config[id] + delta);
+  render();
+}
+
+function startGame() {
+  // 1. Créer le pool de rôles
+  let pool = [];
+  Object.keys(config).forEach(id => {
+    for (let i = 0; i < config[id]; i++) pool.push(id);
+  });
+  
+  // 2. Combler avec des innocents
+  while (pool.length < net.players.length) {
+    pool.push('innocent');
+  }
+
+  // 3. Mélanger le tableau de rôles (Fisher-Yates)
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  // 4. Assigner et envoyer aux clients
+  net.players.forEach((p, index) => {
+    p.role = pool[index];
+    p.conn.send({ type: 'start', role: p.role });
+  });
+
+  alert("C'EST ICI QU'ON LANCERA LE CANVAS 2D ! L'hôte passe sur la Map.");
+  // Prochaine étape : scr = 'game-host' -> Affichage du Canvas
+}
+
+// ==========================================
+// RÉSEAU : HÔTE (PeerJS)
+// ==========================================
+function createRoom() {
+  if (!window.Peer) return alert('Erreur réseau. PeerJS non chargé.');
+  
+  net.role = 'host';
+  net.code = String(Math.floor(100000 + Math.random() * 900000));
+  net.players = [];
+  scr = 'lobby-host';
+  render();
+
+  net.peer = new Peer('spity-' + net.code);
+  
+  net.peer.on('connection', conn => {
+    conn.on('data', data => {
+      if (data.type === 'join') {
+        net.players.push({ id: conn.peer, name: data.name, conn: conn });
+        broadcastLobby();
+        render();
+      }
+    });
+    conn.on('close', () => {
+      net.players = net.players.filter(p => p.id !== conn.peer);
+      broadcastLobby();
+      render();
+    });
+  });
+}
+
+function broadcastLobby() {
+  const pList = net.players.map(p => ({ name: p.name }));
+  net.players.forEach(p => p.conn.send({ type: 'lobby', players: pList }));
+}
+
+// ==========================================
+// RÉSEAU : CLIENT (PeerJS)
+// ==========================================
+function joinRoom() {
+  const code = $('#j-code').value.trim();
+  const name = $('#j-name').value.trim() || 'Anonyme';
+  if (code.length !== 6) return alert("Code invalide");
+
+  net.role = 'client';
+  net.peer = new Peer();
+  
+  net.peer.on('open', () => {
+    const conn = net.peer.connect('spity-' + code, { reliable: true });
+    
+    conn.on('open', () => {
+      conn.send({ type: 'join', name: name });
+      scr = 'lobby-client';
+      render();
+    });
+
+    conn.on('data', data => {
+      if (data.type === 'lobby') {
+        net.players = data.players;
+        if (scr === 'lobby-client') render();
+      }
+      if (data.type === 'start') {
+        myRole = data.role;
+        scr = 'reveal';
+        render();
+      }
+    });
+  });
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
