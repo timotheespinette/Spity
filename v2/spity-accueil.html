@@ -197,7 +197,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
     setTimeout(function(){location.href=b.dataset.go},350);
   });
 });
-document.querySelectorAll("[data-go]").forEach(function(b){
+window.addEventListener("pageshow",function(){document.getElementById("screen").classList.remove("leaving")});
 })();
 </script>
 </body>
