@@ -5,6 +5,7 @@ var CATALOGUE=[
   {id:"or",       type:"contour", nom:"Or",       img:"contours/or.png",      prix:0},
   {id:"flammes",  type:"contour", nom:"Flammes",  img:"contours/flammes.png", prix:50},
   {id:"lunettes", type:"acc",     nom:"Lunettes", img:"acc/lunettes.png",     prix:30},
+  {id:"moustache", type:"acc", nom:"Moustache", img:"acc/moustache.png", prix:20},
   {id:"couronne", type:"acc",     nom:"Couronne", img:"acc/couronne.png",     prix:80}
 ];
 
