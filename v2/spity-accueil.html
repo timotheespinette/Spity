@@ -36,6 +36,8 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .screen{position:relative;min-height:100%;display:flex;flex-direction:column;gap:6px;
   padding:14px clamp(16px,4vw,44px) 22px;overflow:hidden}
 .screen>*{position:relative;z-index:1}
+.screen{transition:opacity .35s,transform .35s}
+.screen.leaving{opacity:0;transform:scale(1.04)}
 
 .top{display:flex;justify-content:space-between;align-items:center}
 .pill,.icon-btn{display:flex;align-items:center;background:var(--glass);
@@ -111,8 +113,8 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 
   <nav class="actions" aria-label="Choisir comment jouer">
     <button class="btn btn-edge" data-soon>Local<small>Un seul appareil</small></button>
-    <button class="btn btn-mid" data-soon>Rejoindre<small>Avec un code</small></button>
-    <button class="btn btn-edge btn-create" data-soon>Créer un salon<small>Pour jouer à plusieurs</small></button>
+    <button class="btn btn-mid" data-go="spity-salon.html?mode=join">Rejoindre<small>Avec un code</small></button>
+    <button class="btn btn-edge btn-create" data-go="spity-salon.html">Créer un salon<small>Pour jouer à plusieurs</small></button>
   </nav>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -189,6 +191,13 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
       timer=setTimeout(function(){t.classList.remove("on")},2200);
     });
   });
+  document.querySelectorAll("[data-go]").forEach(function(b){
+  b.addEventListener("click",function(){
+    document.getElementById("screen").classList.add("leaving");
+    setTimeout(function(){location.href=b.dataset.go},350);
+  });
+});
+document.querySelectorAll("[data-go]").forEach(function(b){
 })();
 </script>
 </body>
