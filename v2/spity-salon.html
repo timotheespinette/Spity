@@ -69,6 +69,10 @@ h2{margin:0;font-weight:800;font-size:clamp(2rem,6vw,3.6rem);text-align:center;t
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 body{animation:in .35s ease-out}
 @keyframes in{from{opacity:0}to{opacity:1}}
+.bub{position:fixed;border-radius:50%;pointer-events:none;z-index:6;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.75),rgba(255,255,255,.15) 45%,rgba(255,255,255,.05) 70%);
+  border:1px solid rgba(255,255,255,.45);animation:bubUp 1.6s ease-out forwards}
+@keyframes bubUp{from{transform:translate(0,0) scale(.3);opacity:0}15%{opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
 </style>
 </head>
 <body>
@@ -94,8 +98,9 @@ body{animation:in .35s ease-out}
   <a class="back glass" href="spity-accueil.html">← Accueil</a>
   <div class="left">
     <div class="av d" id="pv"><img id="pvImg" src="spity-poisson-face.png" alt="Aperçu de ton avatar"></div>
-    <div class="row"><button class="btn" id="phB">Photo</button><button class="btn" id="rmB">Supprimer</button></div>
+    <div class="row"><button class="btn" id="phB">Photo</button><button class="btn" id="rmB">Supprimer</button><button class="btn" id="camPhB">Selfie</button></div>
     <input type="file" id="file" accept="image/*" hidden>
+    <input type="file" id="fileCam" accept="image/*" capture="user" hidden>
   </div>
   <div class="right">
     <input class="in" id="pseudo" maxlength="14" placeholder="Pseudo" autocomplete="off" aria-label="Pseudo" style="font-size:clamp(1.6rem,4vw,2.6rem)">
@@ -111,6 +116,7 @@ body{animation:in .35s ease-out}
 </section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
+<input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -137,8 +143,10 @@ function hostNet(code,on){
   return{all:function(m){ch.postMessage({to:"*",m:m})},close:function(){ch.postMessage({to:"*",m:{t:"closed"}});ch.close()}}
 }
 function clientNet(code,on){
-  if(peerOK){var p=new Peer(),c;p.on("error",on.error);
-    p.on("open",function(){c=p.connect(PRE+code,{reliable:true});c.on("open",on.open);c.on("data",on.msg);c.on("close",on.close)});
+    if(peerOK){var p=new Peer(),c,ok=0;
+    p.on("error",function(e){console.log(e);on.error(e)});
+    p.on("open",function(){c=p.connect(PRE+code,{reliable:true});c.on("open",function(){ok=1;on.open()});c.on("data",on.msg);c.on("close",on.close)});
+    setTimeout(function(){ok||on.error({type:"timeout"})},10000);
     return{send:function(m){c&&c.open&&c.send(m)},close:function(){p.destroy()}}}
   var id="c"+Math.random().toString(36).slice(2),ch=new BroadcastChannel(PRE+code),ok=0;
   ch.onmessage=function(e){var d=e.data;if(d.to!=="*"&&d.to!==id)return;
@@ -156,8 +164,20 @@ function fill(el,l){el.innerHTML="";l.forEach(function(p){
   d.className="pl"+(shown[p.id]?" old":"");a.className="av"+(img(p.avatar)?"":" d");a.style.setProperty("--ring",/^#[0-9a-f]{3,6}$/i.test(p.ring)?p.ring:"#fff");
   i.src=img(p.avatar)||FISH;i.alt="";n.className="nm";n.textContent=p.name;a.appendChild(i);d.appendChild(a);d.appendChild(n);el.appendChild(d);shown[p.id]=1})}
 function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R)}
+function burst(el){
+  if(!el||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  var r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  for(var i=0;i<14;i++){
+    var b=document.createElement("span"),z=8+Math.random()*22;
+    b.className="bub";
+    b.style.cssText="left:"+(cx-z/2)+"px;top:"+(cy-z/2)+"px;width:"+z+"px;height:"+z+"px;--dx:"+((Math.random()-.5)*160)+"px;--dy:"+(-60-Math.random()*140)+"px;animation-delay:"+(Math.random()*.25)+"s";
+    b.addEventListener("animationend",function(){this.remove()});
+    document.body.appendChild(b);
+  }
+}
 function addPlayer(p){if(P.length>=12||P.some(function(x){return x.id===p.id}))return;
   P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring});render();
+    var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
   H&&H.all({t:"players",n:P.length})}
 function startHost(tries){
   var code=String(Math.floor(100000+Math.random()*900000));
@@ -177,8 +197,9 @@ function setCode(c){CODE=c;show("profile")}
 $("codeIn").oninput=function(){this.value=this.value.replace(/\D/g,"").slice(0,6);if(this.value.length===6)setCode(this.value)};
 function prev(){$("pvImg").src=photo||FISH;$("pv").classList.toggle("d",!photo)}
 $("phB").onclick=function(){$("file").click()};
+$("camPhB").onclick=function(){$("fileCam").click()};
 $("rmB").onclick=function(){photo="";$("file").value="";prev()};
-$("file").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){
+$("file").onchange=$("fileCam").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){
   var s=Math.min(im.width,im.height),c=document.createElement("canvas");c.width=c.height=192;
   c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,192,192);photo=c.toDataURL("image/jpeg",.8);prev()};im.src=r.result};r.readAsDataURL(f)};
 $("pGo").onclick=function(){var name=$("pseudo").value.trim();
@@ -193,8 +214,15 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
 var stream,scanning=0;
 function stopScan(){scanning=0;$("scan").classList.remove("on");stream&&stream.getTracks().forEach(function(t){t.stop()})}
 $("scX").onclick=stopScan;
+$("qrFile").onchange=function(){var f=this.files[0];if(!f)return;var im=new Image();
+  im.onload=function(){var k=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement("canvas");
+    c.width=im.width*k;c.height=im.height*k;var x=c.getContext("2d");x.drawImage(im,0,0,c.width,c.height);
+    var r=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height),m=r&&r.data.match(/(\d{6})\s*$/);
+    URL.revokeObjectURL(im.src);m?setCode(m[1]):toast("QR code non reconnu. Réessaie ou entre le code.")};
+  im.src=URL.createObjectURL(f);this.value=""};
 $("camB").onclick=function(){
-  if(!navigator.mediaDevices||!window.jsQR)return toast("Scan indisponible : utilise l’appareil photo du téléphone.");
+  if(!window.jsQR)return toast("Scan indisponible. Entre le code à la main.");
+  if(!navigator.mediaDevices)return $("qrFile").click();
   navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(s){
     stream=s;var v=$("vid");v.srcObject=s;v.play();$("scan").classList.add("on");scanning=1;
     var c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
