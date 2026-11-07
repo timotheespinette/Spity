@@ -53,7 +53,6 @@ h2{margin:0;font-weight:800;font-size:clamp(2rem,6vw,3.6rem);text-align:center;t
 /* Profil */
 #profile{grid-template-columns:auto minmax(0,1fr);align-content:center;gap:28px clamp(20px,5vw,70px);max-width:1100px;margin:0 auto;width:100%}
 .left{display:flex;flex-direction:column;align-items:center;gap:14px}
-#pv{width:clamp(150px,30vh,300px);border-width:8px}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}.row .btn{padding:10px 22px 12px;font-size:1.2rem}
 .right{display:flex;flex-direction:column;gap:22px;justify-content:center}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.two .btn{padding:34px 10px 36px}
@@ -75,6 +74,9 @@ body{animation:in .35s ease-out}
 @keyframes bubUp{from{transform:translate(0,0) scale(.3);opacity:0}15%{opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
 .kick{width:30px;height:30px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:1rem;font-weight:800;line-height:1;background:var(--glass);border:1.5px solid var(--line);color:#fff}
 .kick:active{transform:scale(.9)}
+#pvBox{margin:clamp(16px,4vh,40px)}
+#pvBox .av{width:clamp(150px,30vh,300px);border-width:8px}
+#profile{overflow-y:auto}
 </style>
 </head>
 <body>
@@ -99,14 +101,14 @@ body{animation:in .35s ease-out}
 <section id="profile" class="scr">
   <a class="back glass" href="spity-accueil.html">← Accueil</a>
   <div class="left">
-    <div class="av d" id="pv"><img id="pvImg" src="spity-poisson-face.png" alt="Aperçu de ton avatar"></div>
+    <div id="pvBox"></div>
     <div class="row"><button class="btn" id="phB">Photo</button><button class="btn" id="rmB">Supprimer</button><button class="btn" id="camPhB">Selfie</button></div>
     <input type="file" id="file" accept="image/*" hidden>
     <input type="file" id="fileCam" accept="image/*" capture="user" hidden>
   </div>
   <div class="right">
     <input class="in" id="pseudo" maxlength="14" placeholder="Pseudo" autocomplete="off" aria-label="Pseudo" style="font-size:clamp(1.6rem,4vw,2.6rem)">
-    <div class="two"><button class="btn" data-soon>Contour</button><button class="btn" data-soon>Équipement</button></div>
+    <div id="picker"></div>
     <button class="btn sun" id="pGo">Rejoindre le salon</button>
   </div>
 </section>
@@ -124,6 +126,7 @@ body{animation:in .35s ease-out}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="spity-avatar.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
@@ -164,9 +167,9 @@ function clientNet(code,on){
 var P=[],shown={},H=null;
 function img(s){return typeof s==="string"&&s.indexOf("data:image/")===0||s===FISH?s:""}
 function fill(el,l){el.innerHTML="";l.forEach(function(p){
-  var d=document.createElement("div"),a=document.createElement("div"),i=document.createElement("img"),n=document.createElement("div");
-  d.className="pl"+(shown[p.id]?" old":"");a.className="av"+(img(p.avatar)?"":" d");a.style.setProperty("--ring",/^#[0-9a-f]{3,6}$/i.test(p.ring)?p.ring:"#fff");
-    i.src=img(p.avatar)||FISH;i.alt="";n.className="nm";n.textContent=p.name;a.appendChild(i);d.appendChild(a);d.appendChild(n);
+  var d=document.createElement("div"),n=document.createElement("div");
+  d.className="pl"+(shown[p.id]?" old":"");n.className="nm";n.textContent=p.name;
+  d.appendChild(Avatar.make(p));d.appendChild(n);
   var k=document.createElement("button");k.className="kick";k.textContent="✕";k.setAttribute("aria-label","Retirer "+p.name);k.onclick=function(){kick(p.id)};d.appendChild(k);
   el.appendChild(d);shown[p.id]=1})}
 function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R)}
@@ -183,7 +186,7 @@ function burst(el){
 }
 function kick(id){H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
 function addPlayer(p){if(P.length>=12||P.some(function(x){return x.id===p.id}))return;
-  P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring});render();
+    P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc});render();
     var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
   H&&H.all({t:"players",n:P.length})}
 function startHost(tries){
@@ -192,7 +195,7 @@ function startHost(tries){
     open:function(){$("codeTxt").textContent=code.slice(0,3)+" "+code.slice(3);
       try{var q=qrcode(0,"M");q.addData(location.href.split("?")[0].split("#")[0]+"?code="+code);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true})}catch(e){$("qr").textContent=code}},
     error:function(e){if(e&&e.type==="unavailable-id"&&tries<3)startHost(tries+1);else toast("Connexion impossible. Vérifie Internet.")},
-    msg:function(id,m){if(m&&m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring})},
+    msg:function(id,m){if(m&&m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc})},
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="spity-accueil.html"};
@@ -202,7 +205,8 @@ $("hG").onclick=function(){toast("Bientôt : choix du jeu.")};
 var CODE="",C=null,photo="";
 function setCode(c){CODE=c;show("profile")}
 $("codeIn").oninput=function(){this.value=this.value.replace(/\D/g,"").slice(0,6);if(this.value.length===6)setCode(this.value)};
-function prev(){$("pvImg").src=photo||FISH;$("pv").classList.toggle("d",!photo)}
+function prev(){var b=$("pvBox");b.innerHTML="";b.appendChild(Avatar.make({avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc}))}
+Avatar.picker($("picker"),prev);prev();
 $("phB").onclick=function(){$("file").click()};
 $("camPhB").onclick=function(){$("fileCam").click()};
 $("rmB").onclick=function(){photo="";$("file").value="";prev()};
@@ -213,7 +217,7 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
   if(!name)return toast("Choisis un pseudo.");
   if(CODE.length!==6)return show("code");
   C&&C.close();
-  C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff"});show("wait")},
+  C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc});show("wait")},
     msg:function(m){if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
       if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
     close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
