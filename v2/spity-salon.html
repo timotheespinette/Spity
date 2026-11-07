@@ -6,8 +6,6 @@
 <title>Spity — Salon</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
-body{animation:in .35s ease-out}
-@keyframes in{from{opacity:0}to{opacity:1}}
 :root{--fond:url(spity-fond.jpg);--glass:rgba(14,22,70,.42);--line:rgba(255,255,255,.32);
 --violet:#7a57f5;--violet-top:#9170ff;--violet-edge:#3f26a8;--sun:#ffc23d;--sun-top:#ffd96e;--sun-edge:#c27f00;
 --font:"Baloo 2","Nunito",system-ui,-apple-system,sans-serif;box-sizing:border-box;
@@ -69,6 +67,8 @@ h2{margin:0;font-weight:800;font-size:clamp(2rem,6vw,3.6rem);text-align:center;t
 #host{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"q q" "c c" "l r" "b s"}.qr{width:min(52vw,34vh);justify-self:center}.side{align-content:start;grid-template-columns:repeat(2,minmax(0,1fr));gap:2vh 3vw}.av{width:clamp(52px,17vw,90px)}.btn{padding:12px 18px 14px}#host .fish{display:none}
 #profile{grid-template-columns:1fr}.two .btn{padding:22px 8px 24px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+body{animation:in .35s ease-out}
+@keyframes in{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
