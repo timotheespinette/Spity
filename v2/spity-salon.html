@@ -73,6 +73,8 @@ body{animation:in .35s ease-out}
   background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.75),rgba(255,255,255,.15) 45%,rgba(255,255,255,.05) 70%);
   border:1px solid rgba(255,255,255,.45);animation:bubUp 1.6s ease-out forwards}
 @keyframes bubUp{from{transform:translate(0,0) scale(.3);opacity:0}15%{opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
+.kick{width:30px;height:30px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:1rem;font-weight:800;line-height:1;background:var(--glass);border:1.5px solid var(--line);color:#fff}
+.kick:active{transform:scale(.9)}
 </style>
 </head>
 <body>
@@ -135,12 +137,14 @@ function hostNet(code,on){
   if(peerOK){var p=new Peer(PRE+code),cs={};
     p.on("open",on.open);p.on("error",on.error);
     p.on("connection",function(c){cs[c.peer]=c;c.on("data",function(m){on.msg(c.peer,m)});c.on("close",function(){delete cs[c.peer];on.leave(c.peer)})});
-    return{all:function(m){for(var k in cs)cs[k].open&&cs[k].send(m)},close:function(){p.destroy()}}}
+    return{all:function(m){for(var k in cs)cs[k].open&&cs[k].send(m)},close:function(){p.destroy()},
+      kick:function(id){var c=cs[id];if(!c)return;c.open&&c.send({t:"kicked"});setTimeout(function(){c.close()},150)}}}
   var ch=new BroadcastChannel(PRE+code);
   ch.onmessage=function(e){var d=e.data;if(d.to!=="host")return;
     if(d.bye)on.leave(d.from);else if(d.m.t==="hello")ch.postMessage({to:d.from,m:{t:"welcome"}});else on.msg(d.from,d.m)};
   setTimeout(on.open,0);
-  return{all:function(m){ch.postMessage({to:"*",m:m})},close:function(){ch.postMessage({to:"*",m:{t:"closed"}});ch.close()}}
+  return{all:function(m){ch.postMessage({to:"*",m:m})},close:function(){ch.postMessage({to:"*",m:{t:"closed"}});ch.close()},
+    kick:function(id){ch.postMessage({to:id,m:{t:"kicked"}})}}
 }
 function clientNet(code,on){
     if(peerOK){var p=new Peer(),c,ok=0;
@@ -162,7 +166,9 @@ function img(s){return typeof s==="string"&&s.indexOf("data:image/")===0||s===FI
 function fill(el,l){el.innerHTML="";l.forEach(function(p){
   var d=document.createElement("div"),a=document.createElement("div"),i=document.createElement("img"),n=document.createElement("div");
   d.className="pl"+(shown[p.id]?" old":"");a.className="av"+(img(p.avatar)?"":" d");a.style.setProperty("--ring",/^#[0-9a-f]{3,6}$/i.test(p.ring)?p.ring:"#fff");
-  i.src=img(p.avatar)||FISH;i.alt="";n.className="nm";n.textContent=p.name;a.appendChild(i);d.appendChild(a);d.appendChild(n);el.appendChild(d);shown[p.id]=1})}
+    i.src=img(p.avatar)||FISH;i.alt="";n.className="nm";n.textContent=p.name;a.appendChild(i);d.appendChild(a);d.appendChild(n);
+  var k=document.createElement("button");k.className="kick";k.textContent="✕";k.setAttribute("aria-label","Retirer "+p.name);k.onclick=function(){kick(p.id)};d.appendChild(k);
+  el.appendChild(d);shown[p.id]=1})}
 function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R)}
 function burst(el){
   if(!el||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
@@ -175,6 +181,7 @@ function burst(el){
     document.body.appendChild(b);
   }
 }
+function kick(id){H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
 function addPlayer(p){if(P.length>=12||P.some(function(x){return x.id===p.id}))return;
   P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring});render();
     var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
@@ -207,8 +214,9 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
   if(CODE.length!==6)return show("code");
   C&&C.close();
   C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff"});show("wait")},
-    msg:function(m){if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !")},
-    close:function(){toast("Le salon a été fermé.");show("code")},
+    msg:function(m){if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
+      if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
+    close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
     error:function(){toast("Salon introuvable. Vérifie le code.");show("code")}})};
 /* Scan du QR code avec la caméra */
 var stream,scanning=0;
