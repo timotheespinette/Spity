@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* ===== THÈME : tout se change ici, une seule fois ===== */
+:root{
+  color-scheme:dark;
+  --bg-1:#150b36; --bg-2:#2a1470; --bg-3:#4a28b0;
+  --glow-a:rgba(214,120,255,.28); --glow-b:rgba(80,150,255,.22);
+  --text:#ffffff; --glass:rgba(255,255,255,.12); --glass-line:rgba(255,255,255,.22);
+  --violet:#7a57f5; --violet-top:#9170ff; --violet-edge:#3f26a8;
+  --mint:#34d9bc; --mint-top:#5bf0d3; --mint-edge:#14917c; --on-mint:#082a24;
+  --font:"Baloo 2","Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{
+  margin:0;height:100%;font-family:var(--font);color:var(--text);
+  background:
+    linear-gradient(180deg,rgba(10,30,90,.35),transparent 22%),
+    url("spity-fond.png") center bottom/cover no-repeat;
+  background-color:#0a6fd6;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+.screen{position:relative;min-height:100%;display:flex;flex-direction:column;gap:6px;
+  padding:14px clamp(16px,4vw,44px) 22px;overflow:hidden}
+.screen>*{position:relative;z-index:1}
+
+.top{display:flex;justify-content:space-between;align-items:center}
+.pill,.icon-btn{display:flex;align-items:center;background:var(--glass);
+  border:1.5px solid var(--glass-line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:transform .15s}
+.pill{gap:10px;padding:6px 22px 6px 8px;border-radius:999px;font-weight:800;font-size:1.1rem}
+.icon-btn{width:50px;height:50px;border-radius:50%;justify-content:center}
+.pill:active,.icon-btn:active{transform:scale(.94)}
+.pill svg,.icon-btn svg{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.coin{width:42px;height:42px;display:block}
+.icon-btn svg{width:26px;height:26px;transition:transform .5s}
+.icon-btn:hover svg,.icon-btn:active svg{transform:rotate(90deg)}
+
+/* Scène : le poisson (vidéo en boucle, fondue dans le fond) */
+.stage{flex:1;min-height:0;display:grid;place-items:center}
+.fish{display:block;width:min(100%,71vh);height:auto;aspect-ratio:960/700;pointer-events:none}
+[hidden]{display:none!important}
+.fish-src{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,2vw,26px);
+  width:100%;max-width:1000px;margin:0 auto}
+.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:16px 10px 18px;border-radius:24px;font-weight:800;font-size:clamp(1.15rem,2.6vw,1.7rem);
+  line-height:1.1;text-align:center;transition:transform .1s,box-shadow .1s}
+.btn small{font-weight:600;font-size:.52em;opacity:.9}
+.btn-edge{background:linear-gradient(180deg,var(--violet-top),var(--violet));color:#fff;box-shadow:0 7px 0 var(--violet-edge)}
+.btn-mid{background:linear-gradient(180deg,var(--mint-top),var(--mint));color:var(--on-mint);box-shadow:0 7px 0 var(--mint-edge)}
+.btn:active{transform:translateY(7px);box-shadow:0 0 0 transparent}
+
+/* Bulles */
+.bub{position:absolute;bottom:-80px;z-index:2;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.6),rgba(255,255,255,.12) 45%,rgba(255,255,255,.04) 70%);
+  border:1px solid rgba(255,255,255,.3);animation:rise linear infinite}
+@keyframes rise{from{transform:translate(0,0)}50%{transform:translate(var(--sway),-60vh)}to{transform:translate(0,-120vh)}}
+
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 78px);
+  transform:translate(-50%,-10px);opacity:0;pointer-events:none;z-index:5;max-width:90vw;
+  background:#fff;color:var(--bg-1);padding:10px 18px;border-radius:14px;
+  font-weight:600;text-align:center;transition:opacity .25s,transform .25s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:640px) and (orientation:portrait){
+  .actions{grid-template-columns:1fr;gap:14px}
+  .btn-create{order:-1}
+  .btn{padding:14px 10px 16px}
+}
+@media (max-height:520px){.btn small{display:none}.btn{padding:10px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <header class="top">
+    <button class="pill" data-soon aria-label="Ouvrir le magasin">
+      <img class="coin" src="spity-piece.png" alt="" width="42" height="42">Magasin
+    </button>
+    <button class="icon-btn" data-soon aria-label="Ouvrir les paramètres">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <main class="stage">
+    <h1 class="sr">Spity</h1>
+    <canvas class="fish" id="fishCanvas" width="960" height="700" role="img" aria-label="Spity, la mascotte poisson-globe"></canvas>
+    <!-- vidéo source : image couleur à gauche, transparence à droite -->
+    <video class="fish-src" id="fishSrc" src="spity-poisson-alpha.mp4" autoplay muted loop playsinline disablepictureinpicture preload="auto" aria-hidden="true"></video>
+    <!-- si WebGL est bloqué (ex. fichier ouvert hors serveur) : WebM transparent -->
+    <video class="fish" id="fishWebm" muted loop playsinline disablepictureinpicture preload="none" hidden aria-label="Spity, la mascotte poisson-globe"></video>
+    <!-- dernier secours -->
+    <video class="fish" id="fishFallback" src="spity-poisson.mp4" poster="spity-poisson-poster.jpg" muted loop playsinline disablepictureinpicture preload="none" hidden aria-label="Spity, la mascotte poisson-globe"></video>
+  </main>
+
+  <nav class="actions" aria-label="Choisir comment jouer">
+    <button class="btn btn-edge" data-soon>Local<small>Un seul appareil</small></button>
+    <button class="btn btn-mid" data-soon>Rejoindre<small>Avec un code</small></button>
+    <button class="btn btn-edge btn-create" data-soon>Créer un salon<small>Pour jouer à plusieurs</small></button>
+  </nav>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+  var v=document.getElementById("fishSrc"),c=document.getElementById("fishCanvas"),
+      fb=document.getElementById("fishFallback"),
+      calm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var gl=c.getContext("webgl",{premultipliedAlpha:true,alpha:true});
+  var wm=document.getElementById("fishWebm"),failed=false;
+  function useWebm(){
+    if(failed)return;failed=true;
+    c.hidden=true;v.pause();v.remove();
+    wm.src="spity-poisson-alpha.webm";wm.hidden=false;
+    wm.addEventListener("error",function(){wm.remove();fallback()});
+    if(!calm){wm.play().catch(function(){});
+      document.addEventListener("pointerdown",function(){if(wm.paused)wm.play().catch(function(){})},{once:true})}
+  }
+  function fallback(){
+    c.hidden=true;if(v.parentNode)v.remove();fb.hidden=false;
+    if(!calm){fb.play().catch(function(){});
+      document.addEventListener("pointerdown",function(){if(fb.paused)fb.play().catch(function(){})},{once:true})}
+  }
+  if(!gl){useWebm();return}
+  function sh(t,src){var o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);return o}
+  var pr=gl.createProgram();
+  gl.attachShader(pr,sh(gl.VERTEX_SHADER,"attribute vec2 p;varying vec2 u;void main(){u=p*.5+.5;gl_Position=vec4(p,0.,1.);}"));
+  gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,"precision mediump float;varying vec2 u;uniform sampler2D t;"
+    +"void main(){vec3 col=texture2D(t,vec2(u.x*.5,u.y)).rgb;float a=texture2D(t,vec2(.5+u.x*.5,u.y)).r;"
+    +"gl_FragColor=vec4(col*a,a);}"));
+  gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){useWebm();return}
+  gl.useProgram(pr);
+  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  var loc=gl.getAttribLocation(pr,"p");gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  var tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  function draw(){
+    if(failed||v.readyState<2)return;
+    try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}catch(e){useWebm();return}
+    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  }
+  function loop(){draw();if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(loop);else requestAnimationFrame(loop)}
+  v.addEventListener("loadeddata",draw);
+  v.addEventListener("error",fallback);
+  if(calm){v.removeAttribute("autoplay");v.pause()}
+  else{
+    v.play().catch(function(){});
+    loop();
+    // Mode économie d'énergie iOS : la lecture démarre au premier toucher
+    document.addEventListener("pointerdown",function(){if(v.paused)v.play().catch(function(){})},{once:true});
+  }
+})();
+(function(){
+  var s=document.getElementById("screen");
+  for(var i=0;i<22;i++){
+    var b=document.createElement("span"),z=8+Math.pow(Math.random(),2)*52;
+    b.className="bub";
+    b.style.cssText="left:"+(Math.random()*96)+"%;width:"+z+"px;height:"+z+"px;--sway:"+((Math.random()-.5)*60)+"px;"
+      +"animation-duration:"+(12+Math.random()*14)+"s;animation-delay:-"+(Math.random()*26)+"s;"
+      +(z<16?"opacity:.7;":"");
+    s.appendChild(b);
+  }
+  var t=document.getElementById("toast"),timer;
+  document.querySelectorAll("[data-soon]").forEach(function(b){
+    b.addEventListener("click",function(){
+      t.textContent="Bientôt : cet écran sera ajouté à l’étape suivante.";
+      t.classList.add("on");clearTimeout(timer);
+      timer=setTimeout(function(){t.classList.remove("on")},2200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
