@@ -132,7 +132,7 @@ body{animation:in .35s ease-out}
 <script src="spity-avatar.js"></script>
 <script src="spity-jeux.js"></script>
 <script>
-var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
+var DEMO=true,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2400)}
 function show(id){document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
@@ -263,7 +263,7 @@ if(DEMO){
   [["host","Hôte"],["code","Code"],["profile","Profil"],["wait","Attente"]].forEach(function(a){var b=document.createElement("button");b.textContent=a[1];b.onclick=function(){show(a[0])};nav.appendChild(b)});
   document.body.appendChild(nav);show("host");startHost(0);
   var ring=["#ff7a59","#7a57f5","#34d9bc","#ffc23d","#ff6fa8"];
-  ["Léa","Tom","Nora","Max","Zoé"].forEach(function(n,i){setTimeout(function(){addPlayer({id:"d"+i,name:n,avatar:"",ring:ring[i]})},1400+i*1100)});
+  Array.from({length:20},function(_,i){return "J"+(i+1)}).forEach(function(n,i){setTimeout(function(){addPlayer({id:"d"+i,name:n,avatar:"",ring:ring[i]})},300+i*250)});
 }else if(pre.length===6)setCode(pre);
 else if(mode==="join")show("code");
 else{show("host");startHost(0)}
