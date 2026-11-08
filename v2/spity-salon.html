@@ -86,7 +86,7 @@ body{animation:in .35s ease-out}
 @media (max-width:760px),(max-aspect-ratio:1/1){
 #host.dense{--hs:clamp(30px,10.5vw,80px)}
 #host.dense .side{grid-template-columns:repeat(4,minmax(0,1fr));gap:1vh 1vw}}
-#undersea{padding:0;overflow-y:auto}
+#undersea,#mots,#usHote,#usTel{padding:0;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -130,6 +130,9 @@ body{animation:in .35s ease-out}
 </section>
 <section id="games" class="scr"></section>
 <section id="undersea" class="scr"></section>
+<section id="mots" class="scr"></section>
+<section id="usHote" class="scr"></section>
+<section id="usTel" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -141,6 +144,8 @@ body{animation:in .35s ease-out}
 <script src="spity-avatar.js"></script>
 <script src="spity-jeux.js"></script>
 <script src="spity-undersea.js"></script>
+<script src="spity-mots.js"></script>
+<script src="spity-undersea-partie.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
@@ -154,13 +159,13 @@ function hostNet(code,on){
   if(peerOK){var p=new Peer(PRE+code),cs={};
     p.on("open",on.open);p.on("error",on.error);
     p.on("connection",function(c){cs[c.peer]=c;c.on("data",function(m){on.msg(c.peer,m)});c.on("close",function(){delete cs[c.peer];on.leave(c.peer)})});
-    return{all:function(m){for(var k in cs)cs[k].open&&cs[k].send(m)},close:function(){p.destroy()},
+    return{all:function(m){for(var k in cs)cs[k].open&&cs[k].send(m)},close:function(){p.destroy()},send:function(id,m){var c=cs[id];c&&c.open&&c.send(m)},
       kick:function(id){var c=cs[id];if(!c)return;c.open&&c.send({t:"kicked"});setTimeout(function(){c.close()},150)}}}
   var ch=new BroadcastChannel(PRE+code);
   ch.onmessage=function(e){var d=e.data;if(d.to!=="host")return;
     if(d.bye)on.leave(d.from);else if(d.m.t==="hello")ch.postMessage({to:d.from,m:{t:"welcome"}});else on.msg(d.from,d.m)};
   setTimeout(on.open,0);
-  return{all:function(m){ch.postMessage({to:"*",m:m})},close:function(){ch.postMessage({to:"*",m:{t:"closed"}});ch.close()},
+  return{all:function(m){ch.postMessage({to:"*",m:m})},close:function(){ch.postMessage({to:"*",m:{t:"closed"}});ch.close()},send:function(id,m){ch.postMessage({to:id,m:m})},
     kick:function(id){ch.postMessage({to:id,m:{t:"kicked"}})}}
 }
 function clientNet(code,on){
@@ -211,15 +216,15 @@ function startHost(tries){
     open:function(){$("codeTxt").textContent=code.slice(0,3)+" "+code.slice(3);
       try{var q=qrcode(0,"M");q.addData(location.href.split("?")[0].split("#")[0]+"?code="+code);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true})}catch(e){$("qr").textContent=code}},
     error:function(e){if(e&&e.type==="unavailable-id"&&tries<3)startHost(tries+1);else toast("Connexion impossible. Vérifie Internet.")},
-    msg:function(id,m){if(m&&m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc})},
+    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m)},
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="spity-accueil.html"};
 function ouvrirUnderSea(){
   UnderSea.init($("undersea"),{
     retour:function(){show("games")},
-    mot:function(){toast("Bientôt : choix du mot")},
-    demarrer:function(cfg){toast("Bientôt : partie ("+cfg.undercover+" undercover, "+cfg.mrwhite+" Mr White)")}
+    mot:function(){show("mots")},
+    demarrer:function(cfg){UsPartie.hote.lancer(cfg)}
   });
   UnderSea.joueurs(P);
   show("undersea");
@@ -232,6 +237,11 @@ Jeux.init($("games"),{
     toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"))
   }
 });
+Mots.init($("mots"),{retour:function(){show("undersea")}});
+UsPartie.hote.init({root:$("usHote"),joueurs:function(){return P},
+  envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
+  afficher:show,toast:toast,menu:ouvrirUnderSea,jeux:function(){show("games")}});
+UsPartie.tel.init({root:$("usTel"),envoyer:function(m){C&&C.send(m)},afficher:show,toast:toast});
 $("hG").onclick=function(){Jeux.joueurs(P);show("games")};
 
 /* ---- Écrans du joueur ---- */
@@ -251,7 +261,7 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
   if(CODE.length!==6)return show("code");
   C&&C.close();
   C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc});show("wait")},
-    msg:function(m){if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
+    msg:function(m){if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
       if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
     close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
     error:function(){toast("Salon introuvable. Vérifie le code.");show("code")}})};
