@@ -141,7 +141,6 @@ function init(r,o){
   root=r;opts=o||{};
   root.innerHTML=
     '<button class="gtop" id="gBack" aria-label="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>'+
-    '<button class="gtop" id="gScores" aria-label="Scores" title="Scores"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M5 3h14v10a7 7 0 0 1-14 0zM5 6H2v3a4 4 0 0 0 4 4M19 6h3v3a4 4 0 0 1-4 4"/></svg></button>'+
     '<button class="gtop" id="gMap" aria-label="Carte des jeux"><svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button>'+
     '<div class="gside" id="gL"></div><div class="gcol" id="gC"></div><div class="gside" id="gR"></div>'+
     '<div class="gmodal" id="gM"><div class="gmbox glass"><div class="gmt"></div><div class="gms"></div><div class="gmd"></div><div class="gml"></div><button class="btn" id="gMx">Fermer</button></div></div>';
@@ -149,12 +148,14 @@ function init(r,o){
   JEUX.forEach(function(j){c.appendChild(carte(j))});
   document.getElementById("gBack").onclick=function(){opts.retour&&opts.retour()};
   document.getElementById("gMap").onclick=bientot;
-  document.getElementById("gScores").onclick=function(){
-  if(window.Scores) window.Scores.ouvrir();
-};
   document.getElementById("gMx").onclick=fermer;
   document.getElementById("gM").onclick=function(e){if(e.target===this)fermer()};
   addEventListener("resize",taille);
+  if(window.Scores){
+     Scores.init(root,{
+        joueurs:function(){return list}
+     });
+  }
   joueurs(list)}
 
 window.Jeux={init:init,joueurs:joueurs};
