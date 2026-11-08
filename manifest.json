@@ -1,1 +1,22 @@
-{"name":"Spity","short_name":"Spity","start_url":"./","scope":"./","display":"standalone","background_color":"#21182D","theme_color":"#21182D","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+  "name": "Spity",
+  "short_name": "Spity",
+  "start_url": "./spity-accueil.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#21182D",
+  "theme_color": "#21182D",
+  "icons": [
+    {
+      "src": "./logo192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
