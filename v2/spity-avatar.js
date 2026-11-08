@@ -4,6 +4,7 @@
 var CATALOGUE=[
   {id:"moustache", type:"acc", nom:"Moustache", img:"acc/moustache.png", prix:20},
   {id:"creator", type:"contour", nom:"creator", img:"contours/creator.png", prix:100},
+  {id:"flamme", type:"contour", nom:"flamme", img:"contours/flamme.png", prix:50},
   {id:"plage", type:"contour", nom:"plage", img:"contours/plage.png", prix:10}
 ];
 
