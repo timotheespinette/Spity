@@ -86,6 +86,7 @@ body{animation:in .35s ease-out}
 @media (max-width:760px),(max-aspect-ratio:1/1){
 #host.dense{--hs:clamp(30px,10.5vw,80px)}
 #host.dense .side{grid-template-columns:repeat(4,minmax(0,1fr));gap:1vh 1vw}}
+#undersea{padding:0;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -128,6 +129,7 @@ body{animation:in .35s ease-out}
   <button class="btn sun" id="wGo" hidden>Démarrer</button>
 </section>
 <section id="games" class="scr"></section>
+<section id="undersea" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -138,6 +140,7 @@ body{animation:in .35s ease-out}
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="spity-avatar.js"></script>
 <script src="spity-jeux.js"></script>
+<script src="spity-undersea.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
@@ -185,7 +188,7 @@ function fill(el,l){el.innerHTML="";l.forEach(function(p){
   el.appendChild(d);shown[p.id]=1})}
 function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R);
   var n=P.length;$("host").classList.toggle("dense",n>8);
-  window.Jeux&&Jeux.joueurs(P)}
+  window.Jeux&&Jeux.joueurs(P);window.UnderSea&&UnderSea.joueurs(P)}
 function burst(el){
   if(!el||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   var r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -212,10 +215,22 @@ function startHost(tries){
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="spity-accueil.html"};
+function ouvrirUnderSea(){
+  UnderSea.init($("undersea"),{
+    retour:function(){show("games")},
+    mot:function(){toast("Bientôt : choix du mot")},
+    demarrer:function(cfg){toast("Bientôt : partie ("+cfg.undercover+" undercover, "+cfg.mrwhite+" Mr White)")}
+  });
+  UnderSea.joueurs(P);
+  show("undersea");
+}
 Jeux.init($("games"),{
   retour:function(){show("host")},
   bientot:function(){toast("Bientôt disponible")},
-  choisir:function(j,mode){toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"))}
+  choisir:function(j,mode){
+    if(j.id==="undersea")return ouvrirUnderSea();
+    toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"))
+  }
 });
 $("hG").onclick=function(){Jeux.joueurs(P);show("games")};
 
