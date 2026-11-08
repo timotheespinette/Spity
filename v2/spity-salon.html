@@ -77,6 +77,8 @@ body{animation:in .35s ease-out}
 #pvBox{margin:clamp(16px,4vh,40px)}
 #pvBox .av{width:clamp(150px,30vh,300px);border-width:8px}
 #profile{overflow-y:auto}
+#host .av{width:var(--hs,clamp(60px,13vh,130px))}
+@media (max-width:760px),(max-aspect-ratio:1/1){#host .av{width:var(--hs,clamp(52px,17vw,90px))}}
 </style>
 </head>
 <body>
@@ -118,6 +120,7 @@ body{animation:in .35s ease-out}
   <img class="fish" src="spity-poisson-face.png" alt="">
   <button class="btn sun" id="wGo" hidden>Démarrer</button>
 </section>
+<section id="games" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -127,6 +130,7 @@ body{animation:in .35s ease-out}
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="spity-avatar.js"></script>
+<script src="spity-jeux.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
@@ -172,7 +176,9 @@ function fill(el,l){el.innerHTML="";l.forEach(function(p){
   d.appendChild(Avatar.make(p));d.appendChild(n);
   var k=document.createElement("button");k.className="kick";k.textContent="✕";k.setAttribute("aria-label","Retirer "+p.name);k.onclick=function(){kick(p.id)};d.appendChild(k);
   el.appendChild(d);shown[p.id]=1})}
-function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R)}
+function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R);
+  var n=P.length;$("host").style.setProperty("--hs",n>12?"clamp(36px,min(8vh,11vw),80px)":n>8?"clamp(44px,min(10.5vh,14vw),100px)":"");
+  window.Jeux&&Jeux.joueurs(P)}
 function burst(el){
   if(!el||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   var r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -185,7 +191,7 @@ function burst(el){
   }
 }
 function kick(id){H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
-function addPlayer(p){if(P.length>=12||P.some(function(x){return x.id===p.id}))return;
+function addPlayer(p){if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
     P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc});render();
     var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
   H&&H.all({t:"players",n:P.length})}
@@ -199,7 +205,12 @@ function startHost(tries){
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="spity-accueil.html"};
-$("hG").onclick=function(){toast("Bientôt : choix du jeu.")};
+Jeux.init($("games"),{
+  retour:function(){show("host")},
+  bientot:function(){toast("Bientôt disponible")},
+  choisir:function(j,mode){toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"))}
+});
+$("hG").onclick=function(){Jeux.joueurs(P);show("games")};
 
 /* ---- Écrans du joueur ---- */
 var CODE="",C=null,photo="";
