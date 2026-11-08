@@ -161,10 +161,27 @@ function verifier(){
 function suite(){var w=verifier();w?terminer(w):nouveauTour()}
 
 function terminer(roles){
+  if(G.phase==="fin")return;
+
   G.roles=roles;
-  G.gagnants=ids(G.ps.filter(function(p){return roles.indexOf(p.role)>=0}));
-  G.gagnants.forEach(function(i){scores[i]=(scores[i]||0)+1});
-  G.phase="fin";diffuser({gagnants:G.gagnants,roles:roles});dessiner()}
+  G.gagnants=ids(G.ps.filter(function(p){
+    return roles.indexOf(p.role)>=0
+  }));
+
+  // Ajouter 1 point à chaque gagnant dans le classement général
+  if(window.Scores && typeof Scores.ajouter==="function"){
+    Scores.ajouter(G.gagnants,1);
+  }
+
+  // Conserver également les scores propres à UnderSea
+  G.gagnants.forEach(function(i){
+    scores[i]=(scores[i]||0)+1
+  });
+
+  G.phase="fin";
+  diffuser({gagnants:G.gagnants,roles:roles});
+  dessiner()
+}
 
 function quitter(dest){O.tous({t:"us:retour"});G=null;dest()}
 
@@ -238,7 +255,8 @@ function dessiner(){
       var gagne=G.gagnants.indexOf(x.id)>=0,c=h("div","uc glass"+(gagne?" win":""));
       c.appendChild(fait(x));c.appendChild(h("div","uname",x.name));
       var rr=h("div","ur");rr.appendChild(roleImg(x.role,"rs"));rr.appendChild(h("span","",US_ROLES[x.role].nom));c.appendChild(rr);
-      c.appendChild(h("div","",(gagne?"+1 point, ":"")+"total : "+(scores[x.id]||0)));
+      var total=window.Scores?Scores.points(x.id):(scores[x.id]||0);
+      c.appendChild(h("div","",(gagne?"+1 point, ":"")+"total : "+total));
       g.appendChild(c)});
     w.appendChild(g);
     var bt=h("div","ubtns");
