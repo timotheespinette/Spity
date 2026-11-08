@@ -101,7 +101,7 @@ body{animation:in .35s ease-out}
 </section>
 
 <section id="code" class="scr">
-  <a class="back glass" href="spity-accueil.html">← Accueil</a>
+  <a class="back glass" href="index.html">← Accueil</a>
   <h2>Entrez le code</h2>
   <input class="in" id="codeIn" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="······" aria-label="Code du salon">
   <div class="sc">Scannez<button class="cam" id="camB" aria-label="Scanner le QR code"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div>
@@ -109,7 +109,7 @@ body{animation:in .35s ease-out}
 </section>
 
 <section id="profile" class="scr">
-  <a class="back glass" href="spity-accueil.html">← Accueil</a>
+  <a class="back glass" href="index.html">← Accueil</a>
   <div class="left">
     <div id="pvBox"></div>
     <div class="row"><button class="btn" id="phB">Photo</button><button class="btn" id="rmB">Supprimer</button><button class="btn" id="camPhB">Selfie</button></div>
@@ -220,7 +220,7 @@ function startHost(tries){
     msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m)},
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
-$("hB").onclick=function(){H&&H.close();location.href="spity-accueil.html"};
+$("hB").onclick=function(){H&&H.close();location.href="index.html"};
 function ouvrirUnderSea(){
   UnderSea.init($("undersea"),{
     retour:function(){show("games")},
