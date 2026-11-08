@@ -29,7 +29,7 @@ st.textContent=
 ".gtop{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:3;width:50px;height:50px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1.5px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}"+
 ".gtop:active{transform:scale(.94)}"+
 ".gtop svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}"+
-"#gBack{left:16px}#gMap{right:16px}"+
+"#gBack{left:16px}#gMap{right:16px}#gScores{right:78px}"+
 ".gside{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;align-items:flex-start;gap:calc(var(--s,70px)*.3) calc(var(--s,70px)*.2);min-width:0;min-height:0}"+
 ".gp{display:flex;flex-direction:column;align-items:center;gap:3px}"+
 ".gside .av{width:var(--s,70px);border-width:3px}"+
@@ -141,6 +141,7 @@ function init(r,o){
   root=r;opts=o||{};
   root.innerHTML=
     '<button class="gtop" id="gBack" aria-label="Retour"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>'+
+    '<button class="gtop" id="gScores" aria-label="Scores" title="Scores"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M5 3h14v10a7 7 0 0 1-14 0zM5 6H2v3a4 4 0 0 0 4 4M19 6h3v3a4 4 0 0 1-4 4"/></svg></button>'+
     '<button class="gtop" id="gMap" aria-label="Carte des jeux"><svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button>'+
     '<div class="gside" id="gL"></div><div class="gcol" id="gC"></div><div class="gside" id="gR"></div>'+
     '<div class="gmodal" id="gM"><div class="gmbox glass"><div class="gmt"></div><div class="gms"></div><div class="gmd"></div><div class="gml"></div><button class="btn" id="gMx">Fermer</button></div></div>';
@@ -148,6 +149,9 @@ function init(r,o){
   JEUX.forEach(function(j){c.appendChild(carte(j))});
   document.getElementById("gBack").onclick=function(){opts.retour&&opts.retour()};
   document.getElementById("gMap").onclick=bientot;
+  document.getElementById("gScores").onclick=function(){
+  window.location.href="spity-scores.html";
+};
   document.getElementById("gMx").onclick=fermer;
   document.getElementById("gM").onclick=function(e){if(e.target===this)fermer()};
   addEventListener("resize",taille);
