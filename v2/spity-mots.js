@@ -6,9 +6,9 @@
    Chaque image se place en haut d’une des 3 cartes (ajouter / générer / voir tout).
    Laisse "" pour ne rien afficher. */
 var MOTS_IMG = [
-  "",   /* carte 1 « Ajouter des mots »   ex. "jeux/poisson1.png" */
-  "",   /* carte 2 « Générer des mots »    ex. "jeux/poisson2.png" */
-  ""    /* carte 3 « Voir tous les mots »  ex. "jeux/poisson3.png" */
+  "jeux/pieuvre.png",   /* carte 1 « Ajouter des mots »   ex. "jeux/poisson1.png" */
+  "jeux/poisson-clown.png",   /* carte 2 « Générer des mots »    ex. "jeux/poisson2.png" */
+  "jeux/requin.png"    /* carte 3 « Voir tous les mots »  ex. "jeux/poisson3.png" */
 ];
 
 /* Clé Gemini : plus tard, tu la mettras depuis les paramètres avec  Mots.cle("ta clé").
