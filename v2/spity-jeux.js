@@ -150,7 +150,7 @@ function init(r,o){
   document.getElementById("gBack").onclick=function(){opts.retour&&opts.retour()};
   document.getElementById("gMap").onclick=bientot;
   document.getElementById("gScores").onclick=function(){
-  window.location.href="spity-scores.js";
+  if(window.Scores) window.Scores.ouvrir();
 };
   document.getElementById("gMx").onclick=fermer;
   document.getElementById("gM").onclick=function(e){if(e.target===this)fermer()};
