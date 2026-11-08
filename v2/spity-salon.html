@@ -139,7 +139,7 @@ body{animation:in .35s ease-out}
 <script src="spity-avatar.js"></script>
 <script src="spity-jeux.js"></script>
 <script>
-var DEMO=true,PRE="spity-",FISH="spity-poisson-face.png";
+var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 function $(i){return document.getElementById(i)}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2400)}
 function show(id){document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
