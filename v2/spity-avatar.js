@@ -3,6 +3,7 @@
 /* 1) CATALOGUE : une ligne par objet (id unique ; type = "contour" ou "acc") */
 var CATALOGUE=[
   {id:"moustache", type:"acc", nom:"Moustache", img:"acc/moustache.png", prix:20},
+  {id:"creator", type:"contour", nom:"creator", img:"contours/creator.png", prix:100},
   {id:"plage", type:"contour", nom:"plage", img:"contours/plage.png", prix:10}
 ];
 
