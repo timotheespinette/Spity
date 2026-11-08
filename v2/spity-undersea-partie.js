@@ -6,9 +6,9 @@
    Change les noms pour qu’ils correspondent à tes fichiers.
    Laisse "" (ou si l’image est introuvable) : un emoji s’affiche à la place. */
 var US_IMG_ROLES = {
-  civil:      "jeux/role-civil.png",
-  undercover: "jeux/role-undercover.png",
-  mrwhite:    "jeux/role-mrwhite.png"
+  civil:      "jeux/poisson-clown.png",
+  undercover: "jeux/requin.png",
+  mrwhite:    "jeux/pieuvre.png"
 };
 
 /* Noms affichés (le « pluriel » sert au titre : VICTOIRE des Civils) */
@@ -116,6 +116,7 @@ function lancer(cfg){
   while(roles.length<l.length)roles.push("civil");
   roles=mel(roles.slice(0,l.length));
   var mots=Mots.tirer();
+  if(Math.random()<.5)mots={a:mots.b,b:mots.a};   /* une fois sur deux, on inverse : le mot « undercover » devient celui des civils */
   G={ps:l.map(function(p,k){var q={};for(var key in p)q[key]=p[key];q.role=roles[k];q.vivant=true;return q}),
      mots:mots,phase:"carte",tour:0,vu:{},votes:{}};
   var roster=G.ps.map(function(p){return{id:p.id,name:p.name,avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc}});
