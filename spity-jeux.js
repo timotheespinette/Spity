@@ -8,7 +8,7 @@
 var JEUX=[
   {id:"undersea", nom:"UnderSea", sous:"Undercover", fond:"jeux/undersea.png", couleurs:["#1fb6e8","#0a5ea8"], dispo:true, equipes:false, local:true, min:3, max:20,
    info:"Chacun reçoit un mot en secret. Les civils ont tous le même mot, l’undercover en a un très proche. Décris le tien sans le dire, puis votez pour démasquer l’intrus."},
-  {id:"quizebre", nom:"Qui-Zèbre ?", sous:"Quiz TV", fond:"", couleurs:["#f6c453","#d9822b"], dispo:true, equipes:true, local:true, min:2, max:20,
+  {id:"bzzz", nom:"Bzzz", sous:"Quiz TV", fond:"jeux/bzzz.png", couleurs:["#f6c453","#d9822b"], dispo:true, equipes:true, local:true, min:2, max:20,
    info:"Questions, buzzer et QCM : réponds vite et juste depuis ton téléphone, seul ou en équipes."},
   {id:"manoir", nom:"Le Manoir", sous:"", fond:"", couleurs:["#2fb86a","#0f6b3b"], dispo:true, equipes:false, local:false, min:2, max:20,
    info:"Description à venir."},
