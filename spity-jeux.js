@@ -80,7 +80,7 @@ function info(j){
   m.classList.add("on")}
 
 function hasard(){
-  var l=JEUX.filter(function(j){return j.dispo!==false&&!j.hasard});
+  var l=JEUX.filter(function(j){return j.dispo!==false&&!j.hasard&&(!opts.local||j.local)});
   if(!l.length)return bientot();
   var j=l[Math.floor(Math.random()*l.length)];
   go(j,j.equipes?(Math.random()<.5?"solo":"equipes"):"direct")}
@@ -145,7 +145,7 @@ function init(r,o){
     '<div class="gside" id="gL"></div><div class="gcol" id="gC"></div><div class="gside" id="gR"></div>'+
     '<div class="gmodal" id="gM"><div class="gmbox glass"><div class="gmt"></div><div class="gms"></div><div class="gmd"></div><div class="gml"></div><button class="btn" id="gMx">Fermer</button></div></div>';
   var c=document.getElementById("gC");
-  JEUX.forEach(function(j){c.appendChild(carte(j))});
+  JEUX.filter(function(j){return !opts.local||j.local||j.hasard}).forEach(function(j){c.appendChild(carte(j))});
   document.getElementById("gBack").onclick=function(){opts.retour&&opts.retour()};
   document.getElementById("gMap").onclick=bientot;
   document.getElementById("gMx").onclick=fermer;
