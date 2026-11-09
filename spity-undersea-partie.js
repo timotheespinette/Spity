@@ -142,7 +142,7 @@ function nouveauTour(){
     O.afficher("usLocal");
     LocalUnderSea.cartes(G.ps.map(function(p){
       return{p:p,mrwhite:p.role==="mrwhite",mot:p.role==="mrwhite"?"":(p.role==="undercover"?G.mots.b:G.mots.a)}}),
-      function(){G.ps.forEach(function(p){G.vu[p.id]=1});nouveauTour();O.afficher("usHote")});
+      function(){G.ps.forEach(function(p){G.vu[p.id]=1});dessiner();O.afficher("usHote")});
     return}
   diffuser();dessiner()}
 
