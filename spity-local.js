@@ -3,7 +3,7 @@
 /* 1) À MODIFIER ICI  ----------------------------------------------------- */
 
 /* Nombre minimum / maximum de joueurs */
-var LOCAL_MIN = 3;
+var LOCAL_MIN = 1;
 var LOCAL_MAX = 20;
 
 /* Couleurs de contour données aux joueurs, dans l'ordre (elles se répètent si besoin) */
