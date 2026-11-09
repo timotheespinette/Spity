@@ -133,6 +133,8 @@ body{animation:in .35s ease-out}
 <section id="mots" class="scr"></section>
 <section id="usHote" class="scr"></section>
 <section id="usTel" class="scr"></section>
+<section id="local" class="scr"></section>
+<section id="usLocal" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -147,8 +149,11 @@ body{animation:in .35s ease-out}
 <script src="spity-undersea.js"></script>
 <script src="spity-mots.js"></script>
 <script src="spity-undersea-partie.js"></script>
+<script src="spity-local.js"></script>
+<script src="spity-local-undersea.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
+var MODE_LOCAL=new URLSearchParams(location.search).get("mode")==="local";
 function $(i){return document.getElementById(i)}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2400)}
 function show(id){document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
@@ -231,7 +236,8 @@ function ouvrirUnderSea(){
   show("undersea");
 }
 Jeux.init($("games"),{
-  retour:function(){show("host")},
+  local:MODE_LOCAL,
+  retour:function(){show(MODE_LOCAL?"local":"host")},
   bientot:function(){toast("Bientôt disponible")},
   choisir:function(j,mode){
     if(j.id==="undersea")return ouvrirUnderSea();
@@ -239,10 +245,18 @@ Jeux.init($("games"),{
   }
 });
 Mots.init($("mots"),{retour:function(){show("undersea")}});
-UsPartie.hote.init({root:$("usHote"),joueurs:function(){return P},
+UsPartie.hote.init({local:MODE_LOCAL,root:$("usHote"),joueurs:function(){return P},
   envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
   afficher:show,toast:toast,menu:ouvrirUnderSea,jeux:function(){show("games")}});
 UsPartie.tel.init({root:$("usTel"),envoyer:function(m){C&&C.send(m)},afficher:show,toast:toast});
+
+LocalUnderSea.init($("usLocal"));
+Local.init($("local"),{
+  retour:function(){location.href="index.html"},
+  toast:toast,
+  valider:function(l){P=l;Jeux.joueurs(P);UnderSea.joueurs(P);show("games")}
+});
+
 $("hG").onclick=function(){Jeux.joueurs(P);show("games")};
 
 /* ---- Écrans du joueur ---- */
@@ -299,6 +313,7 @@ if(DEMO){
   Array.from({length:20},function(_,i){return "J"+(i+1)}).forEach(function(n,i){setTimeout(function(){addPlayer({id:"d"+i,name:n,avatar:"",ring:ring[i]})},300+i*250)});
 }else if(pre.length===6)setCode(pre);
 else if(mode==="join")show("code");
+else if(MODE_LOCAL)show("local");
 else{show("host");startHost(0)}
 </script>
 </body>
