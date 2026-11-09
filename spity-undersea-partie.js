@@ -123,6 +123,12 @@ function lancer(cfg){
   G.ps.forEach(function(p){
     O.envoyer(p.id,{t:"us:start",moi:p.id,roster:roster,mrwhite:p.role==="mrwhite",
       mot:p.role==="mrwhite"?"":(p.role==="undercover"?mots.b:mots.a)})});
+  if(O.local){
+    O.afficher("usLocal");
+    LocalUnderSea.cartes(G.ps.map(function(p){
+      return{p:p,mrwhite:p.role==="mrwhite",mot:p.role==="mrwhite"?"":(p.role==="undercover"?mots.b:mots.a)}}),
+      function(){G.ps.forEach(function(p){G.vu[p.id]=1});nouveauTour();O.afficher("usHote")});
+    return}
   nouveauTour();
   O.afficher("usHote")}
 
@@ -132,6 +138,12 @@ function nouveauTour(){
   /* Mr White ne parle jamais en premier (sinon il est trop facilement démasqué) */
   if(o.length>1&&o[0].role==="mrwhite"){var j=1+Math.floor(Math.random()*(o.length-1)),t=o[0];o[0]=o[j];o[j]=t}
   G.ordre=ids(o);
+  if(O.local){
+    O.afficher("usLocal");
+    LocalUnderSea.cartes(G.ps.map(function(p){
+      return{p:p,mrwhite:p.role==="mrwhite",mot:p.role==="mrwhite"?"":(p.role==="undercover"?G.mots.b:G.mots.a)}}),
+      function(){G.ps.forEach(function(p){G.vu[p.id]=1});nouveauTour();O.afficher("usHote")});
+    return}
   diffuser();dessiner()}
 
 function lancerVote(){G.phase="vote";G.votes={};diffuser();dessiner()}
