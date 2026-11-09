@@ -146,7 +146,13 @@ function nouveauTour(){
     return}
   diffuser();dessiner()}
 
-function lancerVote(){G.phase="vote";G.votes={};diffuser();dessiner()}
+function lancerVote(){
+  G.phase="vote";G.votes={};
+  if(O.local){
+    O.afficher("usLocal");
+    LocalUnderSea.votes(vivants(),function(v){G.votes=v;O.afficher("usHote");depouiller()});
+    return}
+  diffuser();dessiner()}
 
 function depouiller(){
   var cnt={},max=0;
@@ -219,7 +225,7 @@ function dessiner(){
   if(p==="carte"){
     n=Object.keys(G.vu).length;
     w.appendChild(h("h2","ut","Tour "+G.tour));
-    w.appendChild(h("div","us","Regardez votre carte sur votre téléphone ("+n+"/"+G.ps.length+")"));
+    w.appendChild(h("div","us",O.local?"Chacun a vu son mot : décrivez-le à tour de rôle.":"Regardez votre carte sur votre téléphone ("+n+"/"+G.ps.length+")"));
     w.appendChild(h("div","us","Ordre de parole"));
     o=h("div","uord");G.ordre.forEach(function(id,i){o.appendChild(perso(trouver(id),i+1))});w.appendChild(o);
     w.appendChild(bouton("Voter","sun",lancerVote))}
@@ -242,8 +248,17 @@ function dessiner(){
     var b=h("div","ubig");b.appendChild(fait(el));w.appendChild(b);
     var rv=h("div","urev");rv.appendChild(roleImg(el.role,"rm"));rv.appendChild(h("div","us2","Il était "+US_ROLES[el.role].nom));w.appendChild(rv);
     if(p==="devine"){
-      w.appendChild(h("div","us","Mr White peut encore gagner : il doit deviner le mot des civils sur son téléphone."));
-      w.appendChild(bouton("Il passe","",function(){valider("")}))}
+      if(O.local){
+        w.appendChild(h("div","us","Mr White peut encore gagner : il doit deviner le mot des civils."));
+        var bt2=h("div","ubtns");
+        bt2.appendChild(bouton("Il tente sa chance","sun",function(){
+          O.afficher("usLocal");
+          LocalUnderSea.devine(el,function(mot){O.afficher("usHote");valider(mot)})}));
+        bt2.appendChild(bouton("Il passe","",function(){valider("")}));
+        w.appendChild(bt2)}
+      else{
+        w.appendChild(h("div","us","Mr White peut encore gagner : il doit deviner le mot des civils sur son téléphone."));
+        w.appendChild(bouton("Il passe","",function(){valider("")}) )}}
     else w.appendChild(bouton("Continuer","sun",suite))}
 
   else if(p==="rate"){
