@@ -138,13 +138,9 @@ function nouveauTour(){
   /* Mr White ne parle jamais en premier (sinon il est trop facilement démasqué) */
   if(o.length>1&&o[0].role==="mrwhite"){var j=1+Math.floor(Math.random()*(o.length-1)),t=o[0];o[0]=o[j];o[j]=t}
   G.ordre=ids(o);
-  if(O.local){
-    O.afficher("usLocal");
-    LocalUnderSea.cartes(G.ps.map(function(p){
-      return{p:p,mrwhite:p.role==="mrwhite",mot:p.role==="mrwhite"?"":(p.role==="undercover"?G.mots.b:G.mots.a)}}),
-      function(){G.ps.forEach(function(p){G.vu[p.id]=1});dessiner();O.afficher("usHote")});
-    return}
-  diffuser();dessiner()}
+  if(!O.local) diffuser();
+  dessiner();
+  if(O.local) O.afficher("usHote");}
 
 function lancerVote(){
   G.phase="vote";G.votes={};
