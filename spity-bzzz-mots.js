@@ -522,9 +522,6 @@ function init(r,o){
 function questions(t){return copie(courantePour(t==="qcm"?"qcm":"qr").items)}
 function choisie(t){var b=courantePour(t==="qcm"?"qcm":"qr");return{id:b.id,nom:b.nom,items:copie(b.items)}}
 
-function questions(t){return copie(courantePour(t==="qcm"?"qcm":"qr").items)}
-function choisie(t){var b=courantePour(t==="qcm"?"qcm":"qr");return{id:b.id,nom:b.nom,items:copie(b.items)}}
-
 var listeBiblios = function(t){t=t==="qcm"?"qcm":"qr";return deType(t).map(function(b){return{id:b.id,nom:b.nom,n:b.items.length}})};
 function selectionner(t,id){t=t==="qcm"?"qcm":"qr";if(deType(t).some(function(b){return b.id===id})){choix[t]=id;sauverChoix()}}
 
