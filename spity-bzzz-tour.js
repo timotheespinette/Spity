@@ -32,7 +32,6 @@ BzzzPartie.mode("tour",{
     var moi=T.q.actif===T.unite;
     w.appendChild(X.h("h2","bptt",moi?"C’est ton tour !":"Tour de "+T.q.nomActif));
     if(moi){
-      w.appendChild(X.h("div","bpts",T.q.q));
       w.appendChild(X.h("div","bpts","Réponds à voix haute : l’animateur valide."))}
     else w.appendChild(X.h("div","bpts","Écoute bien, ce sera peut-être à toi ensuite."))}
 });
