@@ -107,7 +107,7 @@ function demarrer(){
   opts.demarrer?opts.demarrer(cfg):toast("Bientôt : la partie sera ajoutée à l’étape suivante.")}
 
 function mot(){
-  opts.mot?opts.mot():toast("Bientôt : cet écran sera ajouté à l’étape suivante.")}
+  opts.mot?opts.mot(sel):toast("Bientôt : cet écran sera ajouté à l’étape suivante.")}
 
 /* Appelé quand la liste des joueurs change */
 function joueurs(l){
