@@ -13,11 +13,20 @@ function finir(G,E){
   G.ps.forEach(function(p){
     var s=G.m.rep[p.id]||[],ok=0,ko=0;
     s.forEach(function(k){G.q.bonnes.indexOf(k)>=0?ok++:ko++});
-    G.m.score[p.id]=Math.max(0,(ok-ko)/nb)*mult});
+    var rapidite = Math.max(0, (G.fin-Date.now()) / (BP_DUREE_QCM*1000));
+    var bonusVitesse = 1 + rapidite;
+    G.m.score[p.id] = Math.max(0, (ok-ko)/nb) * bonusVitesse * mult;});
+  var tailleMax = Math.max.apply(null,G.units.map(function(u){
+     return u.membres.length;
+  }));
   G.units.forEach(function(u){
-    var tot=0;
-    u.membres.forEach(function(id){tot+=G.m.score[id]||0});
-    E.pts(u,u.membres.length?tot/u.membres.length:0)});
+     var tot=0;
+     u.membres.forEach(function(id){
+        tot+=G.m.score[id]||0;
+     });
+     var multiplicateur = tailleMax / Math.max(1,u.membres.length);
+     E.pts(u,tot*multiplicateur);
+  });
   E.finQ()}
 
 BzzzPartie.mode("qcm",{
@@ -52,13 +61,12 @@ BzzzPartie.mode("qcm",{
 
   tel:function(w,T,X){
     var q=T.q,val;
-    w.appendChild(X.h("div","bpts",q.q+(q.bonus?"  (×2 points !)":"")));
     var cd=X.h("div","bptimer");w.appendChild(cd);X.compte(cd);
     if(T.fait){w.appendChild(X.h("div","bpts","Réponse envoyée ✓ On attend les autres…"));return}
     if(q.multi)w.appendChild(X.h("div","bpts","Plusieurs bonnes réponses : sélectionne-les, puis valide."));
     var g=X.h("div","bpcg");
     q.choix.forEach(function(c,k){
-      var b=X.h("button","bpcb c"+(k%6)+(T.sel.indexOf(k)>=0?" on":""),c);b.type="button";
+      var b=X.h("button","bpcb c"+(k%6)+(T.sel.indexOf(k)>=0?" on":""),"");b.type="button";
       b.onclick=function(){
         if(!q.multi){X.envoyer({t:"bz:rep",c:[k]});T.fait=true;X.redessiner();return}
         var i=T.sel.indexOf(k);
