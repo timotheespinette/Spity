@@ -29,7 +29,13 @@ BzzzPartie.mode("buzzer",{
       var u=E.unit(m.par);
       w.appendChild(E.h("div","bps","A buzzé"));
       w.appendChild(E.chip(u));
-      w.appendChild(E.h("div","bpans","Réponse attendue : "+G.q.r));
+      var rep=E.h("button","bpans","Afficher la réponse");
+      rep.type="button";
+      rep.onclick=function(){
+         rep.textContent="Réponse : "+G.q.r;
+         rep.disabled=true;
+      };
+      w.appendChild(rep);
       var b=E.h("div","bpbtns");
       b.appendChild(E.bouton("✓ Bonne réponse (+"+(BP_BUZZER_OK*mult)+")","sun",function(){
         E.pts(u,BP_BUZZER_OK*mult);E.finQ()}));
