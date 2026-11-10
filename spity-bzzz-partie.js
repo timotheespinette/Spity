@@ -73,6 +73,21 @@ st.textContent = `
 .bpbuzz{width:min(70vw,300px);aspect-ratio:1;border-radius:50%;font-weight:800;font-size:3rem;color:#fff;background:radial-gradient(circle at 35% 30%,#ff9a7a,#e8503a);box-shadow:0 10px 0 #8f2412,0 18px 30px rgba(0,40,90,.4)}
 .bpbuzz:active{transform:translateY(10px);box-shadow:0 0 0 transparent}
 .bpbuzz:disabled{filter:grayscale(.8) brightness(.7);box-shadow:none}
+.bpconfetti{
+  position:fixed;
+  top:-15px;
+  width:10px;
+  height:16px;
+  z-index:9999;
+  pointer-events:none;
+  animation:bpconfettiFall 3s linear forwards;
+}
+@keyframes bpconfettiFall{
+  to{
+    transform:translateY(110vh) rotate(900deg);
+    opacity:0;
+  }
+}
 `;
 document.head.appendChild(st);
 
@@ -80,6 +95,20 @@ document.head.appendChild(st);
 function h(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 function mel(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function bouton(txt,cls,fn){var b=h("button","btn "+(cls||""),txt);b.type="button";b.onclick=fn;return b}
+function lancerConfettis(){
+  var couleurs=["#ffc23d","#9170ff","#34d9bc","#ff7a59","#ffffff","#ff6fa8"];
+
+  for(var i=0;i<120;i++){
+    var c=document.createElement("div");
+    c.className="bpconfetti";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=couleurs[Math.floor(Math.random()*couleurs.length)];
+    c.style.animationDelay=Math.random()*1.5+"s";
+    c.style.animationDuration=(2.5+Math.random()*2)+"s";
+    document.body.appendChild(c);
+    c.addEventListener("animationend",function(){this.remove()});
+  }
+}
 function fmt(n){return String(Math.round(n*100)/100).replace(".",",")}
 function pt(n){return fmt(n)+(Math.abs(n)>1?" pts":" pt")}
 function present(){var l=O.joueurs().map(function(p){return p.id});return G.ps.filter(function(p){return l.indexOf(p.id)>=0})}
@@ -139,8 +168,11 @@ function suivante(){
   var M=MODES[G.mode];
   G.q=G.qs[G.i];G.gain={};G.phase="q";
   G.bonus=G.mode!=="tour"&&Math.random()<BP_PROBA_X2;
-  var x=M.debut(G,E)||{},m={t:"bz:q",i:G.i,n:G.qs.length,bonus:G.bonus,q:G.q.q};
-  if(G.q.choix){m.choix=G.q.choix;m.multi=G.q.bonnes.length>1}
+  var x=M.debut(G,E)||{},m={t:"bz:q",i:G.i,n:G.qs.length,bonus:G.bonus};
+  if(G.q.choix){
+     m.nbChoix=G.q.choix.length;
+     m.multi=G.q.bonnes.length>1;
+  }
   for(var k in x)m[k]=x[k];
   diffuser(m);dessiner()}
 
@@ -256,6 +288,10 @@ function dessiner(){
     else w.appendChild(bouton(dernier?"Classement final":"Question suivante","sun",suivante))}
 
   else if(p==="fin"){
+    if(!G.confettisLances){
+       G.confettisLances=true;
+       lancerConfettis();
+    }
     if(G.gagnants.length){
       w.appendChild(h("div","bpvic","VICTOIRE"));
       var g=h("div","bpgrid");G.gagnants.forEach(function(u){g.appendChild(chip(u))});w.appendChild(g)}
