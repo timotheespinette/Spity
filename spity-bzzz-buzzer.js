@@ -52,7 +52,6 @@ BzzzPartie.mode("buzzer",{
 
   tel:function(w,T,X){
     var e=T.etat||{},bloque=(e.bloque||[]).indexOf(T.unite)>=0,par=e.par||"";
-    w.appendChild(X.h("div","bpts",T.q.q));
     if(par===T.unite)
       w.appendChild(X.h("h2","bptt","À toi de répondre !"));
     else if(par)
