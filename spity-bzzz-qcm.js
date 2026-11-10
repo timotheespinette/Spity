@@ -13,19 +13,14 @@ function finir(G,E){
   G.ps.forEach(function(p){
     var s=G.m.rep[p.id]||[],ok=0,ko=0;
     s.forEach(function(k){G.q.bonnes.indexOf(k)>=0?ok++:ko++});
-    var rapidite = Math.max(0, (G.fin-Date.now()) / (BP_DUREE_QCM*1000));
-    var bonusVitesse = 1 + rapidite;
-    G.m.score[p.id] = Math.max(0, (ok-ko)/nb) * bonusVitesse * mult;});
-  var tailleMax = Math.max.apply(null,G.units.map(function(u){
-     return u.membres.length;
-  }));
+    var pointsTemps = Math.max(0, (G.fin-Date.now()) / 1000); // 20 sec = 20 pts, descend de 1 par sec
+    G.m.score[p.id] = Math.max(0, (ok-ko)/nb) * pointsTemps * mult;});
   G.units.forEach(function(u){
      var tot=0;
      u.membres.forEach(function(id){
         tot+=G.m.score[id]||0;
      });
-     var multiplicateur = tailleMax / Math.max(1,u.membres.length);
-     E.pts(u,tot*multiplicateur);
+     E.pts(u, tot / Math.max(1, u.membres.length));
   });
   E.finQ()}
 
