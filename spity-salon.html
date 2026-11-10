@@ -230,10 +230,9 @@ function startHost(tries){
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="index.html"};
-var jeuBzzz=null, retourEq="games";
+var jeuBzzz=null;
 
 function ouvrirEquipes(j){
-  retourEq="games";
   if(Equipes.ouvrir(P,j))show("equipes");
 }
 
@@ -246,19 +245,19 @@ function ouvrirBzzz(j,mode){
 
 Bzzz.init($("bzzz"),{
   local:MODE_LOCAL,
-  retour:function(){show("games")},
+  retour:function(){show(Bzzz.choix().equipes?"equipes":"games")},
   mot:function(){toast("Bientôt : les mots de Bzzz")},
   demarrer:function(cfg){
-    if(cfg.equipes){retourEq="bzzz";if(Equipes.ouvrir(P,jeuBzzz))show("equipes");return}
-    toast("Bientôt : la partie de Bzzz");   /* plus tard : lancer la partie en solo */
+    toast("Bientôt : la partie de Bzzz");
   }
 });
 
 Equipes.init($("equipes"),{
-  retour:function(){show(retourEq)},
+  retour:function(){show("games")},
   toast:toast,
   demarrer:function(equipes,j){
-    toast("Bientôt : "+j.nom+" en équipes");    /* plus tard : lancer le jeu avec les équipes */
+    if(j.id==="bzzz")return ouvrirBzzz(j,"equipes");
+    toast("Bientôt : "+j.nom+" en équipes");
   }
 });
 function ouvrirUnderSea(){
@@ -276,9 +275,9 @@ Jeux.init($("games"),{
   bientot:function(){toast("Bientôt disponible")},
   choisir:function(j,mode){
     if(mode==="equipes")return ouvrirEquipes(j);
+    if(j.id==="bzzz")return ouvrirBzzz(j,"solo");
     if(j.id==="undersea")return ouvrirUnderSea();
-    if(j.id==="bzzz")return ouvrirBzzz(j,mode);
-    toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"))
+    toast("Bientôt : "+j.nom+(mode==="direct"?"":" ("+mode+")"));
   }
 });
 Mots.init($("mots"),{retour:function(){show("undersea")}});
