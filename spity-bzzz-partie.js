@@ -52,7 +52,23 @@ st.textContent = `
 .bpvic{font-weight:800;font-size:clamp(3rem,13vw,8rem);line-height:.95;letter-spacing:.04em;color:#ffd96e;text-shadow:0 6px 0 #c27f00,0 12px 30px rgba(0,40,90,.5);animation:bpp .8s cubic-bezier(.3,1.6,.5,1)}
 .bptimer{font-weight:800;font-size:clamp(1.6rem,4vw,2.6rem)}
 .bplc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.bpch{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;width:min(100%,1000px)}
+.bpcg{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  width:100%;
+  max-width:440px;
+}
+
+.bpcb{
+  width:100%;
+  aspect-ratio:1;
+  min-height:100px;
+  padding:0;
+  border-radius:18px;
+  border:3px solid rgba(255,255,255,.5);
+  cursor:pointer;
+}
 .bpc{padding:16px 14px;border-radius:20px;font-weight:800;font-size:clamp(1.1rem,2.6vw,1.8rem);border:3px solid rgba(255,255,255,.55);color:#fff;text-align:left}
 .bpc.ok{outline:5px solid #34d9bc;box-shadow:0 0 24px #34d9bc}
 .bpc.ko{opacity:.45}
