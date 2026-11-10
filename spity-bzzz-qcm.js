@@ -50,7 +50,7 @@ BzzzPartie.mode("qcm",{
 
   recevoir:function(id,m,G,E){
     if(m.t!=="bz:rep"||G.phase!=="q"||G.m.rep[id])return;
-    var n=G.q.choix.length,
+    var n=G.T.q.nbChoix,
         c=(Array.isArray(m.c)?m.c:[]).filter(function(k,i,a){return Number.isInteger(k)&&k>=0&&k<n&&a.indexOf(k)===i});
     if(!c.length)return;
     if(G.q.bonnes.length===1)c=[c[0]];
