@@ -50,7 +50,7 @@ BzzzPartie.mode("qcm",{
 
   recevoir:function(id,m,G,E){
     if(m.t!=="bz:rep"||G.phase!=="q"||G.m.rep[id])return;
-    var n=G.T.q.nbChoix,
+    var n=G.q.choix.length,
         c=(Array.isArray(m.c)?m.c:[]).filter(function(k,i,a){return Number.isInteger(k)&&k>=0&&k<n&&a.indexOf(k)===i});
     if(!c.length)return;
     if(G.q.bonnes.length===1)c=[c[0]];
@@ -65,14 +65,15 @@ BzzzPartie.mode("qcm",{
     if(T.fait){w.appendChild(X.h("div","bpts","Réponse envoyée ✓ On attend les autres…"));return}
     if(q.multi)w.appendChild(X.h("div","bpts","Plusieurs bonnes réponses : sélectionne-les, puis valide."));
     var g=X.h("div","bpcg");
-    q.choix.forEach(function(c,k){
+    for(var k=0;k<q.nbChoix;k++){
       var b=X.h("button","bpcb c"+(k%6)+(T.sel.indexOf(k)>=0?" on":""),"");b.type="button";
       b.onclick=function(){
         if(!q.multi){X.envoyer({t:"bz:rep",c:[k]});T.fait=true;X.redessiner();return}
         var i=T.sel.indexOf(k);
         if(i>=0)T.sel.splice(i,1);else T.sel.push(k);
         b.classList.toggle("on",i<0);val.disabled=!T.sel.length};
-      g.appendChild(b)});
+      g.appendChild(b);
+      }
     w.appendChild(g);
     if(q.multi){
       val=X.bouton("Valider","sun",function(){
