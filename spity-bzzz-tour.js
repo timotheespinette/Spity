@@ -14,7 +14,13 @@ BzzzPartie.mode("tour",{
     w.appendChild(E.h("div","bpq",G.q.q));
     w.appendChild(E.h("div","bps","C’est le tour de"));
     w.appendChild(E.chip(u));
-    w.appendChild(E.h("div","bpans","Réponse attendue : "+G.q.r));
+    var rep=E.h("button","bpans","Afficher la réponse");
+    rep.type="button";
+    rep.onclick=function(){
+       rep.textContent="Réponse : "+G.q.r;
+       rep.disabled=true;
+    };
+    w.appendChild(rep);
     var b=E.h("div","bpbtns");
     b.appendChild(E.bouton("✓ Bonne réponse","sun",function(){E.pts(u,1);E.finQ()}));
     b.appendChild(E.bouton("✗ Raté","",function(){E.finQ()}));
