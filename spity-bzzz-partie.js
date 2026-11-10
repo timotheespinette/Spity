@@ -66,8 +66,8 @@ st.textContent = `
 .bptv{font-weight:800;font-size:clamp(2.6rem,14vw,5rem);line-height:1}
 .bptv.win{color:#ffd96e;text-shadow:0 5px 0 #c27f00}
 .bptv.lose{color:#cfe3ff;text-shadow:0 5px 0 #3f5a8a}
-.bpcg{display:grid;grid-template-columns:1fr;gap:10px;width:100%;max-width:480px}
-.bpcb{padding:16px 12px;border-radius:18px;font-weight:800;font-size:1.2rem;color:#fff;border:3px solid rgba(255,255,255,.5)}
+.bpcg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;max-width:440px}
+.bpcb{width:100%;aspect-ratio:1;min-height:100px;padding:0;border-radius:18px;border:3px solid rgba(255,255,255,.5);cursor:pointer;font-weight:800;font-size:1.2rem;color:#fff}
 .bpcb.c2{color:#3a2600}
 .bpcb.on{outline:5px solid #fff;transform:scale(1.03)}
 .bpbuzz{width:min(70vw,300px);aspect-ratio:1;border-radius:50%;font-weight:800;font-size:3rem;color:#fff;background:radial-gradient(circle at 35% 30%,#ff9a7a,#e8503a);box-shadow:0 10px 0 #8f2412,0 18px 30px rgba(0,40,90,.4)}
