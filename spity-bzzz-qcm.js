@@ -65,20 +65,48 @@ BzzzPartie.mode("qcm",{
     if(T.fait){w.appendChild(X.h("div","bpts","Réponse envoyée ✓ On attend les autres…"));return}
     if(q.multi)w.appendChild(X.h("div","bpts","Plusieurs bonnes réponses : sélectionne-les, puis valide."));
     var g=X.h("div","bpcg");
+
     for(var k=0;k<q.nbChoix;k++){
-      var b=X.h("button","bpcb c"+(k%6)+(T.sel.indexOf(k)>=0?" on":""),"");b.type="button";
-      b.onclick=function(){
-        if(!q.multi){X.envoyer({t:"bz:rep",c:[k]});T.fait=true;X.redessiner();return}
-        var i=T.sel.indexOf(k);
-        if(i>=0)T.sel.splice(i,1);else T.sel.push(k);
-        b.classList.toggle("on",i<0);val.disabled=!T.sel.length};
+      var b=X.h("button",
+        "bpcb c"+(k%6)+(T.sel.indexOf(k)>=0?" on":""),
+        ""
+      );
+      b.type="button";
+
+      b.onclick=function(index,btn){
+        return function(){
+          if(!q.multi){
+            X.envoyer({t:"bz:rep",c:[index]});
+            T.fait=true;
+            X.redessiner();
+            return;
+          }
+
+          var i=T.sel.indexOf(index);
+          if(i>=0)T.sel.splice(i,1);
+          else T.sel.push(index);
+
+          btn.classList.toggle("on",i<0);
+          val.disabled=!T.sel.length;
+        };
+      }(k,b);
+
       g.appendChild(b);
-      }
+    }
+
     w.appendChild(g);
+
     if(q.multi){
       val=X.bouton("Valider","sun",function(){
         if(!T.sel.length)return;
-        X.envoyer({t:"bz:rep",c:T.sel.slice()});T.fait=true;X.redessiner()});
-      val.disabled=!T.sel.length;w.appendChild(val)}}
+        X.envoyer({t:"bz:rep",c:T.sel.slice()});
+        T.fait=true;
+        X.redessiner();
+      });
+
+      val.disabled=!T.sel.length;
+      w.appendChild(val);
+    }
+  }
 });
 })();
