@@ -13,7 +13,8 @@ function finir(G,E){
   G.ps.forEach(function(p){
     var s=G.m.rep[p.id]||[],ok=0,ko=0;
     s.forEach(function(k){G.q.bonnes.indexOf(k)>=0?ok++:ko++});
-    var pointsTemps = Math.max(0, (G.fin-Date.now()) / 1000); // 20 sec = 20 pts, descend de 1 par sec
+    var tempsReponse = G.m.temps[p.id] || G.fin;
+    var pointsTemps = Math.max(0, (G.fin - tempsReponse) / 1000);
     G.m.score[p.id] = Math.max(0, (ok-ko)/nb) * pointsTemps * mult;});
   G.units.forEach(function(u){
      var tot=0;
@@ -29,7 +30,7 @@ BzzzPartie.mode("qcm",{
   auto:true,
 
   debut:function(G,E){
-    G.m={rep:{}};
+    G.m={rep:{}, temps:{}};
     E.timer(BP_DUREE_QCM,function(){finir(G,E)});
     return{duree:BP_DUREE_QCM}},
 
@@ -50,6 +51,7 @@ BzzzPartie.mode("qcm",{
     if(!c.length)return;
     if(G.q.bonnes.length===1)c=[c[0]];
     G.m.rep[id]=c;
+    G.m.temps[id]=Date.now();
     if(E.presents().every(function(p){return G.m.rep[p.id]}))finir(G,E);else E.dessiner()},
 
   res:function(id,G){return{score:G.m.score[id]||0,rep:!!G.m.rep[id],max:G.bonus?2:1}},
