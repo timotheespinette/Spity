@@ -41,7 +41,7 @@ BzzzPartie.mode("qcm",{
   hote:function(w,G,E){
     w.appendChild(E.h("div","bpq",G.q.q));
     if(G.q.bonnes.length>1)w.appendChild(E.h("div","bps","Plusieurs bonnes réponses possibles"));
-    var g=E.h("div","bpch");
+    var g=E.h("div","bpcg");
     G.q.choix.forEach(function(c,k){g.appendChild(E.h("div","bpc c"+(k%6),LET[k]+" · "+c))});
     w.appendChild(g);
     var pr=E.presents(),n=pr.filter(function(p){return G.m.rep[p.id]}).length;
@@ -51,7 +51,7 @@ BzzzPartie.mode("qcm",{
   recevoir:function(id,m,G,E){
     if(m.t!=="bz:rep"||G.phase!=="q"||G.m.rep[id])return;
     var n=G.q.choix.length,
-        c=(Array.isArray(m.c)?m.c:[]).filter(function(k,i,a){return Number.isInteger(k)&&k>=0&&k<n&&a.indexOf(k)===i});
+        c=(Array.isArray(m.c)?m.c:[]).map(Number).filter(function(k,i,a){return !isNaN(k)&&k>=0&&k<n&&a.indexOf(k)===i});
     if(!c.length)return;
     if(G.q.bonnes.length===1)c=[c[0]];
     G.m.rep[id]=c;
