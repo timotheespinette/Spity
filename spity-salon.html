@@ -132,6 +132,8 @@ body{animation:in .35s ease-out}
 <section id="equipes" class="scr"></section>
 <section id="bzzz" class="scr"></section>
 <section id="bzzzMots" class="scr"></section>
+<section id="bzHote" class="scr"></section>
+<section id="bzTel" class="scr"></section>
 <section id="undersea" class="scr"></section>
 <section id="mots" class="scr"></section>
 <section id="usHote" class="scr"></section>
@@ -153,6 +155,10 @@ body{animation:in .35s ease-out}
 <script src="spity-undersea.js"></script>
 <script src="spity-bzzz.js"></script>
 <script src="spity-bzzz-mots.js"></script>
+<script src="spity-bzzz-partie.js"></script>
+<script src="spity-bzzz-tour.js"></script>
+<script src="spity-bzzz-buzzer.js"></script>
+<script src="spity-bzzz-qcm.js"></script>
 <script src="spity-undersea-mots.js"></script>
 <script src="spity-undersea-partie.js"></script>
 <script src="spity-local.js"></script>
@@ -228,7 +234,7 @@ function startHost(tries){
     open:function(){$("codeTxt").textContent=code.slice(0,3)+" "+code.slice(3);
       try{var q=qrcode(0,"M");q.addData(location.href.split("?")[0].split("#")[0]+"?code="+code);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true})}catch(e){$("qr").textContent=code}},
     error:function(e){if(e&&e.type==="unavailable-id"&&tries<3)startHost(tries+1);else toast("Connexion impossible. Vérifie Internet.")},
-    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m)},
+    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m)},
     leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="index.html"};
@@ -249,9 +255,7 @@ Bzzz.init($("bzzz"),{
   local:MODE_LOCAL,
   retour:function(){show(Bzzz.choix().equipes?"equipes":"games")},
   mot:function(mode){BzzzMots.ouvrir(mode);show("bzzzMots")},
-  demarrer:function(cfg){
-    toast("Bientôt : la partie de Bzzz");
-  }
+  demarrer:function(cfg){BzzzPartie.hote.lancer(cfg)}
 });
 
 BzzzMots.init($("bzzzMots"),{local:MODE_LOCAL,retour:function(){show("bzzz")}});
@@ -290,6 +294,11 @@ UsPartie.hote.init({local:MODE_LOCAL,root:$("usHote"),joueurs:function(){return 
   afficher:show,toast:toast,menu:ouvrirUnderSea,jeux:function(){show("games")}});
 UsPartie.tel.init({root:$("usTel"),envoyer:function(m){C&&C.send(m)},afficher:show,toast:toast});
 
+BzzzPartie.hote.init({local:MODE_LOCAL,root:$("bzHote"),joueurs:function(){return P},
+  envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
+  afficher:show,toast:toast,menu:function(){show("bzzz")},jeux:function(){show("games")}});
+BzzzPartie.tel.init({root:$("bzTel"),envoyer:function(m){C&&C.send(m)},afficher:show});
+
 LocalUnderSea.init($("usLocal"));
 Local.init($("local"),{
   retour:function(){location.href="index.html"},
@@ -316,7 +325,7 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
   if(CODE.length!==6)return show("code");
   C&&C.close();
   C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc});show("wait")},
-    msg:function(m){if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
+    msg:function(m){if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
       if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
     close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
     error:function(){toast("Salon introuvable. Vérifie le code.");show("code")}})};
