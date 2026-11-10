@@ -7,7 +7,7 @@
 
 /* Les 3 images (PNG, dossier "jeux" sur GitHub), en haut des 3 cartes :
    ajouter / générer / voir. Laisse "" pour ne rien afficher. */
-var BZM_IMG = ["jeux/abeille.png", "", ""];
+var BZM_IMG = ["jeux/abeille.png", "jeux/ecureil.png", "jeux/ours.png"];
 
 /* Clé Gemini : la même que celle des mots d'UnderSea (Mots.cle("ta clé")).
    Tu peux aussi la coller ici en attendant (mais ne la publie pas sur GitHub). */
