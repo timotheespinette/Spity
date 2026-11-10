@@ -131,6 +131,7 @@ body{animation:in .35s ease-out}
 <section id="games" class="scr"></section>
 <section id="equipes" class="scr"></section>
 <section id="bzzz" class="scr"></section>
+<section id="bzzzMots" class="scr"></section>
 <section id="undersea" class="scr"></section>
 <section id="mots" class="scr"></section>
 <section id="usHote" class="scr"></section>
@@ -151,7 +152,8 @@ body{animation:in .35s ease-out}
 <script src="spity-scores.js"></script>
 <script src="spity-undersea.js"></script>
 <script src="spity-bzzz.js"></script>
-<script src="spity-mots.js"></script>
+<script src="spity-bzzz-mots.js"></script>
+<script src="spity-undersea-mots.js"></script>
 <script src="spity-undersea-partie.js"></script>
 <script src="spity-local.js"></script>
 <script src="spity-local-undersea.js"></script>
@@ -246,11 +248,13 @@ function ouvrirBzzz(j,mode){
 Bzzz.init($("bzzz"),{
   local:MODE_LOCAL,
   retour:function(){show(Bzzz.choix().equipes?"equipes":"games")},
-  mot:function(){toast("Bientôt : les mots de Bzzz")},
+  mot:function(mode){BzzzMots.ouvrir(mode);show("bzzzMots")},
   demarrer:function(cfg){
     toast("Bientôt : la partie de Bzzz");
   }
 });
+
+BzzzMots.init($("bzzzMots"),{local:MODE_LOCAL,retour:function(){show("bzzz")}});
 
 Equipes.init($("equipes"),{
   retour:function(){show("games")},
