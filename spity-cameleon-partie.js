@@ -37,21 +37,25 @@ function ajuster(cv){
 
 /* ======================= ÉCRAN DE L'HÔTE (TV) ======================= */
 var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false;
+var cfgPartie=null;
 
-function lancer(){
+function lancer(cfg){
   var l=O.joueurs();
   if(l.length<MN_MIN_JOUEURS)return O.toast("Il faut au moins "+MN_MIN_JOUEURS+" joueurs.");
   if(l.length>MN_MAX_JOUEURS)return O.toast("Maximum "+MN_MAX_JOUEURS+" joueurs.");
+  cfg=cfg||{};var pr=cfg.params||{};cfgPartie=cfg;
+  if(pr.vitesse)C.vitesse=pr.vitesse;
+  if(pr.rayonVision)C.rayonVision=pr.rayonVision;
   stopHote();
   mo=Moteur.nouveau();voir=false;
   l.forEach(function(p){
     var j=mo.ajouter(p.id,p.name);
-    O.envoyer(p.id,{t:"mn:start",couleur:j.couleur})});
+    O.envoyer(p.id,{t:"mn:start",couleur:j.couleur,rayon:C.rayonVision})});
 
   var r=O.root;r.innerHTML="";
   cvH=h("canvas","mncv");cxH=cvH.getContext("2d");r.appendChild(cvH);
   var bar=h("div","mnbar"),q=h("button","mnb glass","Arrêter"),v=h("button","mnb glass","Voir les joueurs (test)");
-  q.onclick=function(){if(confirm("Arrêter la partie ?"))quitter(O.jeux)};
+  q.onclick=function(){if(confirm("Arrêter la partie ?"))quitter(O.menu||O.jeux)};
   v.onclick=function(){voir=!voir};
   bar.appendChild(q);bar.appendChild(v);r.appendChild(bar);
   O.afficher("mnHote");
@@ -127,6 +131,7 @@ function envoyerDir(){
 
 function telStart(m){
   telStop();
+  if(m.rayon)C.rayonVision=m.rayon;
   T={x:0,y:0,vx:0,vy:0,couleur:m.couleur||"#fff",init:false,autres:[],stick:null,touches:{},dernier:{x:9,y:9,t:0}};
   var r=TO.root;r.innerHTML="";
   cvT=h("canvas","mncv");cxT=cvT.getContext("2d");r.appendChild(cvT);
