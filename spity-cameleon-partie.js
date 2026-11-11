@@ -190,50 +190,176 @@ function telStop(){
   T=null}
 
 /* Vue locale avec brouillard de guerre */
+
+/* Vue locale avec vision claire + décor assombri autour */
 function dessinerT(){
   if(!T)return;
+
   var K=ajuster(cvT),w=cvT.width,hh=cvT.height;
   if(!w)return;
-  var cx=cxT,R=C.rayonVision,cs=Math.floor(Math.min(w,hh)/(2*R+1)),x,y,a,i;
-  T.vx+=(T.x-T.vx)*.35;T.vy+=(T.y-T.vy)*.35;
+
+  var cx=cxT,R=C.rayonVision,cs=Math.floor(Math.min(w,hh)/(2*R+1));
+  var x,y,a,i;
+
+  T.vx+=(T.x-T.vx)*.35;
+  T.vy+=(T.y-T.vy)*.35;
+
   var ox=w/2-T.vx*cs,oy=hh/2-T.vy*cs;
-  cx.fillStyle="#050a08";cx.fillRect(0,0,w,hh);
+
+  // 1. Fond général
+  cx.fillStyle="#050a08";
+  cx.fillRect(0,0,w,hh);
 
   if(T.init){
-    cx.save();cx.beginPath();                          /* zone éclairée = ce que les murs laissent voir */
-    for(a=0;a<360;a+=3){
-      var r=a*Math.PI/180,d=0;
-      while(d<R+.5&&!Moteur.mur(T.vx+Math.cos(r)*d,T.vy+Math.sin(r)*d))d+=.1;
+
+    // 2. Dessiner TOUT le décor, même hors de la vision
+    for(y=0;y<M.hauteur;y++){
+      for(x=0;x<M.largeur;x++){
+        cx.fillStyle=C.cases[M.grille[y][x]];
+        cx.fillRect(
+          ox+x*cs,
+          oy+y*cs,
+          cs+1,
+          cs+1
+        );
+      }
+    }
+
+    // 3. Assombrir toute la carte
+    cx.fillStyle="rgba(0,0,0,0.68)";
+    cx.fillRect(0,0,w,hh);
+
+    // 4. Zone de vision normale avec les murs
+    cx.save();
+    cx.beginPath();
+
+    for(a=0;a<360;a+=2){
+      var rad=a*Math.PI/180,d=0;
+
+      while(
+        d<R+.5 &&
+        !Moteur.mur(
+          T.vx+Math.cos(rad)*d,
+          T.vy+Math.sin(rad)*d
+        )
+      ){
+        d+=.1;
+      }
+
       d=Math.min(d+.45,R+.5);
-      var px=ox+(T.vx+Math.cos(r)*d)*cs,py=oy+(T.vy+Math.sin(r)*d)*cs;
-      a?cx.lineTo(px,py):cx.moveTo(px,py)}
-    cx.closePath();cx.clip();
 
-    for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++)for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
-      var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)?M.grille[y][x]:"#";
-      cx.fillStyle=C.cases[c];cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1)}
+      var px=ox+(T.vx+Math.cos(rad)*d)*cs;
+      var py=oy+(T.vy+Math.sin(rad)*d)*cs;
 
-    cx.textAlign="center";cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
+      if(a===0)cx.moveTo(px,py);
+      else cx.lineTo(px,py);
+    }
+
+    cx.closePath();
+    cx.clip();
+
+    // Redessiner le décor normalement dans la vision
+    for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
+      for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
+
+        var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)
+          ?M.grille[y][x]:"#";
+
+        cx.fillStyle=C.cases[c];
+        cx.fillRect(
+          ox+x*cs,
+          oy+y*cs,
+          cs+1,
+          cs+1
+        );
+      }
+    }
+
+    // 5. Afficher uniquement les joueurs autorisés
     for(i=0;i<T.autres.length;i++){
+
       var o=T.autres[i];
-      pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*.4,o[3],o[0],o[4]);
-      cx.textAlign="center";cx.textBaseline="alphabetic";
+
+      // Vérification de la distance et de la visibilité
+      var dist=Math.hypot(o[1]-T.x,o[2]-T.y);
+
+      if(dist>R)continue;
+
+      if(!Moteur.voit(T.x,T.y,o[1],o[2]))continue;
+
+      pion(
+        cx,
+        ox+o[1]*cs,
+        oy+o[2]*cs,
+        cs*.4,
+        o[3],
+        o[0],
+        o[4]
+      );
+
+      cx.textAlign="center";
+      cx.textBaseline="alphabetic";
       cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
-      cx.fillStyle="#fff";cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.5)}
+      cx.fillStyle="#fff";
 
-    pion(cx,w/2,hh/2,cs*.4,T.couleur,T.id,T.pseudo);
+      cx.fillText(
+        o[4],
+        ox+o[1]*cs,
+        oy+o[2]*cs-cs*.5
+      );
+    }
 
-    var g=cx.createRadialGradient(w/2,hh/2,cs*R*.5,w/2,hh/2,cs*(R+.5));
-    g.addColorStop(0,"rgba(5,10,8,0)");g.addColorStop(1,"rgba(5,10,8,.85)");
-    cx.fillStyle=g;cx.fillRect(0,0,w,hh);cx.restore()}
+    // 6. Afficher son propre personnage
+    pion(
+      cx,
+      w/2,
+      hh/2,
+      cs*.4,
+      T.couleur,
+      T.id,
+      T.pseudo
+    );
 
+    // 7. Dégradé doux sur le bord de la vision
+    var g=cx.createRadialGradient(
+      w/2,hh/2,cs*R*.72,
+      w/2,hh/2,cs*(R+.5)
+    );
+
+    g.addColorStop(0,"rgba(5,10,8,0)");
+    g.addColorStop(1,"rgba(5,10,8,.35)");
+
+    cx.fillStyle=g;
+    cx.fillRect(0,0,w,hh);
+
+    cx.restore();
+  }
+
+  // 8. Joystick tactile
   var s=T.stick;
+
   if(s){
-    cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=3*K;
-    cx.beginPath();cx.arc(s.ox*K,s.oy*K,50*K,0,7);cx.stroke();
-    var dx=s.x-s.ox,dy=s.y-s.oy,l=Math.min(50,Math.hypot(dx,dy)),an=Math.atan2(dy,dx);
-    cx.fillStyle="rgba(255,255,255,.6)";cx.beginPath();
-    cx.arc((s.ox+Math.cos(an)*l)*K,(s.oy+Math.sin(an)*l)*K,22*K,0,7);cx.fill()}}
+    cx.strokeStyle="rgba(255,255,255,.5)";
+    cx.lineWidth=3*K;
+    cx.beginPath();
+    cx.arc(s.ox*K,s.oy*K,50*K,0,7);
+    cx.stroke();
+
+    var dx=s.x-s.ox,dy=s.y-s.oy;
+    var l=Math.min(50,Math.hypot(dx,dy));
+    var an=Math.atan2(dy,dx);
+
+    cx.fillStyle="rgba(255,255,255,.6)";
+    cx.beginPath();
+    cx.arc(
+      (s.ox+Math.cos(an)*l)*K,
+      (s.oy+Math.sin(an)*l)*K,
+      22*K,0,7
+    );
+    cx.fill();
+  }
+}
+
 
 function boucleT(){
   if(!T)return;
