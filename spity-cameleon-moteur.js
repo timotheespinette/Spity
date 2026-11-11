@@ -229,8 +229,8 @@ const Moteur = (() => {
 
         if(j.mort){
           // Les fantômes traversent absolument tous les murs
-          j.x+=vx;
-          j.y+=vy;
+          j.x=Math.max(.3,Math.min(M.largeur-.3,j.x+vx));
+          j.y=Math.max(.3,Math.min(M.hauteur-.3,j.y+vy));
         }else{
           const r=C.rayonJoueur;
           if(libre(j.x+vx,j.y,r))j.x+=vx;
