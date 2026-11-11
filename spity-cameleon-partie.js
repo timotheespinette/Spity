@@ -276,11 +276,70 @@ function envoyerDir(){
 function telStart(m){
   telStop();
   if(m.rayon)C.rayonVision=m.rayon;
-  T={id:m.id,pseudo:m.pseudo,role:null,cle:"",x:0,y:0,vx:0,vy:0,couleur:m.couleur||"#fff",init:false,autres:[],stick:null,touches:{},dernier:{x:9,y:9,t:0}};
+  T={
+    id:m.id,
+    pseudo:m.pseudo,
+    role:null,
+    cle:"",
+    x:0,
+    y:0,
+    vx:0,
+    vy:0,
+    couleur:m.couleur||"#fff",
+    init:false,
+    autres:[],
+    stick:null,
+    touches:{},
+    dernier:{x:9,y:9,t:0},
+    cadavres:[],
+    mort:false,
+    cooldown:0,
+    poison:0,
+    cibleAttaque:null,
+    cibleCadavre:null,
+    flashMort:0
+  };
   var r=TO.root;r.innerHTML="";
   cvT=h("canvas","mncv");cxT=cvT.getContext("2d");r.appendChild(cvT);
-  hudT=h("div","mnhud glass","Connexion…");r.appendChild(hudT);
-  T.ov=h("div","mnov");r.appendChild(T.ov);
+  
+  hudT=h("div","mnhud glass","Connexion…");
+  r.appendChild(hudT);
+
+  T.actions=h("div","mnActions");
+  T.btnAttaque=h("button","mnAction mnAttack","ATTAQUER");
+  T.btnReport=h("button","mnAction mnReport","SIGNALER");
+
+  T.btnAttaque.style.display="none";
+  T.btnReport.style.display="none";
+
+  T.btnAttaque.onclick=function(){
+    if(T&&T.cibleAttaque){
+      TO.envoyer({
+        t:"mn:kill",
+        cible:T.cibleAttaque
+      });
+    }
+  };
+
+  T.btnReport.onclick=function(){
+    if(T&&T.cibleCadavre){
+      TO.envoyer({
+        t:"mn:report",
+        cible:T.cibleCadavre
+      });
+    }
+  };
+
+  T.actions.appendChild(T.btnAttaque);
+  T.actions.appendChild(T.btnReport);
+  r.appendChild(T.actions);
+
+  T.flash=h("div","mnFlash");
+  r.appendChild(T.flash);
+
+  T.ov=h("div","mnov");
+  r.appendChild(T.ov);
+
 
   function pos(e){var b=cvT.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}}
   cvT.addEventListener("pointerdown",function(e){
@@ -301,47 +360,105 @@ function telStop(){
   removeEventListener("keydown",kd);removeEventListener("keyup",ku);
   T=null}
 
+/* Détection des actions disponibles */
+function majActionsT(){
+  if(!T||!T.actions)return;
+
+  T.cibleAttaque=null;
+  T.cibleCadavre=null;
+
+  var role=T.role&&T.role.role;
+  var peutAttaquer=role==="cultiste"||role==="empoisonneur";
+
+  if(!T.mort){
+
+    // Recherche du joueur vivant le plus proche
+    if(peutAttaquer){
+      var meilleure=1.2;
+
+      T.autres.forEach(function(o){
+        var d=Math.hypot(o[1]-T.x,o[2]-T.y);
+
+        if(d<meilleure&&Moteur.voit(T.x,T.y,o[1],o[2])){
+          meilleure=d;
+          T.cibleAttaque=o[0];
+        }
+      });
+    }
+
+    // Recherche du cadavre le plus proche
+    var meilleureMort=1.5;
+
+    T.cadavres.forEach(function(c){
+      if(c[5])return;
+
+      var d=Math.hypot(c[1]-T.x,c[2]-T.y);
+
+      if(d<meilleureMort&&Moteur.voit(T.x,T.y,c[1],c[2])){
+        meilleureMort=d;
+        T.cibleCadavre=c[0];
+      }
+    });
+  }
+
+  // Bouton d'attaque
+  T.btnAttaque.style.display=
+    T.cibleAttaque?"block":"none";
+
+  if(T.cibleAttaque){
+    if(T.cooldown>0){
+      T.btnAttaque.textContent="RECHARGE "+Math.ceil(T.cooldown)+" s";
+      T.btnAttaque.disabled=true;
+    }else{
+      T.btnAttaque.textContent=
+        role==="empoisonneur"?"EMPOISONNER":"ATTAQUER";
+      T.btnAttaque.disabled=false;
+    }
+  }
+
+  // Bouton de signalement
+  T.btnReport.style.display=
+    T.cibleCadavre?"block":"none";
+}
 /* Vue locale avec brouillard de guerre */
 
 /* Vue locale avec vision claire + décor assombri autour */
 function dessinerT(){
+
   if(!T)return;
 
   var K=ajuster(cvT),w=cvT.width,hh=cvT.height;
   if(!w)return;
 
-  var cx=cxT,R=C.rayonVision,cs=Math.floor(Math.min(w,hh)/(2*R+1));
+  var cx=cxT,R=C.rayonVision;
+  var cs=Math.floor(Math.min(w,hh)/(2*R+1));
   var x,y,a,i;
 
   T.vx+=(T.x-T.vx)*.35;
   T.vy+=(T.y-T.vy)*.35;
 
-  var ox=w/2-T.vx*cs,oy=hh/2-T.vy*cs;
+  var ox=w/2-T.vx*cs;
+  var oy=hh/2-T.vy*cs;
 
-  // 1. Fond général
+  // Fond
   cx.fillStyle="#050a08";
   cx.fillRect(0,0,w,hh);
 
   if(T.init){
 
-    // 2. Dessiner TOUT le décor, même hors de la vision
+    // Toute la carte est dessinée
     for(y=0;y<M.hauteur;y++){
       for(x=0;x<M.largeur;x++){
         cx.fillStyle=C.cases[M.grille[y][x]];
-        cx.fillRect(
-          ox+x*cs,
-          oy+y*cs,
-          cs+1,
-          cs+1
-        );
+        cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
       }
     }
 
-    // 3. Assombrir toute la carte
-    cx.fillStyle="rgba(0,0,0,0.68)";
+    // Assombrissement extérieur
+    cx.fillStyle="rgba(0,0,0,.68)";
     cx.fillRect(0,0,w,hh);
 
-    // 4. Zone de vision normale avec les murs
+    // Calcul de la vision
     cx.save();
     cx.beginPath();
 
@@ -370,7 +487,7 @@ function dessinerT(){
     cx.closePath();
     cx.clip();
 
-    // Redessiner le décor normalement dans la vision
+    // Décor éclairé normalement
     for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
       for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
 
@@ -378,25 +495,32 @@ function dessinerT(){
           ?M.grille[y][x]:"#";
 
         cx.fillStyle=C.cases[c];
-        cx.fillRect(
-          ox+x*cs,
-          oy+y*cs,
-          cs+1,
-          cs+1
-        );
+        cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
       }
     }
 
-    // 5. Afficher uniquement les joueurs autorisés
+    // Cadavres visibles
+    for(i=0;i<T.cadavres.length;i++){
+
+      var corps=T.cadavres[i];
+
+      dessinerCadavre(
+        cx,
+        ox+corps[1]*cs,
+        oy+corps[2]*cs,
+        cs*.4,
+        corps[3],
+        corps[0],
+        corps[4]
+      );
+    }
+
+    // Autres joueurs vivants visibles
     for(i=0;i<T.autres.length;i++){
 
       var o=T.autres[i];
 
-      // Vérification de la distance et de la visibilité
-      var dist=Math.hypot(o[1]-T.x,o[2]-T.y);
-
-      if(dist>R)continue;
-
+      if(Math.hypot(o[1]-T.x,o[2]-T.y)>R)continue;
       if(!Moteur.voit(T.x,T.y,o[1],o[2]))continue;
 
       pion(
@@ -421,18 +545,36 @@ function dessinerT(){
       );
     }
 
-    // 6. Afficher son propre personnage
-    pion(
-      cx,
-      w/2,
-      hh/2,
-      cs*.4,
-      T.couleur,
-      T.id,
-      T.pseudo
-    );
+    // Personnage du joueur
+    if(T.mort){
 
-    // 7. Dégradé doux sur le bord de la vision
+      // Fantôme translucide avec contour lumineux
+      cx.save();
+      cx.globalAlpha=.4;
+
+      pion(
+        cx,w/2,hh/2,cs*.4,
+        "#8cecff",T.id,T.pseudo
+      );
+
+      cx.globalAlpha=.8;
+      cx.strokeStyle="#a4f1ff";
+      cx.lineWidth=2*K;
+      cx.beginPath();
+      cx.arc(w/2,hh/2,cs*.48,0,Math.PI*2);
+      cx.stroke();
+
+      cx.restore();
+
+    }else{
+
+      pion(
+        cx,w/2,hh/2,cs*.4,
+        T.couleur,T.id,T.pseudo
+      );
+    }
+
+    // Dégradé de bord
     var g=cx.createRadialGradient(
       w/2,hh/2,cs*R*.72,
       w/2,hh/2,cs*(R+.5)
@@ -447,7 +589,14 @@ function dessinerT(){
     cx.restore();
   }
 
-  // 8. Joystick tactile
+  // Flash rouge reçu par le Médium
+  if(T.flashMort>performance.now()){
+    T.flash.style.opacity=".35";
+  }else{
+    T.flash.style.opacity="0";
+  }
+
+  // Joystick
   var s=T.stick;
 
   if(s){
@@ -470,6 +619,8 @@ function dessinerT(){
     );
     cx.fill();
   }
+
+  majActionsT();
 }
 
 
@@ -505,10 +656,47 @@ function telRecevoir(m){
   if(m.t==="mn:start")telStart(m);
   else if(m.t==="mn:vue"){
     if(!T)return;
-    T.x=m.x;T.y=m.y;
-    if(!T.init){T.vx=m.x;T.vy=m.y;T.init=true;hudT.style.display="none"}
-    T.autres=m.autres||[];majOv(m.phase,m.reste)}
-  else if(m.t==="mn:fin"){telStop();TO.afficher("wait")}}
+
+    T.x=m.x;
+    T.y=m.y;
+
+    if(!T.init){
+      T.vx=m.x;
+      T.vy=m.y;
+      T.init=true;
+      hudT.style.display="none";
+    }
+
+    T.mort=!!m.mort;
+    T.autres=m.autres||[];
+    T.cadavres=m.cadavres||[];
+    T.cooldown=m.cooldown||0;
+    T.poison=m.poison||0;
+
+    majOv(m.phase,m.reste);
+  }
+  else if(m.t==="mn:death"){
+    if(T){
+      T.flashMort=performance.now()+1200;
+    }
+  }
+  else if(m.t==="mn:action"){
+    if(T){
+      hudT.textContent=m.message;
+      hudT.style.display="block";
+
+      clearTimeout(T.messageTimer);
+
+      T.messageTimer=setTimeout(function(){
+        if(T&&hudT)hudT.style.display="none";
+      },2200);
+    }
+  }
+  else if(m.t==="mn:fin"){
+    telStop();
+    TO.afficher("wait");
+  }
+}
 
 window.ManoirPartie={
   hote:{init:function(o){O=o},lancer:lancer,recevoir:recevoir,retirer:retirer},
