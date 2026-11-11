@@ -140,6 +140,8 @@ body{animation:in .35s ease-out}
 <section id="usTel" class="scr"></section>
 <section id="local" class="scr"></section>
 <section id="usLocal" class="scr"></section>
+<section id="mnHote" class="scr"></section>
+<section id="mnTel" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -163,6 +165,10 @@ body{animation:in .35s ease-out}
 <script src="spity-undersea-partie.js"></script>
 <script src="spity-local.js"></script>
 <script src="spity-local-undersea.js"></script>
+<script src="spity-cameleon-config.js"></script>
+<script src="spity-cameleon-map.js"></script>
+<script src="spity-cameleon-moteur.js"></script>
+<script src="spity-cameleon-partie.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 var MODE_LOCAL=new URLSearchParams(location.search).get("mode")==="local";
@@ -223,7 +229,7 @@ function burst(el){
     document.body.appendChild(b);
   }
 }
-function kick(id){H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
+function kick(id){window.ManoirPartie&&ManoirPartie.hote.retirer(id);H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
 function addPlayer(p){if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
     P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc});render();
     var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
@@ -234,8 +240,8 @@ function startHost(tries){
     open:function(){$("codeTxt").textContent=code.slice(0,3)+" "+code.slice(3);
       try{var q=qrcode(0,"M");q.addData(location.href.split("?")[0].split("#")[0]+"?code="+code);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true})}catch(e){$("qr").textContent=code}},
     error:function(e){if(e&&e.type==="unavailable-id"&&tries<3)startHost(tries+1);else toast("Connexion impossible. Vérifie Internet.")},
-    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m)},
-    leave:function(id){P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
+    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("mn:")===0)ManoirPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m)},
+    leave:function(id){window.ManoirPartie&&ManoirPartie.hote.retirer(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
 }
 $("hB").onclick=function(){H&&H.close();location.href="index.html"};
 var jeuBzzz=null;
@@ -282,6 +288,7 @@ Jeux.init($("games"),{
   retour:function(){show(MODE_LOCAL?"local":"host")},
   bientot:function(){toast("Bientôt disponible")},
   choisir:function(j,mode){
+    if(j.id==="manoir")return ManoirPartie.hote.lancer();
     if(mode==="equipes")return ouvrirEquipes(j);
     if(j.id==="bzzz")return ouvrirBzzz(j,"solo");
     if(j.id==="undersea")return ouvrirUnderSea();
@@ -293,6 +300,10 @@ UsPartie.hote.init({local:MODE_LOCAL,root:$("usHote"),joueurs:function(){return 
   envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
   afficher:show,toast:toast,menu:ouvrirUnderSea,jeux:function(){show("games")}});
 UsPartie.tel.init({root:$("usTel"),envoyer:function(m){C&&C.send(m)},afficher:show,toast:toast});
+ManoirPartie.hote.init({root:$("mnHote"),joueurs:function(){return P},
+  envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
+  afficher:show,toast:toast,jeux:function(){show("games")}});
+ManoirPartie.tel.init({root:$("mnTel"),envoyer:function(m){C&&C.send(m)},afficher:show});
 
 BzzzPartie.hote.init({local:MODE_LOCAL,root:$("bzHote"),joueurs:function(){return P},
   envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
@@ -325,7 +336,7 @@ $("pGo").onclick=function(){var name=$("pseudo").value.trim();
   if(CODE.length!==6)return show("code");
   C&&C.close();
   C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc});show("wait")},
-    msg:function(m){if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
+    msg:function(m){if(String(m.t).indexOf("mn:")===0)return ManoirPartie.tel.recevoir(m);if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
       if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
     close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
     error:function(){toast("Salon introuvable. Vérifie le code.");show("code")}})};
