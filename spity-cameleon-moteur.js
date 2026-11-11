@@ -1,6 +1,6 @@
 
 /* spity-cameleon-moteur.js
-   Moteur de Caméléon : déplacements, morts, fantômes et signalements.
+   Déplacements, morts, fantômes, signalements et votes.
 */
 const Moteur = (() => {
   const M = MANOIR_MAP, C = MANOIR_CFG;
@@ -11,7 +11,8 @@ const Moteur = (() => {
       M.grille[y][x]==='#';
   };
 
-  const typeCase = (x,y) => M.grille[Math.floor(y)][Math.floor(x)];
+  const typeCase = (x,y) =>
+    M.grille[Math.floor(y)]?.[Math.floor(x)] || '#';
 
   const libre = (x,y,r) =>
     !(mur(x-r,y-r)||mur(x+r,y-r)||mur(x-r,y+r)||mur(x+r,y+r));
@@ -28,7 +29,7 @@ const Moteur = (() => {
   function limites(n){
     const c=n<=6?1:n<=11?2:3;
     const i=n<=6?1:n<=10?2:3;
-    return{
+    return {
       cult:Math.max(1,Math.min(c,Math.floor(n/2))),
       info:i
     };
@@ -49,7 +50,8 @@ const Moteur = (() => {
       phase:'jeu',
       tPhase:0,
       cadavres:{},
-      mortsEnAttente:[]
+      mortsEnAttente:[],
+      vote:null
     };
 
     e.ajouter=(id,pseudo)=>{
@@ -58,6 +60,7 @@ const Moteur = (() => {
       return e.joueurs[id]={
         id,pseudo,
         x:s[0]+.5,y:s[1]+.5,
+        departX:s[0]+.5,departY:s[1]+.5,
         dx:0,dy:0,
         couleur:C.couleurs[i%C.couleurs.length],
         mort:false,
@@ -107,21 +110,23 @@ const Moteur = (() => {
 
     e.retirer=id=>{
       delete e.joueurs[id];
+      if(e.vote){
+        delete e.vote.votes[id];
+      }
     };
 
     e.dir=(id,dx,dy)=>{
       const j=e.joueurs[id];
-      if(!j)return;
+      if(!j || j.mort || e.phase!=='jeu')return;
 
       const l=Math.hypot(dx,dy);
-      if(l>1){dx/=l;dy/=l}
+      if(l>1){dx/=l;dy/=l;}
 
       j.dx=dx;
       j.dy=dy;
     };
 
-    /* Élimination d'un joueur */
-    function mourir(j){
+    function mourir(j,creerCadavre){
       if(!j||j.mort)return false;
 
       j.mort=true;
@@ -129,66 +134,218 @@ const Moteur = (() => {
       j.dy=0;
       j.poison=0;
 
-      // Le corps reste définitivement à sa position de mort
-      e.cadavres[j.id]={
-        id:j.id,
-        x:j.x,
-        y:j.y,
-        couleur:j.couleur,
-        pseudo:j.pseudo,
-        signale:false
-      };
+      if(creerCadavre){
+        e.cadavres[j.id]={
+          id:j.id,
+          x:j.x,
+          y:j.y,
+          couleur:j.couleur,
+          pseudo:j.pseudo,
+          signale:false
+        };
+      }
 
       e.mortsEnAttente.push(j.id);
       return true;
     }
 
-    /* Attaque au contact */
     e.attaquer=(attaquantId,cibleId)=>{
       const a=e.joueurs[attaquantId];
       const c=e.joueurs[cibleId];
 
-      if(!a||!c||a.mort||c.mort)
-        return{ok:false,message:"Action impossible"};
+      if(e.phase!=='jeu' || !a || !c || a.mort || c.mort)
+        return {ok:false,message:"Action impossible"};
 
-      if(a.role!=='cultiste'&&a.role!=='empoisonneur')
-        return{ok:false,message:"Tu ne possèdes pas cette capacité"};
+      if(
+        a.role!=='cultiste' &&
+        a.role!=='metamorphe' &&
+        a.role!=='empoisonneur'
+      ){
+        return {ok:false,message:"Tu ne possèdes pas cette capacité"};
+      }
 
       if(a.cooldown>0)
-        return{ok:false,message:"Attends encore "+Math.ceil(a.cooldown)+" s"};
+        return {ok:false,message:"Attends encore "+Math.ceil(a.cooldown)+" s"};
 
       const distance=Math.hypot(a.x-c.x,a.y-c.y);
 
       if(distance>1.2||!voit(a.x,a.y,c.x,c.y))
-        return{ok:false,message:"Joueur trop éloigné"};
+        return {ok:false,message:"Joueur trop éloigné"};
 
       a.cooldown=C.cooldownKill||25;
 
       if(a.role==='empoisonneur'){
+        if(c.poison>0)return {ok:false,message:"Ce joueur est déjà empoisonné"};
         c.poison=15;
-        return{ok:true,message:"Joueur empoisonné"};
+        return {ok:true,message:"Joueur empoisonné"};
       }
 
-      mourir(c);
-      return{ok:true,message:"Joueur éliminé"};
+      mourir(c,true);
+      return {ok:true,message:"Joueur éliminé"};
     };
 
-    /* Signalement d'un cadavre */
+    function terminerVote(){
+      if(!e.vote || e.phase!=='vote')return;
+
+      const v=e.vote;
+      const vivants=Object.values(e.joueurs).filter(j=>!j.mort);
+
+      // Les joueurs qui n'ont pas voté reçoivent un vote aléatoire.
+      vivants.forEach(j=>{
+        if(Object.prototype.hasOwnProperty.call(v.votes,j.id))return;
+
+        let choix=vivants.filter(c=>c.id!==j.id);
+        if(!choix.length)choix=vivants;
+
+        const cible=choix.length
+          ?choix[Math.floor(Math.random()*choix.length)].id
+          :null;
+
+        v.votes[j.id]=cible;
+        v.aleatoires[j.id]=true;
+      });
+
+      const compte={};
+      v.candidats.forEach(c=>compte[c.id]=0);
+
+      Object.keys(v.votes).forEach(id=>{
+        const cible=v.votes[id];
+        if(cible!==null && compte[cible]!==undefined)compte[cible]++;
+      });
+
+      const max=Math.max(0,...Object.values(compte));
+      const premiers=Object.keys(compte).filter(id=>compte[id]===max);
+
+      let elimine=null;
+
+      if(max>0 && premiers.length===1){
+        const j=e.joueurs[premiers[0]];
+        if(j){
+          const r=MM_ROLES.find(x=>x.id===j.role)||{};
+          elimine={
+            id:j.id,
+            pseudo:j.pseudo,
+            role:r.nom||j.role
+          };
+        }
+      }
+
+      v.resultats=Object.keys(compte).map(id=>{
+        const j=e.joueurs[id];
+        return {
+          id,
+          pseudo:j?j.pseudo:"Joueur",
+          voix:compte[id]
+        };
+      });
+
+      v.details=Object.keys(v.votes).map(id=>{
+        const votant=e.joueurs[id];
+        const cible=v.votes[id];
+        const joueurCible=cible===null?null:e.joueurs[cible];
+
+        return {
+          votant:votant?votant.pseudo:"Joueur",
+          cible:joueurCible?joueurCible.pseudo:"Ne voter personne",
+          aleatoire:!!v.aleatoires[id]
+        };
+      });
+
+      v.elimine=elimine;
+      e.phase='resultats';
+      e.tPhase=4;
+    }
+
+    function revelerElimination(){
+      if(!e.vote)return;
+
+      const id=e.vote.elimine&&e.vote.elimine.id;
+      if(id && e.joueurs[id]){
+        mourir(e.joueurs[id],false);
+      }
+
+      // Les corps de la manche précédente disparaîtront à la reprise.
+      e.phase='revelation';
+      e.tPhase=3;
+    }
+
+    function nouvelleManche(){
+      Object.values(e.joueurs).forEach(j=>{
+        j.x=j.departX;
+        j.y=j.departY;
+        j.dx=0;
+        j.dy=0;
+        j.poison=0;
+        j.cooldown=0;
+      });
+
+      e.cadavres={};
+      e.vote=null;
+      e.phase='jeu';
+      e.tPhase=0;
+    }
+
     e.signaler=(joueurId,cadavreId)=>{
       const j=e.joueurs[joueurId];
       const corps=e.cadavres[cadavreId];
 
-      if(!j||j.mort||!corps||corps.signale)
-        return{ok:false,message:"Signalement impossible"};
+      if(e.phase!=='jeu' || !j || j.mort || !corps || corps.signale)
+        return {ok:false,message:"Signalement impossible"};
 
       const distance=Math.hypot(j.x-corps.x,j.y-corps.y);
 
       if(distance>1.5||!voit(j.x,j.y,corps.x,corps.y))
-        return{ok:false,message:"Cadavre trop éloigné"};
+        return {ok:false,message:"Cadavre trop éloigné"};
 
       corps.signale=true;
 
-      return{ok:true,message:"Cadavre signalé"};
+      const candidats=Object.values(e.joueurs)
+        .filter(p=>!p.mort)
+        .map(p=>({id:p.id,pseudo:p.pseudo}));
+
+      e.vote={
+        reporter:joueurId,
+        candidats:candidats,
+        votes:{},
+        aleatoires:{},
+        resultats:[],
+        details:[],
+        elimine:null
+      };
+
+      Object.values(e.joueurs).forEach(p=>{
+        p.dx=0;
+        p.dy=0;
+      });
+
+      e.phase='vote';
+      e.tPhase=C.dureeVote||20;
+
+      return {ok:true,message:"Vote lancé"};
+    };
+
+    e.voter=(joueurId,cibleId)=>{
+      if(e.phase!=='vote' || !e.vote)
+        return {ok:false,message:"Le vote est terminé"};
+
+      const j=e.joueurs[joueurId];
+      if(!j || j.mort)
+        return {ok:false,message:"Tu ne peux pas voter"};
+
+      if(Object.prototype.hasOwnProperty.call(e.vote.votes,joueurId))
+        return {ok:false,message:"Tu as déjà voté"};
+
+      if(cibleId!==null && !e.vote.candidats.some(c=>c.id===cibleId))
+        return {ok:false,message:"Vote invalide"};
+
+      e.vote.votes[joueurId]=cibleId;
+
+      const vivants=Object.values(e.joueurs).filter(p=>!p.mort);
+      if(vivants.every(p=>Object.prototype.hasOwnProperty.call(e.vote.votes,p.id))){
+        terminerVote();
+      }
+
+      return {ok:true,message:"Vote enregistré"};
     };
 
     e.prendreMorts=()=>{
@@ -198,15 +355,26 @@ const Moteur = (() => {
     };
 
     e.maj=dt=>{
-
-      // Recharge des attaques et poison
       for(const j of Object.values(e.joueurs)){
         if(j.cooldown>0)j.cooldown=Math.max(0,j.cooldown-dt);
+      }
 
-        if(j.poison>0){
-          j.poison-=dt;
-          if(j.poison<=0)mourir(j);
-        }
+      if(e.phase==='vote'){
+        e.tPhase-=dt;
+        if(e.tPhase<=0)terminerVote();
+        return;
+      }
+
+      if(e.phase==='resultats'){
+        e.tPhase-=dt;
+        if(e.tPhase<=0)revelerElimination();
+        return;
+      }
+
+      if(e.phase==='revelation'){
+        e.tPhase-=dt;
+        if(e.tPhase<=0)nouvelleManche();
+        return;
       }
 
       if(e.phase!=='jeu'){
@@ -224,11 +392,15 @@ const Moteur = (() => {
       }
 
       for(const j of Object.values(e.joueurs)){
+        if(j.poison>0){
+          j.poison-=dt;
+          if(j.poison<=0)mourir(j,true);
+        }
+
         const vx=j.dx*C.vitesse*dt;
         const vy=j.dy*C.vitesse*dt;
 
         if(j.mort){
-          // Les fantômes traversent absolument tous les murs
           j.x=Math.max(.3,Math.min(M.largeur-.3,j.x+vx));
           j.y=Math.max(.3,Math.min(M.hauteur-.3,j.y+vy));
         }else{
@@ -239,14 +411,29 @@ const Moteur = (() => {
       }
     };
 
-    /* Vue personnalisée de chaque téléphone */
+    e.etatHote=()=>{
+      return {
+        phase:e.phase,
+        reste:Math.max(0,Math.ceil(e.tPhase)),
+        vote:e.vote?{
+          total:Object.values(e.joueurs).filter(j=>!j.mort).length,
+          votesRecus:Object.keys(e.vote.votes).length,
+          candidats:e.phase==='resultats'||e.phase==='revelation'
+            ?e.vote.resultats
+            :e.vote.candidats,
+          details:e.vote.details,
+          elimine:e.vote.elimine
+        }:null
+      };
+    };
+
     e.vue=id=>{
       const j=e.joueurs[id];
       if(!j)return null;
 
       const autres=[],cadavres=[];
+      const rayon=j.mort?Infinity:C.rayonVision;
 
-      // Les joueurs vivants ne voient que les autres vivants
       if(!j.mort){
         for(const o of Object.values(e.joueurs)){
           if(o===j||o.mort)continue;
@@ -266,10 +453,9 @@ const Moteur = (() => {
         }
       }
 
-      // Les cadavres sont visibles dans le rayon normal
       for(const corps of Object.values(e.cadavres)){
         if(
-          Math.hypot(corps.x-j.x,corps.y-j.y)<=C.rayonVision &&
+          Math.hypot(corps.x-j.x,corps.y-j.y)<=rayon &&
           voit(j.x,j.y,corps.x,corps.y)
         ){
           cadavres.push([
@@ -283,7 +469,13 @@ const Moteur = (() => {
         }
       }
 
-      return{
+      const voteTelephone=e.vote?{
+        candidats:e.vote.candidats,
+        aVote:Object.prototype.hasOwnProperty.call(e.vote.votes,id),
+        elimine:e.phase==='revelation'?e.vote.elimine:null
+      }:null;
+
+      return {
         t:'vue',
         x:+j.x.toFixed(2),
         y:+j.y.toFixed(2),
@@ -293,12 +485,13 @@ const Moteur = (() => {
         cooldown:+j.cooldown.toFixed(1),
         poison:+j.poison.toFixed(1),
         phase:e.phase,
-        reste:Math.max(0,Math.ceil(e.tPhase))
+        reste:Math.max(0,Math.ceil(e.tPhase)),
+        vote:voteTelephone
       };
     };
 
     return e;
   }
 
-  return{nouveau,mur,voit,typeCase};
+  return {nouveau,mur,voit,typeCase};
 })();
