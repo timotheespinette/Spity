@@ -26,7 +26,7 @@ var MM_ROLES = [
   {id:"garde",        nom:"Le Garde du corps", emoji:"🛡️", camp:"invite",
    desc:"Protège un joueur avec un bouclier de 20 secondes."},
   {id:"veilleur",     nom:"Le Veilleur",       emoji:"👁️", camp:"invite", info:true,
-   desc:"Voit les deux caméras sur son téléphone, mais ne peut pas bouger."},
+   desc:"Il peut changer le point de vue des caméras sur l'écran de l'hôte."},
   {id:"chasseur",     nom:"Le Chasseur",       emoji:"🏹", camp:"invite",
    desc:"S’il est éliminé au vote, il peut tuer un joueur en 5 secondes."},
   {id:"cartographe",  nom:"Le Cartographe",    emoji:"🗺️", camp:"invite", info:true,
