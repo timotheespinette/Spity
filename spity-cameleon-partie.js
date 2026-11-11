@@ -193,7 +193,10 @@ if(morts.length){
   boucleH()}
 
 function stopHote(){
-  actifH=false;clearInterval(tickH);cancelAnimationFrame(rafH);mo=null}
+  actifH=false;clearInterval(tickH);cancelAnimationFrame(rafH);mo=null;
+  if(votePanelH && votePanelH.destroy) votePanelH.destroy(); // <-- Ligne à ajouter
+  votePanelH=null; // <-- Ligne à ajouter
+}
 
 function quitter(dest){
   O.tous({t:"mn:fin"});stopHote();
@@ -375,6 +378,7 @@ function telStart(m){
 function telStop(){
   clearInterval(tickT);cancelAnimationFrame(rafT);
   removeEventListener("keydown",kd);removeEventListener("keyup",ku);
+  if(T && T.voteUI && T.voteUI.destroy) T.voteUI.destroy();
   T=null}
 
 /* Détection des actions disponibles */
