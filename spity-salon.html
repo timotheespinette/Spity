@@ -142,6 +142,7 @@ body{animation:in .35s ease-out}
 <section id="usLocal" class="scr"></section>
 <section id="mnHote" class="scr"></section>
 <section id="mnTel" class="scr"></section>
+<section id="mnMenu" class="scr"></section>
 
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
@@ -169,6 +170,7 @@ body{animation:in .35s ease-out}
 <script src="spity-cameleon-map.js"></script>
 <script src="spity-cameleon-moteur.js"></script>
 <script src="spity-cameleon-partie.js"></script>
+<script src="spity-cameleon-menu.js"></script>
 <script>
 var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 var MODE_LOCAL=new URLSearchParams(location.search).get("mode")==="local";
@@ -217,7 +219,7 @@ function fill(el,l){el.innerHTML="";l.forEach(function(p){
   el.appendChild(d);shown[p.id]=1})}
 function render(){var L=[],R=[];P.forEach(function(p,i){(i%2?R:L).push(p)});fill($("sl"),L);fill($("sr"),R);
   var n=P.length;$("host").classList.toggle("dense",n>8);
-  window.Jeux&&Jeux.joueurs(P);window.UnderSea&&UnderSea.joueurs(P);window.Equipes&&Equipes.joueurs(P);}
+  window.Jeux&&Jeux.joueurs(P);window.UnderSea&&UnderSea.joueurs(P);window.Equipes&&Equipes.joueurs(P);window.ManoirMenu&&ManoirMenu.joueurs(P);}
 function burst(el){
   if(!el||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   var r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -283,12 +285,18 @@ function ouvrirUnderSea(){
   UnderSea.joueurs(P);
   show("undersea");
 }
+function ouvrirManoir(){ManoirMenu.joueurs(P);show("mnMenu")}
+ManoirMenu.init($("mnMenu"),{
+  retour:function(){show("games")},
+  toast:toast,
+  demarrer:function(cfg){ManoirPartie.hote.lancer(cfg)}
+});
 Jeux.init($("games"),{
   local:MODE_LOCAL,
   retour:function(){show(MODE_LOCAL?"local":"host")},
   bientot:function(){toast("Bientôt disponible")},
   choisir:function(j,mode){
-    if(j.id==="manoir")return ManoirPartie.hote.lancer();
+    if(j.id==="manoir")return ouvrirManoir();
     if(mode==="equipes")return ouvrirEquipes(j);
     if(j.id==="bzzz")return ouvrirBzzz(j,"solo");
     if(j.id==="undersea")return ouvrirUnderSea();
@@ -302,7 +310,7 @@ UsPartie.hote.init({local:MODE_LOCAL,root:$("usHote"),joueurs:function(){return 
 UsPartie.tel.init({root:$("usTel"),envoyer:function(m){C&&C.send(m)},afficher:show,toast:toast});
 ManoirPartie.hote.init({root:$("mnHote"),joueurs:function(){return P},
   envoyer:function(id,m){H&&H.send(id,m)},tous:function(m){H&&H.all(m)},
-  afficher:show,toast:toast,jeux:function(){show("games")}});
+  afficher:show,toast:toast,menu:ouvrirManoir,jeux:function(){show("games")}});
 ManoirPartie.tel.init({root:$("mnTel"),envoyer:function(m){C&&C.send(m)},afficher:show});
 
 BzzzPartie.hote.init({local:MODE_LOCAL,root:$("bzHote"),joueurs:function(){return P},
