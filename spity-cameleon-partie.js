@@ -137,6 +137,7 @@ function ajuster(cv){
 /* ======================= ÉCRAN DE L'HÔTE (TV) ======================= */
 var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false;
 var cfgPartie=null;
+var votePanelH=null;
 
 function lancer(cfg){
   var l=O.joueurs();
@@ -146,6 +147,7 @@ function lancer(cfg){
   if(pr.vitesse)C.vitesse=pr.vitesse;
   if(pr.rayonVision)C.rayonVision=pr.rayonVision;
   if(pr.cooldownKill)C.cooldownKill=pr.cooldownKill;
+  if(pr.vote)C.dureeVote=pr.vote;
   stopHote();
   mo=Moteur.nouveau();voir=false;
   l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
@@ -163,6 +165,7 @@ function lancer(cfg){
   q.onclick=function(){if(confirm("Arrêter la partie ?"))quitter(O.menu||O.jeux)};
   v.onclick=function(){voir=!voir};
   bar.appendChild(q);bar.appendChild(v);r.appendChild(bar);
+  votePanelH=ManoirVote.creerHote(r);
   O.afficher("mnHote");
 
   var t0=performance.now();actifH=true;
@@ -170,6 +173,7 @@ function lancer(cfg){
     if(!mo)return;
     var t=performance.now(),dt=Math.min(.1,(t-t0)/1000);t0=t;
     mo.maj(dt);
+    if(votePanelH) ManoirVote.afficherHote(votePanelH, mo.etatHote());
     // Informations privées du Médium à chaque mort
 var morts=mo.prendreMorts();
 
@@ -221,6 +225,16 @@ function recevoir(id,m){
       ok:signalement.ok,
       message:signalement.message
     });
+    return;
+  }
+
+  if(m.t==="mn:vote"){
+    var resultat=mo.voter(id,m.cible===undefined?null:m.cible);
+    O.envoyer(id,{
+      t:"mn:action",
+      ok:resultat.ok,
+      message:resultat.message
+    });
   }
 }
 
@@ -242,6 +256,7 @@ function dessinerH(){
   cx.fillStyle="#e0a800";cx.beginPath();
   cx.arc(ox+(M.cloche[0]+.5)*cs,oy+(M.cloche[1]+.5)*cs,cs*.4,0,7);cx.fill();
   if(voir)Object.keys(mo.joueurs).forEach(function(id){
+    if(mo.joueurs[id].mort)return;
     var j=mo.joueurs[id];
     pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo);
     cx.font="700 "+Math.round(cs*.5)+"px system-ui";cx.textAlign="center";cx.textBaseline="alphabetic";
@@ -339,7 +354,9 @@ function telStart(m){
 
   T.ov=h("div","mnov");
   r.appendChild(T.ov);
-
+  T.voteUI=ManoirVote.creerTelephone(r,function(cible){
+    TO.envoyer({t:"mn:vote",cible:cible});
+  });
 
   function pos(e){var b=cvT.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}}
   cvT.addEventListener("pointerdown",function(e){
@@ -363,6 +380,11 @@ function telStop(){
 /* Détection des actions disponibles */
 function majActionsT(){
   if(!T||!T.actions)return;
+  if(T.phase!=="jeu"){
+    T.btnAttaque.style.display="none";
+    T.btnReport.style.display="none";
+    return;
+  }
 
   T.cibleAttaque=null;
   T.cibleCadavre=null;
@@ -423,6 +445,7 @@ function majActionsT(){
 /* Vue locale avec brouillard de guerre */
 
 /* Vue locale avec vision claire + décor assombri autour */
+/* Vue locale avec vision claire + décor assombri autour */
 function dessinerT(){
 
   if(!T)return;
@@ -454,49 +477,54 @@ function dessinerT(){
       }
     }
 
-    // Assombrissement extérieur
-    cx.fillStyle="rgba(0,0,0,.68)";
-    cx.fillRect(0,0,w,hh);
+    // Le voile noir et la restriction de vision s'appliquent uniquement si le joueur est vivant
+    if(!T.mort){
+      // Assombrissement extérieur
+      cx.fillStyle="rgba(0,0,0,.68)";
+      cx.fillRect(0,0,w,hh);
 
-    // Calcul de la vision
-    cx.save();
-    cx.beginPath();
+      // Calcul de la vision
+      cx.save();
+      cx.beginPath();
 
-    for(a=0;a<360;a+=2){
-      var rad=a*Math.PI/180,d=0;
+      for(a=0;a<360;a+=2){
+        var rad=a*Math.PI/180,d=0;
 
-      while(
-        d<R+.5 &&
-        !Moteur.mur(
-          T.vx+Math.cos(rad)*d,
-          T.vy+Math.sin(rad)*d
-        )
-      ){
-        d+=.1;
+        while(
+          d<R+.5 &&
+          !Moteur.mur(
+            T.vx+Math.cos(rad)*d,
+            T.vy+Math.sin(rad)*d
+          )
+        ){
+          d+=.1;
+        }
+
+        d=Math.min(d+.45,R+.5);
+
+        var px=ox+(T.vx+Math.cos(rad)*d)*cs;
+        var py=oy+(T.vy+Math.sin(rad)*d)*cs;
+
+        if(a===0)cx.moveTo(px,py);
+        else cx.lineTo(px,py);
       }
 
-      d=Math.min(d+.45,R+.5);
+      cx.closePath();
+      cx.clip();
 
-      var px=ox+(T.vx+Math.cos(rad)*d)*cs;
-      var py=oy+(T.vy+Math.sin(rad)*d)*cs;
+      // Décor éclairé normalement dans le cône de vision
+      for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
+        for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
 
-      if(a===0)cx.moveTo(px,py);
-      else cx.lineTo(px,py);
-    }
+          var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)
+            ?M.grille[y][x]:"#";
 
-    cx.closePath();
-    cx.clip();
-
-    // Décor éclairé normalement
-    for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
-      for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
-
-        var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)
-          ?M.grille[y][x]:"#";
-
-        cx.fillStyle=C.cases[c];
-        cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
+          cx.fillStyle=C.cases[c];
+          cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
+        }
       }
+
+      cx.restore();
     }
 
     // Cadavres visibles
@@ -585,8 +613,6 @@ function dessinerT(){
 
     cx.fillStyle=g;
     cx.fillRect(0,0,w,hh);
-
-    cx.restore();
   }
 
   // Flash rouge reçu par le Médium
@@ -672,6 +698,14 @@ function telRecevoir(m){
     T.cadavres=m.cadavres||[];
     T.cooldown=m.cooldown||0;
     T.poison=m.poison||0;
+    T.phase=m.phase;
+    if(T.voteUI){
+      ManoirVote.afficherTelephone(T.voteUI,{
+        phase:m.phase,
+        reste:m.reste,
+        vote:m.vote
+      });
+    }
 
     majOv(m.phase,m.reste);
   }
