@@ -28,6 +28,45 @@ st.textContent = `
 .mnov2{font-size:1.1rem;font-weight:700;opacity:.85}
 .mnov3{font-size:1.1rem;font-weight:600;max-width:28em}
 .mnhud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;z-index:3;padding:6px 16px;border-radius:999px;font-weight:800;pointer-events:none}
+.mnActions{
+  position:absolute;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  left:0;
+  right:0;
+  z-index:5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  pointer-events:none;
+}
+.mnAction{
+  pointer-events:auto;
+  min-width:135px;
+  padding:14px 22px;
+  border:2px solid rgba(255,255,255,.2);
+  border-radius:18px;
+  color:white;
+  font-weight:900;
+  font-size:15px;
+  letter-spacing:.04em;
+  box-shadow:0 6px 22px rgba(0,0,0,.35);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:transform .15s,opacity .15s;
+}
+.mnAction:active{transform:scale(.94)}
+.mnAction:disabled{opacity:.4}
+.mnAttack{background:linear-gradient(145deg,#ed4553,#a91935)}
+.mnReport{background:linear-gradient(145deg,#e5a52c,#b66a13)}
+.mnFlash{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:rgba(220,20,35,.35);
+  opacity:0;
+}
 `;
 document.head.appendChild(st);
 
@@ -47,6 +86,40 @@ function pion(cx,x,y,r,couleur,id,nom){
     cx.fillStyle=couleur;cx.font="800 "+Math.round(ri*1.2)+'px "Baloo 2",system-ui,sans-serif';
     cx.textAlign="center";cx.textBaseline="middle";cx.fillText((nom||"?").charAt(0).toUpperCase(),x,y)}
   cx.restore()}
+function dessinerCadavre(cx,x,y,r,couleur,id,nom){
+  cx.save();
+
+  // Ombre sous le corps
+  cx.fillStyle="rgba(0,0,0,.35)";
+  cx.beginPath();
+  cx.ellipse(x,y+r*.18,r*.9,r*.25,0,0,Math.PI*2);
+  cx.fill();
+
+  // Petit halo rouge
+  cx.strokeStyle="rgba(210,45,55,.65)";
+  cx.lineWidth=Math.max(2,r*.09);
+  cx.beginPath();
+  cx.arc(x,y,r*1.08,0,Math.PI*2);
+  cx.stroke();
+
+  // On ne conserve que la moitié supérieure du personnage
+  cx.beginPath();
+  cx.rect(x-r-2,y-r-2,r*2+4,r+2);
+  cx.clip();
+
+  // On réutilise exactement le personnage original
+  pion(cx,x,y,r,couleur,id,nom);
+
+  cx.restore();
+
+  // Ligne de coupe discrète
+  cx.strokeStyle="rgba(90,20,25,.9)";
+  cx.lineWidth=Math.max(1,r*.06);
+  cx.beginPath();
+  cx.moveTo(x-r*.8,y);
+  cx.lineTo(x+r*.8,y);
+  cx.stroke();
+}
 /* Message « ton rôle » envoyé à un seul téléphone */
 function roleMsg(j){
   var r=MM_ROLES.filter(function(x){return x.id===j.role})[0]||{},
@@ -72,6 +145,7 @@ function lancer(cfg){
   cfg=cfg||{};var pr=cfg.params||{};cfgPartie=cfg;
   if(pr.vitesse)C.vitesse=pr.vitesse;
   if(pr.rayonVision)C.rayonVision=pr.rayonVision;
+  if(pr.cooldownKill)C.cooldownKill=pr.cooldownKill;
   stopHote();
   mo=Moteur.nouveau();voir=false;
   l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
@@ -96,6 +170,18 @@ function lancer(cfg){
     if(!mo)return;
     var t=performance.now(),dt=Math.min(.1,(t-t0)/1000);t0=t;
     mo.maj(dt);
+    // Informations privées du Médium à chaque mort
+var morts=mo.prendreMorts();
+
+if(morts.length){
+  Object.keys(mo.joueurs).forEach(function(id){
+    var j=mo.joueurs[id];
+
+    if(j.role==="medium"){
+      O.envoyer(id,{t:"mn:death"});
+    }
+  });
+}
     for(var id in mo.joueurs){
       var vue=mo.vue(id);
       if(vue){vue.t="mn:vue";O.envoyer(id,vue)}}
@@ -109,9 +195,35 @@ function quitter(dest){
   O.tous({t:"mn:fin"});stopHote();
   dest&&dest()}
 
+
 function recevoir(id,m){
   if(!mo||!m)return;
-  if(m.t==="mn:dir")mo.dir(id,+m.dx||0,+m.dy||0)}
+
+  if(m.t==="mn:dir"){
+    mo.dir(id,+m.dx||0,+m.dy||0);
+    return;
+  }
+
+  if(m.t==="mn:kill"){
+    var resultat=mo.attaquer(id,m.cible);
+    O.envoyer(id,{
+      t:"mn:action",
+      ok:resultat.ok,
+      message:resultat.message
+    });
+    return;
+  }
+
+  if(m.t==="mn:report"){
+    var signalement=mo.signaler(id,m.cible);
+    O.envoyer(id,{
+      t:"mn:action",
+      ok:signalement.ok,
+      message:signalement.message
+    });
+  }
+}
+
 
 function retirer(id){mo&&mo.retirer(id)}
 
