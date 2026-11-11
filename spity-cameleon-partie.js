@@ -22,11 +22,37 @@ st.textContent = `
 .mnbar>*{pointer-events:auto}
 .mnb{padding:8px 18px;border-radius:999px;font-weight:800;color:#fff}
 .mnb:active{transform:scale(.95)}
+.mnov{position:absolute;inset:0;z-index:4;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#fff}
+.mnov0{font-size:5.5rem;line-height:1;font-weight:800}
+.mnov1{font-size:2rem;font-weight:800}
+.mnov2{font-size:1.1rem;font-weight:700;opacity:.85}
+.mnov3{font-size:1.1rem;font-weight:600;max-width:28em}
 .mnhud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;z-index:3;padding:6px 16px;border-radius:999px;font-weight:800;pointer-events:none}
 `;
 document.head.appendChild(st);
 
 function h(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+
+/* Avatars : photos des joueurs, gardées en mémoire (une image par joueur) */
+var AV={};
+function avSrc(a){return typeof a==="string"&&(a.indexOf("data:image/")===0||/^[\w.\-]+\.(png|jpe?g|webp)$/i.test(a))?a:""}
+function avCharger(id,a){var s=avSrc(a);if(!s)return;var im=new Image();im.src=s;AV[id]=im}
+/* Dessine un joueur : anneau de sa couleur + sa photo (ou son initiale s'il n'en a pas) */
+function pion(cx,x,y,r,couleur,id,nom){
+  cx.fillStyle=couleur;cx.beginPath();cx.arc(x,y,r,0,7);cx.fill();
+  var im=AV[id],ri=r*.8;
+  cx.save();cx.beginPath();cx.arc(x,y,ri,0,7);cx.clip();
+  if(im&&im.complete&&im.naturalWidth)cx.drawImage(im,x-ri,y-ri,ri*2,ri*2);
+  else{cx.fillStyle="#fff";cx.fillRect(x-ri,y-ri,ri*2,ri*2);
+    cx.fillStyle=couleur;cx.font="800 "+Math.round(ri*1.2)+'px "Baloo 2",system-ui,sans-serif';
+    cx.textAlign="center";cx.textBaseline="middle";cx.fillText((nom||"?").charAt(0).toUpperCase(),x,y)}
+  cx.restore()}
+/* Message « ton rôle » envoyé à un seul téléphone */
+function roleMsg(j){
+  var r=MM_ROLES.filter(function(x){return x.id===j.role})[0]||{},
+      m={t:"mn:role",role:j.role,nom:r.nom,emoji:r.emoji,desc:r.desc,camp:j.camp};
+  if(j.camp==="cultiste")m.complices=Object.keys(mo.joueurs).filter(function(i){return i!==j.id&&mo.joueurs[i].camp==="cultiste"}).map(function(i){return mo.joueurs[i].pseudo});
+  return m}
 
 /* Adapte la taille du canvas à l'écran (net sur les écrans Retina) et renvoie le facteur utilisé */
 function ajuster(cv){
@@ -48,9 +74,14 @@ function lancer(cfg){
   if(pr.rayonVision)C.rayonVision=pr.rayonVision;
   stopHote();
   mo=Moteur.nouveau();voir=false;
+  l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
+  mo.distribuer(cfg.roles);
   l.forEach(function(p){
-    var j=mo.ajouter(p.id,p.name);
-    O.envoyer(p.id,{t:"mn:start",couleur:j.couleur,rayon:C.rayonVision})});
+    var j=mo.joueurs[p.id];
+    O.envoyer(p.id,{t:"mn:start",id:p.id,pseudo:p.name,couleur:j.couleur,rayon:C.rayonVision});
+    O.envoyer(p.id,roleMsg(j))});
+  l.forEach(function(p,i){                              /* les photos, une par une pour ne pas surcharger */
+    var s=avSrc(p.avatar);if(s)setTimeout(function(){O.tous({t:"mn:av",id:p.id,img:s})},250+i*100)});
 
   var r=O.root;r.innerHTML="";
   cvH=h("canvas","mncv");cxH=cvH.getContext("2d");r.appendChild(cvH);
@@ -100,8 +131,9 @@ function dessinerH(){
   cx.arc(ox+(M.cloche[0]+.5)*cs,oy+(M.cloche[1]+.5)*cs,cs*.4,0,7);cx.fill();
   if(voir)Object.keys(mo.joueurs).forEach(function(id){
     var j=mo.joueurs[id];
-    cx.fillStyle=j.couleur;cx.beginPath();
-    cx.arc(ox+j.x*cs,oy+j.y*cs,cs*.35,0,7);cx.fill()})}
+    pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo);
+    cx.font="700 "+Math.round(cs*.5)+"px system-ui";cx.textAlign="center";cx.textBaseline="alphabetic";
+    cx.fillStyle="#fff";cx.fillText((MM_ROLES.filter(function(r){return r.id===j.role})[0]||{}).emoji||"",ox+j.x*cs,oy+j.y*cs-cs*.5)})}
 
 function boucleH(){
   if(!actifH)return;
@@ -132,10 +164,11 @@ function envoyerDir(){
 function telStart(m){
   telStop();
   if(m.rayon)C.rayonVision=m.rayon;
-  T={x:0,y:0,vx:0,vy:0,couleur:m.couleur||"#fff",init:false,autres:[],stick:null,touches:{},dernier:{x:9,y:9,t:0}};
+  T={id:m.id,pseudo:m.pseudo,role:null,cle:"",x:0,y:0,vx:0,vy:0,couleur:m.couleur||"#fff",init:false,autres:[],stick:null,touches:{},dernier:{x:9,y:9,t:0}};
   var r=TO.root;r.innerHTML="";
   cvT=h("canvas","mncv");cxT=cvT.getContext("2d");r.appendChild(cvT);
   hudT=h("div","mnhud glass","Connexion…");r.appendChild(hudT);
+  T.ov=h("div","mnov");r.appendChild(T.ov);
 
   function pos(e){var b=cvT.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}}
   cvT.addEventListener("pointerdown",function(e){
@@ -183,11 +216,12 @@ function dessinerT(){
     cx.textAlign="center";cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
     for(i=0;i<T.autres.length;i++){
       var o=T.autres[i];
-      cx.fillStyle=o[3];cx.beginPath();cx.arc(ox+o[1]*cs,oy+o[2]*cs,cs*.35,0,7);cx.fill();
-      cx.fillStyle="#fff";cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.45)}
+      pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*.4,o[3],o[0],o[4]);
+      cx.textAlign="center";cx.textBaseline="alphabetic";
+      cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
+      cx.fillStyle="#fff";cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.5)}
 
-    cx.fillStyle=T.couleur;cx.beginPath();cx.arc(w/2,hh/2,cs*.35,0,7);cx.fill();
-    cx.strokeStyle="#fff";cx.lineWidth=2*K;cx.stroke();
+    pion(cx,w/2,hh/2,cs*.4,T.couleur,T.id,T.pseudo);
 
     var g=cx.createRadialGradient(w/2,hh/2,cs*R*.5,w/2,hh/2,cs*(R+.5));
     g.addColorStop(0,"rgba(5,10,8,0)");g.addColorStop(1,"rgba(5,10,8,.85)");
@@ -205,13 +239,37 @@ function boucleT(){
   if(!T)return;
   dessinerT();rafT=requestAnimationFrame(boucleT)}
 
+/* Écran secret (rôle) puis compte à rebours, par-dessus la vue */
+function majOv(ph,reste){
+  if(!T)return;
+  var o=T.ov,k=ph+"|"+(ph==="jeu"?"":reste)+"|"+(T.role?1:0);
+  if(T.cle===k)return;T.cle=k;
+  if(!ph||ph==="jeu"){o.style.display="none";return}
+  o.style.display="flex";o.innerHTML="";
+  var ro=T.role;
+  if(ph==="role"){
+    if(!ro){o.style.background="#050a08";o.appendChild(h("div","mnov1","Distribution des rôles…"));return}
+    o.style.background=ro.camp==="cultiste"?"#4a0f14":"#0d3d36";
+    o.appendChild(h("div","mnov0",ro.emoji||""));
+    o.appendChild(h("div","mnov1",ro.nom||ro.role));
+    o.appendChild(h("div","mnov2",ro.camp==="cultiste"?"Camp des Cultistes":"Camp des Invités"));
+    o.appendChild(h("div","mnov3",ro.desc||""));
+    if(ro.complices&&ro.complices.length)o.appendChild(h("div","mnov3","Tes complices : "+ro.complices.join(", ")));
+    o.appendChild(h("div","mnov2","Cache ton écran ! ("+reste+" s)"))}
+  else{
+    o.style.background="#050a08";
+    o.appendChild(h("div","mnov2","La partie commence dans"));
+    o.appendChild(h("div","mnov0",String(reste)))}}
+
 function telRecevoir(m){
+  if(m.t==="mn:av"){avCharger(m.id,m.img);return}
+  if(m.t==="mn:role"){if(T){T.role=m;T.cle=""}return}
   if(m.t==="mn:start")telStart(m);
   else if(m.t==="mn:vue"){
     if(!T)return;
     T.x=m.x;T.y=m.y;
     if(!T.init){T.vx=m.x;T.vy=m.y;T.init=true;hudT.style.display="none"}
-    T.autres=m.autres||[]}
+    T.autres=m.autres||[];majOv(m.phase,m.reste)}
   else if(m.t==="mn:fin"){telStop();TO.afficher("wait")}}
 
 window.ManoirPartie={
