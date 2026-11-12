@@ -17,6 +17,8 @@ var MN_DEBUG = true;
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
 var M = MANOIR_MAP, C = MANOIR_CFG;
+var TRAP=(M.trappes||[]).map(function(p){return Array.isArray(p)?[p[0],p[1]]:[p.a,p.b]});
+var TCOL=['#e84a5f','#4aa3ff','#4cd964','#ffb020','#b46bff','#20d0c0'];
 
 var st = document.createElement("style");
 st.textContent = `
@@ -41,12 +43,12 @@ st.textContent = `
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:14px;
+  gap:10px;
   pointer-events:none;
 }
 .mnAction{
   pointer-events:auto;
-  min-width:135px;
+  min-width:110px;
   padding:14px 22px;
   border:2px solid rgba(255,255,255,.2);
   border-radius:18px;
@@ -71,6 +73,11 @@ st.textContent = `
   background:rgba(220,20,35,.35);
   opacity:0;
 }
+.mnTrap{background:linear-gradient(145deg,#7a57f5,#3f26a8)}
+.mnCam{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;z-index:3;width:22px;height:22px;border-radius:50%;display:none;pointer-events:none}
+.mnCam.o{display:block;background:#ff9f1c;box-shadow:0 0 12px #ff9f1c}
+.mnCam.r{display:block;background:#ff2d3d;box-shadow:0 0 12px #ff2d3d;animation:mnPulse 1s infinite}
+@keyframes mnPulse{50%{opacity:.35}}
 `;
 document.head.appendChild(st);
 
@@ -250,6 +257,12 @@ function recevoir(id,m){
     return;
   }
 
+  if(m.t==="mn:trappe"){
+    var tr=mo.trappe(id);
+    O.envoyer(id,{t:"mn:action",ok:tr.ok,message:tr.message});
+    return;
+  } 
+
   if(m.t==="mn:vote"){
     var resultat=mo.voter(id,m.cible===undefined?null:m.cible);
     O.envoyer(id,{
@@ -264,11 +277,50 @@ function recevoir(id,m){
 function retirer(id){mo&&mo.retirer(id)}
 
 /* Carte globale SANS les joueurs (sauf avec le bouton de test) */
+function dedansZ(z,x,y){return x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h}
+
+function dessinerFlux(cx,z,px,py,pw,ph,titre){
+  var barre=Math.round(ph*.1),gx,gy,x,y,c;
+  cx.save();
+  cx.beginPath();cx.rect(px,py,pw,ph);cx.clip();
+  cx.fillStyle="#000";cx.fillRect(px,py,pw,ph);
+  var cs=Math.floor(Math.min(pw/z.l,(ph-barre)/z.h)),
+      ox=px+(pw-cs*z.l)/2,oy=py+barre+(ph-barre-cs*z.h)/2;
+  for(y=0;y<z.h;y++)for(x=0;x<z.l;x++){
+    gx=z.x+x;gy=z.y+y;
+    c=(gy>=0&&gy<M.hauteur&&gx>=0&&gx<M.largeur)?M.grille[gy][gx]:"#";
+    cx.fillStyle=C.cases[c];cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
+  }
+  Object.keys(mo.cadavres).forEach(function(id){
+    var k=mo.cadavres[id];
+    if(dedansZ(z,k.x,k.y))
+      dessinerCadavre(cx,ox+(k.x-z.x)*cs,oy+(k.y-z.y)*cs,cs*.4,k.couleur,k.id,k.pseudo);
+  });
+  Object.keys(mo.joueurs).forEach(function(id){
+    var j=mo.joueurs[id];
+    if(j.mort||!dedansZ(z,j.x,j.y)||Moteur.typeCase(j.x,j.y)==="~")return;
+    var X=ox+(j.x-z.x)*cs,Y=oy+(j.y-z.y)*cs;
+    pion(cx,X,Y,cs*.4,j.couleur,id,j.pseudo);
+    cx.font="700 "+Math.round(cs*.4)+"px system-ui";
+    cx.textAlign="center";cx.textBaseline="alphabetic";
+    cx.fillStyle="#fff";cx.fillText(j.pseudo,X,Y-cs*.5);
+  });
+  cx.fillStyle="rgba(0,0,0,.65)";cx.fillRect(px,py,pw,barre);
+  cx.fillStyle="#ff3b47";cx.beginPath();cx.arc(px+barre*.5,py+barre*.5,barre*.2,0,7);cx.fill();
+  cx.fillStyle="#fff";cx.font="800 "+Math.round(barre*.55)+"px system-ui";
+  cx.textAlign="left";cx.textBaseline="middle";
+  cx.fillText(titre,px+barre*.95,py+barre*.52);
+  cx.restore();
+  cx.strokeStyle="#ff3b47";cx.lineWidth=3;cx.strokeRect(px,py,pw,ph);
+}
+
 function dessinerH(){
   var w,hh;ajuster(cvH);w=cvH.width;hh=cvH.height;
   if(!w||!mo)return;
-  var cx=cxH,cs=Math.floor(Math.min(w/M.largeur,hh/M.hauteur)),
-      ox=(w-cs*M.largeur)/2,oy=(hh-cs*M.hauteur)/2,x,y;
+  var cx=cxH,cams=mo.camsActives(),avec=cams.length>0,
+      wCarte=avec?Math.floor(w*.62):w,
+      cs=Math.floor(Math.min(wCarte/M.largeur,hh/M.hauteur)),
+      ox=(wCarte-cs*M.largeur)/2,oy=(hh-cs*M.hauteur)/2,x,y;
   cx.fillStyle="#0b1511";cx.fillRect(0,0,w,hh);
   for(y=0;y<M.hauteur;y++)for(x=0;x<M.largeur;x++){
     cx.fillStyle=C.cases[M.grille[y][x]];
@@ -277,12 +329,34 @@ function dessinerH(){
   M.missions.forEach(function(m){cx.fillRect(ox+m[0]*cs+cs*.2,oy+m[1]*cs+cs*.2,cs*.6,cs*.6)});
   cx.fillStyle="#e0a800";cx.beginPath();
   cx.arc(ox+(M.cloche[0]+.5)*cs,oy+(M.cloche[1]+.5)*cs,cs*.4,0,7);cx.fill();
+
+  /* zones filmées en ce moment */
+  cams.forEach(function(z,i){
+    cx.save();
+    cx.strokeStyle="#ff3b47";cx.lineWidth=Math.max(2,cs*.12);
+    cx.setLineDash([cs*.4,cs*.25]);
+    cx.strokeRect(ox+z.x*cs,oy+z.y*cs,z.l*cs,z.h*cs);
+    cx.restore();
+    cx.fillStyle="#ff3b47";cx.font="800 "+Math.round(cs*.9)+"px system-ui";
+    cx.textAlign="left";cx.textBaseline="top";
+    cx.fillText("CAM "+(i+1),ox+z.x*cs+cs*.2,oy+z.y*cs+cs*.1);
+  });
+
   if(voir)Object.keys(mo.joueurs).forEach(function(id){
     if(mo.joueurs[id].mort)return;
     var j=mo.joueurs[id];
     pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo);
     cx.font="700 "+Math.round(cs*.5)+"px system-ui";cx.textAlign="center";cx.textBaseline="alphabetic";
-    cx.fillStyle="#fff";cx.fillText((MM_ROLES.filter(function(r){return r.id===j.role})[0]||{}).emoji||"",ox+j.x*cs,oy+j.y*cs-cs*.5)})}
+    cx.fillStyle="#fff";cx.fillText((MM_ROLES.filter(function(r){return r.id===j.role})[0]||{}).emoji||"",ox+j.x*cs,oy+j.y*cs-cs*.5)});
+
+  /* les 2 flux caméras à droite */
+  if(avec){
+    var m=Math.round(w*.012),px=wCarte+m,pw=w-wCarte-2*m,ph=Math.floor((hh-3*m)/2);
+    cams.slice(0,2).forEach(function(z,i){
+      dessinerFlux(cx,z,px,m+i*(ph+m),pw,ph,"CAM "+(i+1)+(z.nom?" : "+z.nom:""));
+    });
+  }
+}
 
 function boucleH(){
   if(!actifH)return;
@@ -341,6 +415,8 @@ function telStart(m){
   
   hudT=h("div","mnhud glass","Connexion…");
   r.appendChild(hudT);
+  T.camDot=h("div","mnCam");
+  r.appendChild(T.camDot);
 
   T.actions=h("div","mnActions");
   T.btnAttaque=h("button","mnAction mnAttack","ATTAQUER");
@@ -348,6 +424,11 @@ function telStart(m){
 
   T.btnAttaque.style.display="none";
   T.btnReport.style.display="none";
+  T.btnTrappe=h("button","mnAction mnTrap","TRAPPE");
+  T.btnTrappe.style.display="none";
+  T.btnTrappe.onclick=function(){
+     if(T&&T.pretTrappe)TO.envoyer({t:"mn:trappe"});
+  };
 
   T.btnAttaque.onclick=function(){
     if(T&&T.cibleAttaque){
@@ -369,6 +450,7 @@ function telStart(m){
 
   T.actions.appendChild(T.btnAttaque);
   T.actions.appendChild(T.btnReport);
+  T.actions.appendChild(T.btnTrappe);
   r.appendChild(T.actions);
 
   T.flash=h("div","mnFlash");
@@ -406,24 +488,24 @@ function majActionsT(){
   if(T.phase!=="jeu"){
     T.btnAttaque.style.display="none";
     T.btnReport.style.display="none";
+    T.btnTrappe.style.display="none";
     return;
   }
 
   T.cibleAttaque=null;
   T.cibleCadavre=null;
+  T.pretTrappe=false;
 
   var role=T.role&&T.role.role;
   var peutAttaquer=role==="cultiste"||role==="empoisonneur"||role==="metamorphe";
+  var peutTrappe=!T.mort&&T.role&&
+    (role==="cultiste"||(C.trappesTous&&T.role.camp==="cultiste"));
 
   if(!T.mort){
-
-    // Recherche du joueur vivant le plus proche
     if(peutAttaquer){
       var meilleure=1.2;
-
       T.autres.forEach(function(o){
         var d=Math.hypot(o[1]-T.x,o[2]-T.y);
-
         if(d<meilleure&&Moteur.voit(T.x,T.y,o[1],o[2])){
           meilleure=d;
           T.cibleAttaque=o[0];
@@ -431,39 +513,44 @@ function majActionsT(){
       });
     }
 
-    // Recherche du cadavre le plus proche
     var meilleureMort=1.5;
-
     T.cadavres.forEach(function(c){
       if(c[5])return;
-
       var d=Math.hypot(c[1]-T.x,c[2]-T.y);
-
       if(d<meilleureMort&&Moteur.voit(T.x,T.y,c[1],c[2])){
         meilleureMort=d;
         T.cibleCadavre=c[0];
       }
     });
+
+    if(peutTrappe){
+      TRAP.forEach(function(p){
+        for(var k=0;k<2;k++){
+          if(Math.hypot(p[k][0]+.5-T.x,p[k][1]+.5-T.y)<1.1)T.pretTrappe=true;
+        }
+      });
+    }
   }
 
-  // Bouton d'attaque
-  T.btnAttaque.style.display=
-    T.cibleAttaque?"block":"none";
-
+  T.btnAttaque.style.display=T.cibleAttaque?"block":"none";
   if(T.cibleAttaque){
     if(T.cooldown>0){
       T.btnAttaque.textContent="RECHARGE "+Math.ceil(T.cooldown)+" s";
       T.btnAttaque.disabled=true;
     }else{
-      T.btnAttaque.textContent=
-        role==="empoisonneur"?"EMPOISONNER":"ATTAQUER";
+      T.btnAttaque.textContent=role==="empoisonneur"?"EMPOISONNER":"ATTAQUER";
       T.btnAttaque.disabled=false;
     }
   }
 
-  // Bouton de signalement
-  T.btnReport.style.display=
-    T.cibleCadavre?"block":"none";
+  T.btnReport.style.display=T.cibleCadavre?"block":"none";
+
+  T.btnTrappe.style.display=T.pretTrappe?"block":"none";
+  if(T.pretTrappe){
+    var cd=T.trappeCd||0;
+    T.btnTrappe.disabled=cd>0;
+    T.btnTrappe.textContent=cd>0?"TRAPPE "+Math.ceil(cd)+" s":"TRAPPE";
+  }
 }
 /* Vue locale avec brouillard de guerre */
 
@@ -552,6 +639,18 @@ function dessinerT(){
       cx.restore();
     }
 
+    if(!T.mort&&T.role&&(T.role.role==="cultiste"||(C.trappesTous&&T.role.camp==="cultiste"))){
+      TRAP.forEach(function(p,k){
+        p.forEach(function(q){
+          if(Math.hypot(q[0]+.5-T.x,q[1]+.5-T.y)>R+.5)return;
+          var tx=ox+q[0]*cs+cs*.15,ty=oy+q[1]*cs+cs*.15;
+          cx.fillStyle=TCOL[k%TCOL.length];
+          cx.fillRect(tx,ty,cs*.7,cs*.7);
+          cx.strokeStyle="#fff";cx.lineWidth=2*K;
+          cx.strokeRect(tx,ty,cs*.7,cs*.7);
+        });
+      });
+    }
     // Cadavres visibles
     for(i=0;i<T.cadavres.length;i++){
 
@@ -716,6 +815,7 @@ function telRecevoir(m){
   if(m.t==="mn:start")telStart(m);
   else if(m.t==="mn:vue"){
     if(!T)return;
+    if(T.init&&Math.hypot(m.x-T.x,m.y-T.y)>3){T.vx=m.x;T.vy=m.y;}
 
     T.x=m.x;
     T.y=m.y;
@@ -733,6 +833,8 @@ function telRecevoir(m){
     T.cooldown=m.cooldown||0;
     T.poison=m.poison||0;
     T.phase=m.phase;
+    T.trappeCd=m.trappeCd||0;
+    T.camDot.className="mnCam"+(m.phase==="jeu"&&m.cam===2?" r":(m.phase==="jeu"&&m.cam===1?" o":""));
     if(T.voteUI){
       ManoirVote.afficherTelephone(T.voteUI,{
         phase:m.phase,
