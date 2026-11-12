@@ -87,9 +87,15 @@ var ManoirVote = (function () {
   function afficherDiscussion(box, state) {
     box.innerHTML = "";
     var v = state.vote || {};
-    box.appendChild(el("div", "mnvTitle", "CADAVRE SIGNALÉ !"));
-    box.appendChild(el("div", "mnvRevealRole",
-      (v.reporter || "Quelqu'un") + " a trouvé le corps de " + (v.corps || "?")));
+    if (v.corps) {
+      box.appendChild(el("div", "mnvTitle", "CADAVRE SIGNALÉ !"));
+      box.appendChild(el("div", "mnvRevealRole",
+        (v.reporter || "Quelqu'un") + " a trouvé le corps de " + v.corps));
+    } else {
+      box.appendChild(el("div", "mnvTitle", "RÉUNION D'URGENCE !"));
+      box.appendChild(el("div", "mnvRevealRole",
+        (v.reporter || "Quelqu'un") + " a sonné la cloche"));
+    }
     box.appendChild(el("div", "mnvTimer", Math.ceil(state.reste || 0) + " s"));
     box.appendChild(el("div", "mnvRevealSub",
       "Discutez ! Le vote commencera ensuite sur les téléphones."));
