@@ -35,12 +35,6 @@ const Moteur = (() => {
   const dedans=(z,x,y)=>x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h;
 
   /* 2 zones consécutives de la liste, à partir de l'indice i */
-  const zonesCam=i=>{
-    const n=ZONES.length;
-    if(!n)return [];
-    if(n===1)return [ZONES[0]];
-    return [ZONES[((i%n)+n)%n],ZONES[(((i+1)%n)+n)%n]];
-  };
 
   function voit(ax,ay,bx,by){
     const n=Math.ceil(Math.hypot(bx-ax,by-ay)/.2);
@@ -77,7 +71,7 @@ const Moteur = (() => {
       cadavres:{},
       mortsEnAttente:[],
       vote:null,
-      camI:0,
+      camZ:ZONES.length>1?[0,1]:[0,0],
       camT:C.dureeCamera||20
     };
 
@@ -92,7 +86,11 @@ const Moteur = (() => {
         couleur:C.couleurs[i%C.couleurs.length],
         mort:false,
         cooldown:0,
-        poison:0
+        poison:0,
+        trappeCd:0,
+        tunnel:null,
+        veilleurCd:0,
+        cloches:typeof C.cloches==='number'?C.cloches:1
       };
     };
 
@@ -151,6 +149,7 @@ const Moteur = (() => {
     e.dir=(id,dx,dy)=>{
       const j=e.joueurs[id];
       if(!j || e.phase!=='jeu')return;
+      if(j.tunnel)return;
 
       const l=Math.hypot(dx,dy);
       if(l>1){dx/=l;dy/=l;}
@@ -166,6 +165,7 @@ const Moteur = (() => {
       j.dx=0;
       j.dy=0;
       j.poison=0;
+      j.tunnel=null;
 
       if(creerCadavre){
         e.cadavres[j.id]={
@@ -187,7 +187,7 @@ const Moteur = (() => {
       const a=e.joueurs[attaquantId];
       const c=e.joueurs[cibleId];
 
-      if(e.phase!=='jeu' || !a || !c || a.mort || c.mort)
+      if(e.phase!=='jeu' || !a || !c || a.mort || c.mort || a.tunnel || c.tunnel)
         return {ok:false,message:"Action impossible"};
 
       if(
@@ -339,6 +339,7 @@ const Moteur = (() => {
         j.dy=0;
         j.poison=0;
         j.cooldown=10;
+        j.tunnel=null;
       });
 
       e.cadavres={};
@@ -347,28 +348,15 @@ const Moteur = (() => {
       e.tPhase=0;
     }
 
-    e.signaler=(joueurId,cadavreId)=>{
-      const j=e.joueurs[joueurId];
-      const corps=e.cadavres[cadavreId];
-
-      if(e.phase!=='jeu' || !j || j.mort || !corps || corps.signale)
-        return {ok:false,message:"Signalement impossible"};
-
-      const distance=Math.hypot(j.x-corps.x,j.y-corps.y);
-
-      if(distance>1.5||!voit(j.x,j.y,corps.x,corps.y))
-        return {ok:false,message:"Cadavre trop éloigné"};
-
-      corps.signale=true;
-
+    function lancerReunion(j,corps){
       const candidats=Object.values(e.joueurs)
         .filter(p=>!p.mort)
         .map(p=>({id:p.id,pseudo:p.pseudo}));
 
       e.vote={
-        reporter:joueurId,
+        reporter:j.id,
         signalePar:j.pseudo,
-        corps:corps.pseudo,
+        corps:corps?corps.pseudo:null,
         candidats:candidats,
         votes:{},
         aleatoires:{},
@@ -380,12 +368,42 @@ const Moteur = (() => {
       Object.values(e.joueurs).forEach(p=>{
         p.dx=0;
         p.dy=0;
+        p.tunnel=null;
       });
 
       e.phase='discussion';
       e.tPhase=C.dureeDiscussion||45;
+    }
 
+    e.signaler=(joueurId,cadavreId)=>{
+      const j=e.joueurs[joueurId];
+      const corps=e.cadavres[cadavreId];
+
+      if(e.phase!=='jeu' || !j || j.mort || j.tunnel || !corps || corps.signale)
+        return {ok:false,message:"Signalement impossible"};
+      const distance=Math.hypot(j.x-corps.x,j.y-corps.y);
+      if(distance>1.5||!voit(j.x,j.y,corps.x,corps.y))
+        return {ok:false,message:"Cadavre trop éloigné"};
+
+      corps.signale=true;
+      lancerReunion(j,corps);
       return {ok:true,message:"Vote lancé"};
+    };
+
+    e.sonner=joueurId=>{
+      const j=e.joueurs[joueurId];
+      if(e.phase!=='jeu'||!j||j.mort||j.tunnel)
+        return {ok:false,message:"Action impossible"};
+      if(!M.cloche)
+        return {ok:false,message:"Pas de cloche sur la carte"};
+      if((j.cloches||0)<=0)
+        return {ok:false,message:"Tu n'as plus de cloche d'urgence"};
+      if(Math.hypot(j.x-(M.cloche[0]+.5),j.y-(M.cloche[1]+.5))>1.6)
+        return {ok:false,message:"Trop loin de la cloche"};
+
+      j.cloches--;
+      lancerReunion(j,null);
+      return {ok:true,message:"Réunion d'urgence !"};
     };
 
     e.voter=(joueurId,cibleId)=>{
@@ -422,6 +440,7 @@ const Moteur = (() => {
       for(const j of Object.values(e.joueurs)){
         if(j.cooldown>0)j.cooldown=Math.max(0,j.cooldown-dt);
         if(j.trappeCd>0)j.trappeCd=Math.max(0,j.trappeCd-dt);
+        if(j.veilleurCd>0)j.veilleurCd=Math.max(0,j.veilleurCd-dt);
       }
 
       if(e.phase==='fin')return;
@@ -468,10 +487,10 @@ const Moteur = (() => {
         return;
       }
 
-      if(ZONES.length){
+      if(ZONES.length>1){
         e.camT-=dt;
         if(e.camT<=0){
-          e.camI=(e.camI+2)%ZONES.length;
+          e.camZ=e.camZ.map(i=>(i+2)%ZONES.length);
           e.camT=C.dureeCamera||20;
         }
       }
@@ -480,6 +499,15 @@ const Moteur = (() => {
         if(j.poison>0){
           j.poison-=dt;
           if(j.poison<=0)mourir(j,true);
+        }
+
+        if(j.tunnel){
+          j.tunnel.reste-=dt;
+          if(j.tunnel.reste<=0){
+            j.tunnel=null;
+            j.trappeCd=C.cooldownTrappe||3;
+          }
+          continue;
         }
 
         const vx=j.dx*C.vitesse*dt;
@@ -496,24 +524,33 @@ const Moteur = (() => {
       }
     };
 
-    e.camsActives=()=>zonesCam(e.camI);
+    e.camsActives=()=>{
+      const l=[];
+      e.camZ.forEach(i=>{
+        const z=ZONES[i];
+        if(z&&!l.includes(z))l.push(z);
+      });
+      return l;
+    };
 
     /* 0 = rien, 1 = point orange (filmé dans < 5 s), 2 = point rouge (filmé) */
     function etatCamera(j){
-      if(j.mort||!ZONES.length)return 0;
-      if(zonesCam(e.camI).some(z=>dedans(z,j.x,j.y)))return 2;
-      if(e.camT<=5&&zonesCam(e.camI+2).some(z=>dedans(z,j.x,j.y)))return 1;
+      if(j.mort||j.tunnel||!ZONES.length)return 0;
+      if(e.camZ.some(i=>ZONES[i]&&dedans(ZONES[i],j.x,j.y)))return 2;
+      if(e.camT<=5&&ZONES.length>1&&e.camZ.some(i=>{
+        const z=ZONES[(i+2)%ZONES.length];
+        return z&&dedans(z,j.x,j.y);
+      }))return 1;
       return 0;
     }
 
+    /* Entrer dans les trappes */
     e.trappe=id=>{
       const j=e.joueurs[id];
-      if(e.phase!=='jeu'||!j||j.mort)
+      if(e.phase!=='jeu'||!j||j.mort||j.tunnel)
         return {ok:false,message:"Action impossible"};
-
       if(!(j.role==='cultiste'||(C.trappesTous&&j.camp==='cultiste')))
         return {ok:false,message:"Tu ne peux pas utiliser les trappes"};
-
       if((j.trappeCd||0)>0)
         return {ok:false,message:"Trappe indisponible ("+Math.ceil(j.trappeCd)+" s)"};
 
@@ -524,15 +561,49 @@ const Moteur = (() => {
           if(d<dist){dist=d;arrivee=p[1-k];}
         }
       });
-
       if(!arrivee)return {ok:false,message:"Aucune trappe à proximité"};
 
+      j.tunnel={depart:[j.x,j.y],reste:C.dureeTunnel||15};
       j.x=arrivee[0]+.5;
       j.y=arrivee[1]+.5;
       j.dx=0;
       j.dy=0;
+      return {ok:true,message:"Tu es dans les trappes"};
+    };
+
+    /* Sortir des trappes : choix = "ici" (arrivée) ou "retour" (départ) */
+    e.sortirTrappe=(id,choix)=>{
+      const j=e.joueurs[id];
+      if(e.phase!=='jeu'||!j||j.mort||!j.tunnel)
+        return {ok:false,message:"Tu n'es pas dans les trappes"};
+
+      if(choix==='retour'){
+        j.x=j.tunnel.depart[0];
+        j.y=j.tunnel.depart[1];
+      }
+      j.tunnel=null;
       j.trappeCd=C.cooldownTrappe||3;
-      return {ok:true,message:"Trappe empruntée"};
+      return {ok:true,message:"Tu sors des trappes"};
+    };
+
+    /* Veilleur : choisir la zone filmée par la caméra 1 (slot 0) ou 2 (slot 1) */
+    e.changerCamera=(id,slot,zone)=>{
+      const j=e.joueurs[id];
+      if(e.phase!=='jeu'||!j||j.mort||j.role!=='veilleur')
+        return {ok:false,message:"Action impossible"};
+      if((j.veilleurCd||0)>0)
+        return {ok:false,message:"Attends encore "+Math.ceil(j.veilleurCd)+" s"};
+      if(!(slot===0||slot===1)||!Number.isInteger(zone)||!ZONES[zone])
+        return {ok:false,message:"Caméra invalide"};
+      if(e.camZ[slot]===zone)
+        return {ok:false,message:"Cette caméra filme déjà cette zone"};
+
+      const autre=1-slot;
+      if(e.camZ[autre]===zone)e.camZ[autre]=e.camZ[slot];
+      e.camZ[slot]=zone;
+      e.camT=C.dureeCamera||20;
+      j.veilleurCd=C.cooldownVeilleur||10;
+      return {ok:true,message:"CAM "+(slot+1)+" : "+ZONES[zone].nom};
     };
 
     e.etatHote=()=>({
@@ -560,6 +631,7 @@ const Moteur = (() => {
 
       for(const o of Object.values(e.joueurs)){
         if(o===j||o.mort)continue;
+        if(o.tunnel&&!j.mort)continue;
         const lim=typeCase(o.x,o.y)==='~'?C.rayonBuisson:C.rayonVision;
         if(j.mort || (Math.hypot(o.x-j.x,o.y-j.y)<=lim && voit(j.x,j.y,o.x,o.y))){
           autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),o.couleur,o.pseudo]);
@@ -595,12 +667,16 @@ const Moteur = (() => {
         vote:voteTelephone,
         fin:e.fin||null,
         cam:etatCamera(j),
-        trappeCd:+(j.trappeCd||0).toFixed(1)
+        trappeCd:+(j.trappeCd||0).toFixed(1),
+        tunnel:j.tunnel?{reste:Math.ceil(j.tunnel.reste)}:null,
+        cloches:j.cloches||0,
+        camZ:j.role==='veilleur'?e.camZ.slice():null,
+        veilleurCd:+(j.veilleurCd||0).toFixed(1)
       };
     };
 
     return e;
   }
 
-  return {nouveau,mur,voit,typeCase};
+  return {nouveau,mur,voit,typeCase,zones:ZONES};
 })();
