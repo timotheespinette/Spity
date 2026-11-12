@@ -75,9 +75,10 @@ const Moteur = (() => {
 
       const ok=r=>!r.fixe&&(!actifs||actifs.includes(r.id));
 
-      const cult=melange(
-        MM_ROLES.filter(r=>r.camp==='cultiste'&&ok(r)).map(r=>r.id)
-      ).slice(0,L.cult);
+      const cult=['cultiste'].concat(
+        melange(MM_ROLES.filter(r=>r.camp==='cultiste'&&ok(r)).map(r=>r.id))
+          .slice(0,L.cult-1)
+      );
 
       while(cult.length<L.cult)cult.push('cultiste');
 
@@ -118,13 +119,6 @@ const Moteur = (() => {
     e.dir=(id,dx,dy)=>{
       const j=e.joueurs[id];
       if(!j || e.phase!=='jeu')return;
-
-      const l=Math.hypot(dx,dy);
-      if(l>1){dx/=l;dy/=l;}
-
-      j.dx=dx;
-      j.dy=dy;
-    };
 
       const l=Math.hypot(dx,dy);
       if(l>1){dx/=l;dy/=l;}
@@ -179,17 +173,42 @@ const Moteur = (() => {
       if(distance>1.2||!voit(a.x,a.y,c.x,c.y))
         return {ok:false,message:"Joueur trop éloigné"};
 
-      a.cooldown=C.cooldownKill||25;
-
       if(a.role==='empoisonneur'){
         if(c.poison>0)return {ok:false,message:"Ce joueur est déjà empoisonné"};
+        a.cooldown=C.cooldownKill||25;
         c.poison=15;
         return {ok:true,message:"Joueur empoisonné"};
       }
 
+      a.cooldown=C.cooldownKill||25;
       mourir(c,true);
       return {ok:true,message:"Joueur éliminé"};
     };
+
+     function verifierVictoire(){
+      if(e.fin)return;
+      if(typeof MN_VICTOIRE!=='undefined'&&!MN_VICTOIRE)return;
+
+      const vivants=Object.values(e.joueurs).filter(j=>!j.mort);
+      const cult=vivants.filter(j=>j.camp==='cultiste').length;
+      const inv=vivants.length-cult;
+
+      let gagnant=null;
+      if(cult===0)gagnant='invite';
+      else if(cult>=inv)gagnant='cultiste';
+      if(!gagnant)return;
+
+      e.fin={
+        gagnant,
+        roles:Object.values(e.joueurs).map(j=>{
+          const r=MM_ROLES.find(x=>x.id===j.role)||{};
+          return {pseudo:j.pseudo,role:r.nom||j.role,emoji:r.emoji||'',camp:j.camp,mort:j.mort};
+        })
+      };
+      e.phase='fin';
+      e.tPhase=0;
+      Object.values(e.joueurs).forEach(j=>{j.dx=0;j.dy=0;});
+    }
 
     function terminerVote(){
       if(!e.vote || e.phase!=='vote')return;
@@ -277,13 +296,16 @@ const Moteur = (() => {
     }
 
     function nouvelleManche(){
+      verifierVictoire();
+      if(e.fin)return;
+
       Object.values(e.joueurs).forEach(j=>{
         j.x=j.departX;
         j.y=j.departY;
         j.dx=0;
         j.dy=0;
         j.poison=0;
-        j.cooldown=0;
+        j.cooldown=10;
       });
 
       e.cadavres={};
@@ -312,6 +334,8 @@ const Moteur = (() => {
 
       e.vote={
         reporter:joueurId,
+        signalePar:j.pseudo,
+        corps:corps.pseudo,
         candidats:candidats,
         votes:{},
         aleatoires:{},
@@ -325,8 +349,8 @@ const Moteur = (() => {
         p.dy=0;
       });
 
-      e.phase='vote';
-      e.tPhase=C.dureeVote||20;
+      e.phase='discussion';
+      e.tPhase=C.dureeDiscussion||45;
 
       return {ok:true,message:"Vote lancé"};
     };
@@ -366,6 +390,17 @@ const Moteur = (() => {
         if(j.cooldown>0)j.cooldown=Math.max(0,j.cooldown-dt);
       }
 
+      if(e.phase==='fin')return;
+
+      if(e.phase==='discussion'){
+        e.tPhase-=dt;
+        if(e.tPhase<=0){
+          e.phase='vote';
+          e.tPhase=C.dureeVote||20;
+        }
+        return;
+      }
+
       if(e.phase==='vote'){
         e.tPhase-=dt;
         if(e.tPhase<=0)terminerVote();
@@ -393,6 +428,7 @@ const Moteur = (() => {
             e.tPhase=C.dureeCompte;
           }else{
             e.phase='jeu';
+            Object.values(e.joueurs).forEach(j=>{j.cooldown=10;});
           }
         }
         return;
