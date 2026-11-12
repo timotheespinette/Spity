@@ -17,7 +17,15 @@ var MN_DEBUG = true;
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
 var M = MANOIR_MAP, C = MANOIR_CFG;
-var TRAP=(M.trappes||[]).map(function(p){return Array.isArray(p)?[p[0],p[1]]:[p.a,p.b]});
+var TRAP = [];
+var tmpTrappes = {};
+(M.trappes||[]).forEach(function(t){
+  if(!tmpTrappes[t[2]]) tmpTrappes[t[2]] = [];
+  tmpTrappes[t[2]].push([t[0], t[1]]);
+});
+Object.keys(tmpTrappes).forEach(function(k){
+  if(tmpTrappes[k].length === 2) TRAP.push(tmpTrappes[k]);
+});
 var TCOL=['#e84a5f','#4aa3ff','#4cd964','#ffb020','#b46bff','#20d0c0'];
 
 var st = document.createElement("style");
