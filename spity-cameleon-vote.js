@@ -84,6 +84,44 @@ var ManoirVote = (function () {
     box.appendChild(contenu);
   }
 
+  function afficherDiscussion(box, state) {
+    box.innerHTML = "";
+    var v = state.vote || {};
+    box.appendChild(el("div", "mnvTitle", "CADAVRE SIGNALÉ !"));
+    box.appendChild(el("div", "mnvRevealRole",
+      (v.reporter || "Quelqu'un") + " a trouvé le corps de " + (v.corps || "?")));
+    box.appendChild(el("div", "mnvTimer", Math.ceil(state.reste || 0) + " s"));
+    box.appendChild(el("div", "mnvRevealSub",
+      "Discutez ! Le vote commencera ensuite sur les téléphones."));
+  }
+
+  function afficherFin(box, fin, quitter) {
+    box.innerHTML = "";
+    var cult = fin && fin.gagnant === "cultiste";
+    var c = el("div", "mnvReveal");
+    c.appendChild(el("div", "mnvTitle", "FIN DE LA PARTIE"));
+    c.appendChild(el("div", "mnvRevealName",
+      cult ? "Les Cultistes gagnent" : "Les Invités gagnent"));
+    box.appendChild(c);
+
+    var d = el("div", "mnvDetails");
+    d.appendChild(el("h3", "", "Les rôles"));
+    ((fin && fin.roles) || []).forEach(function (r) {
+      d.appendChild(el("div", "mnvDetail",
+        (r.emoji || "") + " " + r.pseudo + " : " + r.role +
+        (r.camp === "cultiste" ? " (Cultiste)" : "") + (r.mort ? " ☠" : "")));
+    });
+    box.appendChild(d);
+
+    if (quitter) {
+      var b = el("button", "mnvChoice", "RETOUR AU MENU");
+      b.type = "button";
+      b.style.marginTop = "20px";
+      b.onclick = quitter;
+      box.appendChild(b);
+    }
+  }
+
   function creerHote(root) {
     return creerPanel(root);
   }
@@ -93,9 +131,10 @@ var ManoirVote = (function () {
 
     var phase = state.phase;
 
-    if (phase !== "vote" && phase !== "resultats" && phase !== "revelation") {
-      panel.style.display = "none";
-      panel.dataset.phase = "";
+    if (phase !== "vote" && phase !== "resultats" && phase !== "revelation" &&
+      phase !== "discussion" && phase !== "fin") {
+        panel.style.display = "none";
+        panel.dataset.phase = "";
       return;
     }
 
@@ -117,6 +156,8 @@ var ManoirVote = (function () {
       afficherRevelation(box, state.vote && state.vote.elimine);
       return;
     }
+    if (phase === "fin") { afficherFin(box, state.fin, panel._quitter); return; }
+    if (phase === "discussion") { afficherDiscussion(box, state); return; }
 
     if (phase === "vote") {
       box.appendChild(el("div", "mnvTitle", "VOTE EN COURS"));
@@ -169,9 +210,10 @@ var ManoirVote = (function () {
 
     var phase = state.phase;
 
-    if (phase !== "vote" && phase !== "resultats" && phase !== "revelation") {
-      panel.style.display = "none";
-      panel.dataset.key = "";
+    if (phase !== "vote" && phase !== "resultats" && phase !== "revelation" &&
+      phase !== "discussion" && phase !== "fin") {
+        panel.style.display = "none";
+        panel.dataset.key = "";
       return;
     }
 
@@ -195,6 +237,9 @@ var ManoirVote = (function () {
       afficherRevelation(box, vote.elimine);
       return;
     }
+
+    if (phase === "fin") { afficherFin(box, state.fin, null); return; }
+    if (phase === "discussion") { afficherDiscussion(box, { reste: state.reste, vote: vote }); return; }
 
     if (phase === "resultats") {
       box.appendChild(el("div", "mnvTitle", "VOTE TERMINÉ"));
