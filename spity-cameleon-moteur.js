@@ -19,10 +19,18 @@ const Moteur = (() => {
 
   const ZONES=(M.zonesCamera||M.cameras||[]).map((z,i)=>
     Array.isArray(z)
-      ?{x:z[0],y:z[1],l:z[2],h:z[3],nom:"Zone "+(i+1)}
+      ?{x:z[0],y:z[1],l:z[2]-z[0],h:z[3]-z[1],nom:"Zone "+(i+1)}
       :Object.assign({nom:"Zone "+(i+1)},z));
 
-  const TRAPPES=(M.trappes||[]).map(p=>Array.isArray(p)?[p[0],p[1]]:[p.a,p.b]);
+  const TRAPPES = [];
+  const tmpTrappes = {};
+  (M.trappes||[]).forEach(t => {
+    if(!tmpTrappes[t[2]]) tmpTrappes[t[2]] = [];
+    tmpTrappes[t[2]].push([t[0], t[1]]);
+  });
+  Object.values(tmpTrappes).forEach(paire => {
+    if(paire.length === 2) TRAPPES.push(paire);
+  });
 
   const dedans=(z,x,y)=>x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h;
 
