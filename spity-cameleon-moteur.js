@@ -113,7 +113,12 @@ const Moteur = (() => {
       delete e.joueurs[id];
       if(e.vote){
         delete e.vote.votes[id];
+        if(e.phase==='vote'){
+          const vivants=Object.values(e.joueurs).filter(p=>!p.mort);
+          if(vivants.every(p=>Object.prototype.hasOwnProperty.call(e.vote.votes,p.id)))terminerVote();
+        }
       }
+      if(e.phase==='jeu')verifierVictoire();
     };
 
     e.dir=(id,dx,dy)=>{
@@ -454,68 +459,50 @@ const Moteur = (() => {
       }
     };
 
-    e.etatHote=()=>{
-      return {
-        phase:e.phase,
-        reste:Math.max(0,Math.ceil(e.tPhase)),
-        vote:e.vote?{
-          total:Object.values(e.joueurs).filter(j=>!j.mort).length,
-          votesRecus:Object.keys(e.vote.votes).length,
-          candidats:e.phase==='resultats'||e.phase==='revelation'
-            ?e.vote.resultats
-            :e.vote.candidats,
-          details:e.vote.details,
-          elimine:e.vote.elimine
-        }:null
-      };
-    };
+    e.etatHote=()=>({
+      phase:e.phase,
+      reste:Math.max(0,Math.ceil(e.tPhase)),
+      fin:e.fin||null,
+      vote:e.vote?{
+        total:Object.values(e.joueurs).filter(j=>!j.mort).length,
+        votesRecus:Object.keys(e.vote.votes).length,
+        candidats:e.phase==='resultats'||e.phase==='revelation'
+          ?e.vote.resultats
+          :e.vote.candidats,
+        details:e.vote.details,
+        elimine:e.vote.elimine,
+        reporter:e.vote.signalePar,
+        corps:e.vote.corps
+      }:null
+    });
 
     e.vue=id=>{
       const j=e.joueurs[id];
       if(!j)return null;
 
       const autres=[],cadavres=[];
-      const rayon=j.mort?Infinity:C.rayonVision;
 
-      if(!j.mort){
-        for(const o of Object.values(e.joueurs)){
-          if(o===j||o.mort)continue;
-
-          const lim=typeCase(o.x,o.y)==='~'
-            ?C.rayonBuisson:C.rayonVision;
-
-          if(
-            Math.hypot(o.x-j.x,o.y-j.y)<=lim &&
-            voit(j.x,j.y,o.x,o.y)
-          ){
-            autres.push([
-              o.id,+o.x.toFixed(2),+o.y.toFixed(2),
-              o.couleur,o.pseudo
-            ]);
-          }
+      for(const o of Object.values(e.joueurs)){
+        if(o===j||o.mort)continue;
+        const lim=typeCase(o.x,o.y)==='~'?C.rayonBuisson:C.rayonVision;
+        if(j.mort || (Math.hypot(o.x-j.x,o.y-j.y)<=lim && voit(j.x,j.y,o.x,o.y))){
+          autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),o.couleur,o.pseudo]);
         }
       }
 
       for(const corps of Object.values(e.cadavres)){
-        if(
-          Math.hypot(corps.x-j.x,corps.y-j.y)<=rayon &&
-          voit(j.x,j.y,corps.x,corps.y)
-        ){
-          cadavres.push([
-            corps.id,
-            +corps.x.toFixed(2),
-            +corps.y.toFixed(2),
-            corps.couleur,
-            corps.pseudo,
-            corps.signale
-          ]);
+        if(j.mort || (Math.hypot(corps.x-j.x,corps.y-j.y)<=C.rayonVision && voit(j.x,j.y,corps.x,corps.y))){
+          cadavres.push([corps.id,+corps.x.toFixed(2),+corps.y.toFixed(2),
+            corps.couleur,corps.pseudo,corps.signale]);
         }
       }
 
       const voteTelephone=e.vote?{
         candidats:e.vote.candidats,
         aVote:Object.prototype.hasOwnProperty.call(e.vote.votes,id),
-        elimine:e.phase==='revelation'?e.vote.elimine:null
+        elimine:e.phase==='revelation'?e.vote.elimine:null,
+        reporter:e.vote.signalePar,
+        corps:e.vote.corps
       }:null;
 
       return {
@@ -529,7 +516,8 @@ const Moteur = (() => {
         poison:+j.poison.toFixed(1),
         phase:e.phase,
         reste:Math.max(0,Math.ceil(e.tPhase)),
-        vote:voteTelephone
+        vote:voteTelephone,
+        fin:e.fin||null
       };
     };
 
