@@ -139,7 +139,7 @@ function ajuster(cv){
   return k}
 
 /* ======================= ÉCRAN DE L'HÔTE (TV) ======================= */
-var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false, var finEnvoyee=false;
+var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false, finEnvoyee=false;
 var cfgPartie=null;
 var votePanelH=null;
 
@@ -723,7 +723,8 @@ function telRecevoir(m){
         phase:m.phase,
         reste:m.reste,
         vote:m.vote,
-        fin:m.fin
+        fin:m.fin,
+        mort: T.mort
       });
     }
 
