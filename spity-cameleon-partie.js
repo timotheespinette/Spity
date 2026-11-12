@@ -192,8 +192,16 @@ function lancer(cfg){
 
     /* Fin de partie : une seule vue finale envoyée */
     if(mo.phase==="fin"){
-      if(finEnvoyee)return;
-      finEnvoyee=true;
+      if(!finEnvoyee){
+        finEnvoyee=true;
+        if(votePanelH) ManoirVote.afficherHote(votePanelH, mo.etatHote());
+        for(var id in mo.joueurs){
+          var vue=mo.vue(id);
+          if(vue){vue.t="mn:vue";O.envoyer(id,vue)}
+        }
+        clearInterval(tickH);
+      }
+      return;
     }
 
     for(var id in mo.joueurs){
@@ -632,6 +640,13 @@ function dessinerT(){
 
     cx.fillStyle=g;
     cx.fillRect(0,0,w,hh);
+  }
+
+  // Bordure toxique si empoisonné
+  if(T.poison > 0) {
+    cx.strokeStyle = "rgba(120, 255, 50, 0.4)";
+    cx.lineWidth = 15 * K;
+    cx.strokeRect(0, 0, w, hh);
   }
 
   // Flash rouge reçu par le Médium
