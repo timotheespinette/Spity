@@ -535,7 +535,50 @@ function telStop(){
   removeEventListener("keydown",kd);removeEventListener("keyup",ku);
   if(T && T.voteUI && T.voteUI.destroy) T.voteUI.destroy();
   T=null}
+function majPanneauCam(){
+  if(!T||!T.camPanel)return;
+  var estVeilleur=T.phase==="jeu"&&!T.mort&&T.role&&T.role.role==="veilleur";
+  if(!estVeilleur||!T.camOuvert){
+    T.camOuvert=false;
+    T.camPanel.style.display="none";
+    T.cleCam="";
+    return;
+  }
+  T.camPanel.style.display="flex";
+  var cd=Math.ceil(T.veilleurCd||0);
+  var camZ=T.camZ||[0,1];
+  var cle=cd+"|"+camZ.join(",");
+  if(T.cleCam===cle)return;
+  T.cleCam=cle;
 
+  var p=T.camPanel;
+  p.innerHTML="";
+  var top=h("div","");
+  top.style.display="flex";
+  top.style.justifyContent="space-between";
+  top.style.alignItems="center";
+  top.appendChild(h("h3","",cd>0?"Caméras (recharge "+cd+" s)":"Contrôle des caméras"));
+  var fermer=h("button","mnb glass","Fermer");
+  fermer.onclick=function(){T.camOuvert=false;T.cleCam=""};
+  top.appendChild(fermer);
+  p.appendChild(top);
+
+  var zones=Moteur.zones||[];
+  [0,1].forEach(function(slot){
+    p.appendChild(h("h3","","CAM "+(slot+1)));
+    var grid=h("div","mnCamGrid");
+    zones.forEach(function(z,idx){
+      var actif=camZ[slot]===idx;
+      var b=h("button","mnCamZ"+(actif?" on":""),z.nom||("Zone "+(idx+1)));
+      b.disabled=cd>0||actif;
+      b.onclick=function(){
+        TO.envoyer({t:"mn:cam",slot:slot,zone:idx});
+      };
+      grid.appendChild(b);
+    });
+    p.appendChild(grid);
+  });
+}
 /* Détection des actions disponibles */
 function majActionsT(){
   if(!T||!T.actions)return;
@@ -790,12 +833,10 @@ function dessinerT(){
       cx.save();
       cx.globalAlpha=.4;
 
-      if(T.tunnel)cx.globalAlpha=.45;
       pion(
         cx,w/2,hh/2,cs*.4,
-        T.couleur,T.id,T.pseudo
+        "#8cecff",T.id,T.pseudo
       );
-      cx.globalAlpha=1;
 
       cx.globalAlpha=.8;
       cx.strokeStyle="#a4f1ff";
@@ -808,10 +849,12 @@ function dessinerT(){
 
     }else{
 
+      if(T.tunnel)cx.globalAlpha=.45;
       pion(
         cx,w/2,hh/2,cs*.4,
         T.couleur,T.id,T.pseudo
       );
+      cx.globalAlpha=1;
     }
 
     // Dégradé de bord
