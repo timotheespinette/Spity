@@ -152,6 +152,7 @@ const Moteur = (() => {
       }
 
       e.mortsEnAttente.push(j.id);
+      if(e.phase === 'jeu') verifierVictoire();
       return true;
     }
 
