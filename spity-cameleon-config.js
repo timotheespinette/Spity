@@ -13,5 +13,7 @@ const MANOIR_CFG = {
   cases: { '#': '#34463a', '.': '#ece4cc', '~': '#7fae5a' },
   dureeCamera: 20,      // s : rotation des 2 zones filmées
   cooldownTrappe: 3,    // s entre deux passages de trappe
-  trappesTous: false    // false = seul le rôle Cultiste ; true = tous les cultistes
+  trappesTous: false,   // false = seul le rôle Cultiste ; true = tous les cultistes
+  dureeTunnel: 15,       // s max passées dans les trappes
+  cooldownVeilleur: 10   // s entre deux changements de caméra
 };
