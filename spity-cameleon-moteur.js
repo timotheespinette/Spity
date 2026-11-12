@@ -17,6 +17,23 @@ const Moteur = (() => {
   const libre = (x,y,r) =>
     !(mur(x-r,y-r)||mur(x+r,y-r)||mur(x-r,y+r)||mur(x+r,y+r));
 
+  const ZONES=(M.zonesCamera||M.cameras||[]).map((z,i)=>
+    Array.isArray(z)
+      ?{x:z[0],y:z[1],l:z[2],h:z[3],nom:"Zone "+(i+1)}
+      :Object.assign({nom:"Zone "+(i+1)},z));
+
+  const TRAPPES=(M.trappes||[]).map(p=>Array.isArray(p)?[p[0],p[1]]:[p.a,p.b]);
+
+  const dedans=(z,x,y)=>x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h;
+
+  /* 2 zones consécutives de la liste, à partir de l'indice i */
+  const zonesCam=i=>{
+    const n=ZONES.length;
+    if(!n)return [];
+    if(n===1)return [ZONES[0]];
+    return [ZONES[((i%n)+n)%n],ZONES[(((i+1)%n)+n)%n]];
+  };
+
   function voit(ax,ay,bx,by){
     const n=Math.ceil(Math.hypot(bx-ax,by-ay)/.2);
     for(let i=1;i<n;i++){
@@ -51,7 +68,9 @@ const Moteur = (() => {
       tPhase:0,
       cadavres:{},
       mortsEnAttente:[],
-      vote:null
+      vote:null,
+      camI:0,
+      camT:C.dureeCamera||20
     };
 
     e.ajouter=(id,pseudo)=>{
@@ -394,6 +413,7 @@ const Moteur = (() => {
     e.maj=dt=>{
       for(const j of Object.values(e.joueurs)){
         if(j.cooldown>0)j.cooldown=Math.max(0,j.cooldown-dt);
+        if(j.trappeCd>0)j.trappeCd=Math.max(0,j.trappeCd-dt);
       }
 
       if(e.phase==='fin')return;
@@ -440,6 +460,14 @@ const Moteur = (() => {
         return;
       }
 
+      if(ZONES.length){
+        e.camT-=dt;
+        if(e.camT<=0){
+          e.camI=(e.camI+2)%ZONES.length;
+          e.camT=C.dureeCamera||20;
+        }
+      }
+
       for(const j of Object.values(e.joueurs)){
         if(j.poison>0){
           j.poison-=dt;
@@ -458,6 +486,45 @@ const Moteur = (() => {
           if(libre(j.x,j.y+vy,r))j.y+=vy;
         }
       }
+    };
+
+    e.camsActives=()=>zonesCam(e.camI);
+
+    /* 0 = rien, 1 = point orange (filmé dans < 5 s), 2 = point rouge (filmé) */
+    function etatCamera(j){
+      if(j.mort||!ZONES.length)return 0;
+      if(zonesCam(e.camI).some(z=>dedans(z,j.x,j.y)))return 2;
+      if(e.camT<=5&&zonesCam(e.camI+2).some(z=>dedans(z,j.x,j.y)))return 1;
+      return 0;
+    }
+
+    e.trappe=id=>{
+      const j=e.joueurs[id];
+      if(e.phase!=='jeu'||!j||j.mort)
+        return {ok:false,message:"Action impossible"};
+
+      if(!(j.role==='cultiste'||(C.trappesTous&&j.camp==='cultiste')))
+        return {ok:false,message:"Tu ne peux pas utiliser les trappes"};
+
+      if((j.trappeCd||0)>0)
+        return {ok:false,message:"Trappe indisponible ("+Math.ceil(j.trappeCd)+" s)"};
+
+      let arrivee=null,dist=1.1;
+      TRAPPES.forEach(p=>{
+        for(let k=0;k<2;k++){
+          const d=Math.hypot(j.x-(p[k][0]+.5),j.y-(p[k][1]+.5));
+          if(d<dist){dist=d;arrivee=p[1-k];}
+        }
+      });
+
+      if(!arrivee)return {ok:false,message:"Aucune trappe à proximité"};
+
+      j.x=arrivee[0]+.5;
+      j.y=arrivee[1]+.5;
+      j.dx=0;
+      j.dy=0;
+      j.trappeCd=C.cooldownTrappe||3;
+      return {ok:true,message:"Trappe empruntée"};
     };
 
     e.etatHote=()=>({
@@ -518,7 +585,9 @@ const Moteur = (() => {
         phase:e.phase,
         reste:Math.max(0,Math.ceil(e.tPhase)),
         vote:voteTelephone,
-        fin:e.fin||null
+        fin:e.fin||null,
+        cam:etatCamera(j),
+        trappeCd:+(j.trappeCd||0).toFixed(1)
       };
     };
 
