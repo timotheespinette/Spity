@@ -9,6 +9,10 @@
    Le cahier des règles dit 4 à 15. Pour tester seul, mets 1 en minimum (et remets 4 ensuite). */
 var MN_MIN_JOUEURS = 4;
 var MN_MAX_JOUEURS = 15;
+/* true = la partie s'arrête quand un camp gagne. Mets false pour tester seul. */
+var MN_VICTOIRE = true;
+/* true = bouton « Voir les joueurs (test) » sur l'écran hôte. Mets false pour jouer pour de vrai. */
+var MN_DEBUG = true;
 
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
@@ -135,7 +139,7 @@ function ajuster(cv){
   return k}
 
 /* ======================= ÉCRAN DE L'HÔTE (TV) ======================= */
-var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false;
+var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false, var finEnvoyee=false;
 var cfgPartie=null;
 var votePanelH=null;
 
@@ -148,6 +152,7 @@ function lancer(cfg){
   if(pr.rayonVision)C.rayonVision=pr.rayonVision;
   if(pr.cooldownKill)C.cooldownKill=pr.cooldownKill;
   if(pr.vote)C.dureeVote=pr.vote;
+  if(pr.discussion)C.dureeDiscussion=pr.discussion;
   stopHote();
   mo=Moteur.nouveau();voir=false;
   l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
@@ -164,8 +169,10 @@ function lancer(cfg){
   var bar=h("div","mnbar"),q=h("button","mnb glass","Arrêter"),v=h("button","mnb glass","Voir les joueurs (test)");
   q.onclick=function(){if(confirm("Arrêter la partie ?"))quitter(O.menu||O.jeux)};
   v.onclick=function(){voir=!voir};
-  bar.appendChild(q);bar.appendChild(v);r.appendChild(bar);
+  bar.appendChild(q);if(MN_DEBUG)bar.appendChild(v);r.appendChild(bar);
   votePanelH=ManoirVote.creerHote(r);
+  votePanelH._quitter=function(){quitter(O.menu||O.jeux)};
+  finEnvoyee=false;
   O.afficher("mnHote");
 
   var t0=performance.now();actifH=true;
@@ -173,22 +180,26 @@ function lancer(cfg){
     if(!mo)return;
     var t=performance.now(),dt=Math.min(.1,(t-t0)/1000);t0=t;
     mo.maj(dt);
-    if(votePanelH) ManoirVote.afficherHote(votePanelH, mo.etatHote());
-    // Informations privées du Médium à chaque mort
-var morts=mo.prendreMorts();
+    if(votePanelH)ManoirVote.afficherHote(votePanelH,mo.etatHote());
 
-if(morts.length){
-  Object.keys(mo.joueurs).forEach(function(id){
-    var j=mo.joueurs[id];
-
-    if(j.role==="medium"){
-      O.envoyer(id,{t:"mn:death"});
+    /* Flash rouge du Médium (vivant) à chaque mort */
+    if(mo.prendreMorts().length){
+      Object.keys(mo.joueurs).forEach(function(id){
+        var j=mo.joueurs[id];
+        if(j.role==="medium"&&!j.mort)O.envoyer(id,{t:"mn:death"});
+      });
     }
-  });
-}
+
+    /* Fin de partie : une seule vue finale envoyée */
+    if(mo.phase==="fin"){
+      if(finEnvoyee)return;
+      finEnvoyee=true;
+    }
+
     for(var id in mo.joueurs){
       var vue=mo.vue(id);
-      if(vue){vue.t="mn:vue";O.envoyer(id,vue)}}
+      if(vue){vue.t="mn:vue";O.envoyer(id,vue)}
+    }
   },C.tick);
   boucleH()}
 
@@ -394,7 +405,7 @@ function majActionsT(){
   T.cibleCadavre=null;
 
   var role=T.role&&T.role.role;
-  var peutAttaquer=role==="cultiste"||role==="metamorphe"||role==="empoisonneur";
+  var peutAttaquer=role==="cultiste"||role==="empoisonneur"||role==="metamorphe";
 
   if(!T.mort){
 
@@ -474,8 +485,10 @@ function dessinerT(){
   if(T.init){
 
     // Toute la carte est dessinée
-    for(y=0;y<M.hauteur;y++){
-      for(x=0;x<M.largeur;x++){
+    var x0=Math.max(0,Math.floor(-ox/cs)),x1=Math.min(M.largeur-1,Math.ceil((w-ox)/cs));
+    var y0=Math.max(0,Math.floor(-oy/cs)),y1=Math.min(M.hauteur-1,Math.ceil((hh-oy)/cs));
+    for(y=y0;y<=y1;y++){
+      for(x=x0;x<=x1;x++){
         cx.fillStyle=C.cases[M.grille[y][x]];
         cx.fillRect(ox+x*cs,oy+y*cs,cs+1,cs+1);
       }
@@ -552,8 +565,10 @@ function dessinerT(){
 
       var o=T.autres[i];
 
-      if(Math.hypot(o[1]-T.x,o[2]-T.y)>R)continue;
-      if(!Moteur.voit(T.x,T.y,o[1],o[2]))continue;
+      if(!T.mort){
+        if(Math.hypot(o[1]-T.x,o[2]-T.y)>R)continue;
+        if(!Moteur.voit(T.x,T.y,o[1],o[2]))continue;
+      }
 
       pion(
         cx,
@@ -663,7 +678,7 @@ function majOv(ph,reste){
   if(!T)return;
   var o=T.ov,k=ph+"|"+(ph==="jeu"?"":reste)+"|"+(T.role?1:0);
   if(T.cle===k)return;T.cle=k;
-  if(!ph||ph==="jeu"){o.style.display="none";return}
+  if(ph!=="role"&&ph!=="compte"){o.style.display="none";return}
   o.style.display="flex";o.innerHTML="";
   var ro=T.role;
   if(ph==="role"){
@@ -707,7 +722,8 @@ function telRecevoir(m){
       ManoirVote.afficherTelephone(T.voteUI,{
         phase:m.phase,
         reste:m.reste,
-        vote:m.vote
+        vote:m.vote,
+        fin:m.fin
       });
     }
 
