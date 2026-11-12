@@ -394,7 +394,7 @@ function majActionsT(){
   T.cibleCadavre=null;
 
   var role=T.role&&T.role.role;
-  var peutAttaquer=role==="cultiste"||role==="empoisonneur";
+  var peutAttaquer=role==="cultiste"||role==="metamorphe"||role==="empoisonneur";
 
   if(!T.mort){
 
