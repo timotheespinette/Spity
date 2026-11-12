@@ -117,7 +117,14 @@ const Moteur = (() => {
 
     e.dir=(id,dx,dy)=>{
       const j=e.joueurs[id];
-      if(!j || j.mort || e.phase!=='jeu')return;
+      if(!j || e.phase!=='jeu')return;
+
+      const l=Math.hypot(dx,dy);
+      if(l>1){dx/=l;dy/=l;}
+
+      j.dx=dx;
+      j.dy=dy;
+    };
 
       const l=Math.hypot(dx,dy);
       if(l>1){dx/=l;dy/=l;}
