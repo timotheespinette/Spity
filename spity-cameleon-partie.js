@@ -207,6 +207,7 @@ function lancer(cfg){
   if(pr.vote)C.dureeVote=pr.vote;
   if(pr.discussion)C.dureeDiscussion=pr.discussion;
   if(pr.cloche!==undefined)C.cloches=pr.cloche;
+  if(cfg.options && cfg.options.reveler !== undefined) C.revelerCamp = !!cfg.options.reveler;
   stopHote();
   mo=Moteur.nouveau();voir=false;
   l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
