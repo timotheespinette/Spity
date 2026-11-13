@@ -72,8 +72,14 @@ var ManoirVote = (function () {
     if (elimine) {
       contenu.appendChild(el("div", "mnvTitle", "ÉLIMINATION"));
       contenu.appendChild(el("div", "mnvRevealName", elimine.pseudo + " est mort"));
-      contenu.appendChild(el("div", "mnvRevealRole",
-        "Son rôle était : " + elimine.role));
+      if (elimine.reveler) {
+        var texteCamp = elimine.camp === "cultiste"
+          ? "C'était un Cultiste !"
+          : "C'était un Invité.";
+        contenu.appendChild(el("div", "mnvRevealRole", texteCamp));
+      } else {
+        contenu.appendChild(el("div", "mnvRevealRole", "Son identité reste secrète…"));
+      }
     } else {
       contenu.appendChild(el("div", "mnvTitle", "FIN DU VOTE"));
       contenu.appendChild(el("div", "mnvRevealName", "Personne n'est mort"));
