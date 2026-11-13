@@ -41,17 +41,14 @@ var MM_PARAMS = [
   {k:"vitesse",     nom:"Vitesse de déplacement",       min:2,  max:5,   pas:.5, def:3,  unite:" cases/s"},
   {k:"rayonVision", nom:"Rayon de vision",              min:3,  max:8,   pas:1,  def:5,  unite:" cases"},
   {k:"cooldownKill",nom:"Délai entre deux attaques",    min:10, max:60,  pas:5,  def:25, unite:" s"},
-  {k:"missions",    nom:"Missions par joueur",          min:3,  max:6,   pas:1,  def:4,  unite:""},
   {k:"discussion",  nom:"Durée de la discussion",       min:15, max:120, pas:15, def:45, unite:" s"},
   {k:"vote",        nom:"Durée du vote",                min:10, max:60,  pas:5,  def:20, unite:" s"},
-  {k:"cloche",      nom:"Cloches d’urgence par joueur", min:0,  max:3,   pas:1,  def:1,  unite:""},
-  {k:"sabotage",    nom:"Délai entre deux sabotages",   min:20, max:90,  pas:5,  def:40, unite:" s"},
-  {k:"minuteur",    nom:"Minuteur de partie",           min:0,  max:30,  pas:5,  def:0,  unite:" min", zero:"Aucun"}
+  {k:"cloche",      nom:"Cloches d’urgence par joueur", min:0,  max:3,   pas:1,  def:1,  unite:""}
 ];
 
 /* Les options oui / non */
 var MM_OPTIONS = [
-  {k:"reveler", nom:"Révéler le camp d’un joueur éliminé", def:false}
+  {k:"reveler", nom:"Révéler le camp d’un joueur éliminé", def:true}
 ];
 
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
