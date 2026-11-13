@@ -345,7 +345,9 @@ const Moteur = (() => {
           elimine={
             id:j.id,
             pseudo:j.pseudo,
-            role:r.nom||j.role
+            role:r.nom||j.role,
+            camp:j.camp,
+            reveler:!!C.revelerCamp
           };
         }
       }
