@@ -15,5 +15,6 @@ const MANOIR_CFG = {
   cooldownTrappe: 3,    // s entre deux passages de trappe
   trappesTous: false,   // false = seul le rôle Cultiste ; true = tous les cultistes
   dureeTunnel: 15,       // s max passées dans les trappes
-  cooldownVeilleur: 10   // s entre deux changements de caméra
+  cooldownVeilleur: 10,   // s entre deux changements de caméra
+  revelerCamp: true     // true = affiche le camp à l'élimination, false = cache rôle et camp
 };
