@@ -413,6 +413,9 @@ const Moteur = (() => {
     }
 
     function lancerReunion(j,corps){
+      Object.values(e.joueurs).forEach(p=>{
+        if(!p.mort && p.poison>0) mourir(p,false);
+      });
       const candidats=Object.values(e.joueurs)
         .filter(p=>!p.mort)
         .map(p=>({id:p.id,pseudo:p.pseudo}));
