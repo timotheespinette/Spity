@@ -1053,8 +1053,11 @@ const Moteur = (() => {
       while(e.traces.length&&e.t-e.traces[0].t>30)e.traces.shift();
     };
 
+    e.camToutActif=()=>Object.values(e.joueurs).some(p=>!p.mort&&p.camTout>0);
+
     e.camsActives=()=>{
       if(e.camCoupe>0)return [];
+      if(e.camToutActif())return ZONES.slice();
       const l=[];
       e.camZ.forEach(i=>{
         const z=ZONES[i];
@@ -1076,6 +1079,7 @@ const Moteur = (() => {
     function etatCamera(j){
       if(e.camCoupe>0||j.invis>0)return 0;
       if(j.mort||j.tunnel||!ZONES.length)return 0;
+      if(e.camToutActif()&&ZONES.some(z=>dedans(z,j.x,j.y)))return 2;
       if(e.camZ.some(i=>ZONES[i]&&dedans(ZONES[i],j.x,j.y)))return 2;
       if(e.camT<=5&&ZONES.length>1&&e.camZ.some(i=>{
         const z=ZONES[(i+2)%ZONES.length];
@@ -1089,7 +1093,7 @@ const Moteur = (() => {
       const j=e.joueurs[id];
       if(e.phase!=='jeu'||!j||j.mort||j.tunnel)
         return {ok:false,message:"Action impossible"};
-      if(!(j.role==='cultiste'||(C.trappesTous&&j.camp==='cultiste')))
+      if(j.camp!=='cultiste')
         return {ok:false,message:"Tu ne peux pas utiliser les trappes"};
       if((j.trappeCd||0)>0)
         return {ok:false,message:"Trappe indisponible ("+Math.ceil(j.trappeCd)+" s)"};
@@ -1178,7 +1182,7 @@ const Moteur = (() => {
       const autres=[],cadavres=[];
 
       /* Rayon de vision : base + bonus/malus temporaire (minimum 2 cases) */
-      const rv=Math.max(2,C.rayonVision+(j.visReste>0?j.visBonus:0));
+      const rv=Math.max(1.5,C.rayonVision+(j.visReste>0?j.visBonus:0));
       const enZone=o=>ZONES.some(z=>dedans(z,o.x,o.y));
 
       /* Joueur : [idRéel, x, y, couleur, pseudo, empoisonné, vuParCaméra, fantôme, idAvatar] */
@@ -1192,19 +1196,24 @@ const Moteur = (() => {
           continue;
         }
 
-        if(o.tunnel&&!j.mort)continue;
+        if(o.tunnel&&!j.mort){
+          /* Détective : voit les joueurs cachés dans les trappes (en transparence) */
+          if(j.trappeVue>0)autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),o.couleur,o.pseudo,0,1,1,o.id,0]);
+          continue;
+        }
         if(o.invis>0&&!j.mort)continue;              // invisibilité
 
         const lim=typeCase(o.x,o.y)==='~'?(j.buis>0?rv:C.rayonBuisson):rv;
         /* voit() non strict : on voit à travers les vitres */
         const vu=j.mort || (Math.hypot(o.x-j.x,o.y-j.y)<=lim && voit(j.x,j.y,o.x,o.y));
         /* Veilleur : toutes les caméras */
-        const force=!vu&&!j.mort&&j.camTout>0&&enZone(o);
+        const force=false;
 
         if(vu||force){
           const ap=(o.deguise&&e.joueurs[o.deguise.id])||o;   // métamorphe
           autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),ap.couleur,ap.pseudo,
-            (o.poison>0&&!o.poisonFurtif)?1:0,force?1:0,0,ap.id]);
+            (o.poison>0&&!o.poisonFurtif)?1:0,force?1:0,0,ap.id,
+            (j.camp==='cultiste'&&o.camp==='cultiste')?1:0]);
         }
       }
 
@@ -1284,15 +1293,19 @@ const Moteur = (() => {
         missions:j.missions,
         alerte,
         /* capacités de rôle */
-        capaCd:+(j.role==='cartographe'?j.cartoCd:j.capaCd).toFixed(1),
+        capaCd:+j.capaCd.toFixed(1),
         capaActif:+(j.role==='detective'?j.empreintes
           :j.role==='metamorphe'?(j.deguise?j.deguise.reste:0)
           :j.role==='cartographe'?j.cartoReste:0).toFixed(1),
+        transfo:(j.deguise&&e.joueurs[j.deguise.id])
+          ?{id:j.deguise.id,pseudo:e.joueurs[j.deguise.id].pseudo,couleur:e.joueurs[j.deguise.id].couleur,reste:Math.ceil(j.deguise.reste)}
+          :null,
+        invis:Math.ceil(j.invis||0),
         liste,
         traces,
         chasse,
         pieges:j.role==='chasseur'?e.pieges.filter(p=>p.id===j.id).map(p=>[p.x,p.y]):null,
-        zonesTout:j.camTout>0?ZONES.map(z=>[z.x,z.y,z.l,z.h]):null
+        zonesTout:null
       };
     };
 
