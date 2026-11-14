@@ -1,10 +1,15 @@
 /* spity-cameleon-moteur.js
-   Déplacements, morts, fantômes, signalements, votes,
-   vitres, missions, points et pouvoirs.
+   Déplacements, morts, fantômes, signalements, votes, vitres, missions,
+   points, pouvoirs et capacités de TOUS les rôles.
    Dépend de ManoirMissions (spity-cameleon-missions.js).
+
+   Ids de rôles attendus dans MM_ROLES :
+   cultiste, empoisonneur, metamorphe, innocent, veilleur, detective,
+   medium, cartographe, chasseur, garde, martyr
 */
 const Moteur = (() => {
   const M = MANOIR_MAP, C = MANOIR_CFG;
+  const PIECES = M.pieces || [];
 
   const hors = (x,y) => x<0 || y<0 || x>=M.largeur || y>=M.hauteur;
 
@@ -43,7 +48,17 @@ const Moteur = (() => {
 
   const dedans=(z,x,y)=>x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h;
 
-  /* strict=true : les vitres bloquent aussi (attaque, signalement, etc.)
+  /* Pièce (lieu nommé) la plus proche, -1 si aucune à moins de 7 cases */
+  function pieceProche(x,y){
+    let b=-1,bd=7;
+    PIECES.forEach((p,i)=>{
+      const d=Math.hypot(p[0]-x,p[1]-y);
+      if(d<bd){bd=d;b=i;}
+    });
+    return b;
+  }
+
+  /* strict=true : les vitres bloquent aussi (attaque, signalement…)
      strict=false : on voit à travers les vitres */
   function voit(ax,ay,bx,by,strict){
     const bloque=strict?mur:opaque;
@@ -72,6 +87,10 @@ const Moteur = (() => {
     return a;
   };
 
+  /* Effets temporaires (secondes restantes) remis à zéro à la mort */
+  const TIM=['furtif','fige','riposte','gardeReste','empreintes','cibleTraceReste',
+             'fantomes','buis','camTout','revele'];
+
   function nouveau(){
     const e={
       joueurs:{},
@@ -83,6 +102,13 @@ const Moteur = (() => {
       mortsEnAttente:[],
       notifs:[],                 // messages à envoyer à des téléphones précis
       camCoupe:0,                // caméras sabotées (secondes restantes)
+      camSlot:0,
+      traces:[],                 // empreintes de pas
+      derniers:{},               // dernier joueur entré dans chaque pièce
+      pieges:[],                 // pièges du chasseur
+      alerte:null,               // alerte lancée par un imposteur mort
+      chasse:null,               // tir du chasseur éliminé
+      dernierMort:null,
       vote:null,
       camZ:ZONES.length>1?[0,1]:[0,0],
       camT:C.dureeCamera||20
@@ -100,6 +126,7 @@ const Moteur = (() => {
         mort:false,
         cooldown:0,
         poison:0,
+        poisonFurtif:false,
         trappeCd:0,
         tunnel:null,
         veilleurCd:0,
@@ -112,7 +139,18 @@ const Moteur = (() => {
         bouclier:0,
         vitMult:1,vitReste:0,
         visBonus:0,visReste:0,
-        invis:0
+        invis:0,
+        /* capacités de rôle */
+        capaCd:0,
+        deguise:null,
+        cibleTrace:null,
+        protegeVote:false,
+        voteDouble:false,
+        cartoCd:25,cartoReste:0,
+        furtif:0,fige:0,riposte:0,gardeReste:0,empreintes:0,
+        cibleTraceReste:0,fantomes:0,buis:0,camTout:0,revele:0,
+        piece:-1,
+        lastTr:null
       };
     };
 
@@ -206,9 +244,10 @@ const Moteur = (() => {
       j.dx=0;
       j.dy=0;
       j.poison=0;
+      j.poisonFurtif=false;
       j.tunnel=null;
 
-      /* La mort remet tout à zéro : points, effets, mission en cours.
+      /* La mort remet tout à zéro : points, effets, capacités, mission en cours.
          Le fantôme reçoit ses propres missions. */
       j.points=0;
       j.bouclier=0;
@@ -216,6 +255,12 @@ const Moteur = (() => {
       j.visBonus=0;j.visReste=0;
       j.invis=0;
       j.enCours=null;
+      TIM.forEach(k=>{j[k]=0;});
+      j.deguise=null;
+      j.protegeVote=false;
+      j.voteDouble=false;
+      j.cartoReste=0;
+      j.piece=-1;
       j.missions=[];
       remplir(j);
 
@@ -228,10 +273,17 @@ const Moteur = (() => {
           pseudo:j.pseudo,
           signale:false
         };
+        const pi=pieceProche(j.x,j.y);
+        e.dernierMort={lieu:pi>=0?PIECES[pi][2]:"un couloir",pseudo:j.pseudo,t:e.t};
       }
 
       e.mortsEnAttente.push(j.id);
       if(e.phase === 'jeu') verifierVictoire();
+
+      /* Martyr assassiné : alarme immédiate */
+      if(creerCadavre && j.role==='martyr' && e.phase==='jeu' && !e.fin){
+        lancerReunion({id:j.id,pseudo:j.pseudo+" (Martyr)"},null);
+      }
       return true;
     }
 
@@ -259,7 +311,14 @@ const Moteur = (() => {
       if(distance>1.2||!voit(a.x,a.y,c.x,c.y,true))
         return {ok:false,message:"Joueur trop éloigné"};
 
-      /* Talisman : annule l'attaque (tuer comme empoisonner) */
+      /* Protection temporaire (garde du corps, égide du martyr) : non consommée */
+      if(c.gardeReste>0){
+        a.cooldown=C.cooldownKill||25;
+        e.notifier(c.id,"🛡️ Une protection t'a sauvé !");
+        return {ok:true,message:"Ta cible était protégée…"};
+      }
+
+      /* Talisman : annule une attaque */
       if(c.bouclier>0){
         c.bouclier=0;
         a.cooldown=C.cooldownKill||25;
@@ -267,30 +326,34 @@ const Moteur = (() => {
         return {ok:true,message:"Ta cible était protégée…"};
       }
 
-      if(a.role==='empoisonneur'){
-        if(c.poison>0)return {ok:false,message:"Ce joueur est déjà empoisonné"};
-        a.cooldown=C.cooldownKill||25;
-        c.poison=15;
-        return {ok:true,message:"Joueur empoisonné"};
+      if(a.role==='empoisonneur'&&c.poison>0)
+        return {ok:false,message:"Ce joueur est déjà empoisonné"};
+
+      const furtif=a.furtif>0;
+      a.cooldown=C.cooldownKill||25;
+
+      /* Contre-attaque du chasseur : l'agresseur meurt aussi */
+      let rip=false;
+      if(c.riposte>0){
+        c.riposte=0;
+        rip=true;
+        e.notifier(c.id,"🎯 Ta contre-attaque a frappé !");
+        mourir(a,true);
       }
 
-      a.cooldown=C.cooldownKill||25;
+      if(a.role==='empoisonneur'){
+        c.poison=15;
+        c.poisonFurtif=furtif;
+        return {ok:true,message:rip?"Piégé ! Le chasseur riposte…":"Joueur empoisonné"};
+      }
+
       mourir(c,true);
-      return {ok:true,message:"Joueur éliminé"};
+      return {ok:true,message:rip?"Piégé ! Le chasseur riposte…":"Joueur éliminé"};
     };
 
-    function verifierVictoire(){
+    function terminer(gagnant){
       if(e.fin)return;
       if(typeof MN_VICTOIRE!=='undefined'&&!MN_VICTOIRE)return;
-
-      const vivants=Object.values(e.joueurs).filter(j=>!j.mort);
-      const cult=vivants.filter(j=>j.camp==='cultiste').length;
-      const inv=vivants.length-cult;
-
-      let gagnant=null;
-      if(cult===0)gagnant='invite';
-      else if(cult>=inv)gagnant='cultiste';
-      if(!gagnant)return;
 
       e.fin={
         gagnant,
@@ -301,7 +364,21 @@ const Moteur = (() => {
       };
       e.phase='fin';
       e.tPhase=0;
+      e.alerte=null;
       Object.values(e.joueurs).forEach(j=>{j.dx=0;j.dy=0;});
+    }
+
+    function verifierVictoire(){
+      if(e.fin)return;
+
+      const vivants=Object.values(e.joueurs).filter(j=>!j.mort);
+      const cult=vivants.filter(j=>j.camp==='cultiste').length;
+      const inv=vivants.length-cult;
+
+      let gagnant=null;
+      if(cult===0)gagnant='invite';
+      else if(cult>=inv)gagnant='cultiste';
+      if(gagnant)terminer(gagnant);
     }
 
     function terminerVote(){
@@ -328,9 +405,13 @@ const Moteur = (() => {
       const compte={};
       v.candidats.forEach(c=>compte[c.id]=0);
 
+      /* Vote double du garde du corps */
       Object.keys(v.votes).forEach(id=>{
         const cible=v.votes[id];
-        if(cible!==null && compte[cible]!==undefined)compte[cible]++;
+        if(cible!==null && compte[cible]!==undefined){
+          const votant=e.joueurs[id];
+          compte[cible]+=(votant&&votant.voteDouble)?2:1;
+        }
       });
 
       const max=Math.max(0,...Object.values(compte));
@@ -345,12 +426,20 @@ const Moteur = (() => {
           elimine={
             id:j.id,
             pseudo:j.pseudo,
-            role:r.nom||j.role,
-            camp:j.camp,
-            reveler:!!C.revelerCamp
+            role:r.nom||j.role
           };
         }
       }
+
+      /* Immunité au vote (garde du corps) */
+      if(elimine){
+        const cj=e.joueurs[elimine.id];
+        if(cj&&cj.protegeVote){
+          e.notifier(cj.id,"🗳️ Ton immunité t'a sauvé du vote !");
+          elimine=null;
+        }
+      }
+      Object.values(e.joueurs).forEach(p=>{p.protegeVote=false;p.voteDouble=false;});
 
       v.resultats=Object.keys(compte).map(id=>{
         const j=e.joueurs[id];
@@ -383,13 +472,39 @@ const Moteur = (() => {
 
       const id=e.vote.elimine&&e.vote.elimine.id;
       if(id && e.joueurs[id]){
-        mourir(e.joueurs[id],false);
+        const j=e.joueurs[id];
+        mourir(j,false);
+
+        /* Chasseur éliminé au vote : il peut emmener quelqu'un avec lui */
+        if(j.role==='chasseur'){
+          const vivants=Object.values(e.joueurs).filter(p=>!p.mort);
+          if(vivants.length>1){
+            e.chasse={id:j.id};
+            e.phase='chasseur';
+            e.tPhase=15;
+            return;
+          }
+        }
       }
 
       // Les corps de la manche précédente disparaîtront à la reprise.
       e.phase='revelation';
       e.tPhase=3;
     }
+
+    e.tirer=(id,cibleId)=>{
+      if(e.phase!=='chasseur'||!e.chasse||e.chasse.id!==id)
+        return {ok:false,message:"Action impossible"};
+      const c=e.joueurs[cibleId];
+      if(!c||c.mort||c.id===id)
+        return {ok:false,message:"Cible invalide"};
+      mourir(c,false);
+      Object.keys(e.joueurs).forEach(k=>e.notifier(k,"🎯 Le chasseur a abattu "+c.pseudo+" !"));
+      e.chasse=null;
+      e.phase='revelation';
+      e.tPhase=3;
+      return {ok:true,message:"Tu as tiré sur "+c.pseudo};
+    };
 
     function nouvelleManche(){
       verifierVictoire();
@@ -401,21 +516,23 @@ const Moteur = (() => {
         j.dx=0;
         j.dy=0;
         j.poison=0;
+        j.poisonFurtif=false;
         j.cooldown=10;
         j.tunnel=null;
         j.enCours=null;
+        j.lastTr=null;
+        j.piece=-1;
       });
 
       e.cadavres={};
+      e.traces=[];
+      e.alerte=null;
       e.vote=null;
       e.phase='jeu';
       e.tPhase=0;
     }
 
     function lancerReunion(j,corps){
-      Object.values(e.joueurs).forEach(p=>{
-        if(!p.mort && p.poison>0) mourir(p,false);
-      });
       const candidats=Object.values(e.joueurs)
         .filter(p=>!p.mort)
         .map(p=>({id:p.id,pseudo:p.pseudo}));
@@ -439,6 +556,7 @@ const Moteur = (() => {
         p.enCours=null;
       });
 
+      e.alerte=null;                 // une réunion annule l'alerte
       e.phase='discussion';
       e.tPhase=C.dureeDiscussion||45;
     }
@@ -506,12 +624,24 @@ const Moteur = (() => {
 
     /* ───────────── MISSIONS ───────────── */
 
+    /* Mission d'alerte (id -1) proposée aux invités vivants et aux esprits d'invités */
+    function alerteMission(j){
+      if(!e.alerte||j.camp==='cultiste'||e.alerte.faits.has(j.id))return null;
+      const m=ManoirMissions.creer(e.alerte.mi,j.mort?'mort':'civil');
+      m.id=-1;
+      m.alerte=true;
+      m.nom="🚨 "+m.nom;
+      return m;
+    }
+
+    const trouverMission=(j,mid)=>mid===-1?alerteMission(j):j.missions.find(x=>x.id===mid);
+
     /* Le joueur ouvre le mini-jeu : il doit être sur place */
     e.missionDebut=(id,mid)=>{
       const j=e.joueurs[id];
       if(e.phase!=='jeu'||!j||j.tunnel)
         return {ok:false,message:"Action impossible"};
-      const m=j.missions.find(x=>x.id===mid);
+      const m=trouverMission(j,mid);
       if(!m)return {ok:false,message:"Ce n'est pas ta mission"};
       if(Math.hypot(j.x-m.x,j.y-m.y)>1.4)
         return {ok:false,message:"Trop loin de la mission"};
@@ -524,7 +654,7 @@ const Moteur = (() => {
       const j=e.joueurs[id];
       if(e.phase!=='jeu'||!j||j.tunnel)
         return {ok:false,message:"Action impossible"};
-      const m=j.missions.find(x=>x.id===mid);
+      const m=trouverMission(j,mid);
       if(!m||!j.enCours||j.enCours.id!==mid)
         return {ok:false,message:"Mission non commencée"};
       if(e.t-j.enCours.t<m.min){
@@ -538,6 +668,16 @@ const Moteur = (() => {
 
       j.enCours=null;
       j.points++;
+
+      if(mid===-1){
+        e.alerte.faits.add(j.id);
+        if(e.alerte.faits.size>=e.alerte.requis){
+          e.alerte=null;
+          Object.keys(e.joueurs).forEach(k=>e.notifier(k,"✅ Alerte désamorcée !"));
+        }
+        return {ok:true,message:"Alerte relevée  +1 ★"};
+      }
+
       j.missions=j.missions.filter(x=>x!==m);
       j.recent=(j.recent||[]).concat(m.id).slice(-4);
       remplir(j);
@@ -556,34 +696,129 @@ const Moteur = (() => {
       return best;
     }
 
-    function appliquer(j,p){
+    function vivantCible(j,cible,soi){
+      const c=e.joueurs[cible];
+      if(!c||c.mort||(c===j&&!soi))return null;
+      return c;
+    }
+
+    function appliquer(j,p,cible){
       switch(p.effet){
         case 'vitesse':   j.vitMult=p.val;j.vitReste=p.duree;return {ok:true};
         case 'vision':    j.visBonus=p.val;j.visReste=p.duree;return {ok:true};
+        case 'visionX':   j.visBonus=C.rayonVision*(p.val-1);j.visReste=p.duree;return {ok:true};
         case 'bouclier':
           if(j.bouclier>0)return {ok:false,message:"Tu as déjà un talisman"};
           j.bouclier=1;return {ok:true};
         case 'antidote':
           if(!(j.poison>0))return {ok:false,message:"Tu n'es pas empoisonné"};
-          j.poison=0;return {ok:true};
+          j.poison=0;j.poisonFurtif=false;return {ok:true};
         case 'camReset':  j.veilleurCd=0;return {ok:true};
         case 'cooldown':
           if(j.cooldown<=0)return {ok:false,message:"Ton attaque est déjà prête"};
           j.cooldown=0;return {ok:true};
         case 'invisible': j.invis=p.duree;return {ok:true};
         case 'camCoupe':  e.camCoupe=p.duree;return {ok:true};
+        case 'camTout':   j.camTout=p.duree;return {ok:true};
+        case 'furtif':    j.furtif=p.duree;return {ok:true};
+
+        case 'ralentirTous':
+          Object.values(e.joueurs).forEach(o=>{
+            if(o.mort||o.camp==='cultiste')return;
+            o.vitMult=p.val;o.vitReste=p.duree;
+            e.notifier(o.id,"🕸️ Une force invisible te ralentit…");
+          });
+          return {ok:true};
+        case 'aveuglerTous':
+          Object.values(e.joueurs).forEach(o=>{
+            if(o.mort||o.camp==='cultiste')return;
+            o.visBonus=p.val;o.visReste=p.duree;
+            e.notifier(o.id,"🌟 Un éclat t'aveugle…");
+          });
+          return {ok:true};
+
+        case 'capaReset':
+          if(!(j.capaCd>0))return {ok:false,message:"Ta capacité est déjà prête"};
+          j.capaCd=0;return {ok:true};
+        case 'traceCible':{
+          const c=vivantCible(j,cible,false);
+          if(!c)return {ok:false,message:"Choisis un joueur"};
+          j.cibleTrace=c.id;j.cibleTraceReste=p.duree;
+          return {ok:true};
+        }
+        case 'trappeVoir':{
+          const n=Object.values(e.joueurs).filter(o=>o.tunnel).length;
+          return {ok:true,message:n?"🕳️ Quelqu'un est dans les trappes !":"🕳️ Personne dans les trappes."};
+        }
+        case 'lieuMort':
+          if(!e.dernierMort)return {ok:false,message:"Personne n'est mort pour l'instant"};
+          return {ok:true,message:"📍 Le dernier mort est tombé : "+e.dernierMort.lieu};
+        case 'fantomes':  j.fantomes=p.duree;return {ok:true};
+        case 'buissons':  j.buis=p.duree;return {ok:true};
+
+        case 'carte':     j.cartoReste=Math.max(j.cartoReste,p.duree);return {ok:true};
+        case 'cartoReset':j.cartoCd=0;return {ok:true};
+        case 'dernierPassage':{
+          if(!Number.isInteger(cible)||!PIECES[cible])return {ok:false,message:"Choisis une pièce"};
+          const d=e.derniers[cible];
+          return {ok:true,message:d
+            ?"🧭 "+PIECES[cible][2]+" : "+d.pseudo+" (il y a "+Math.round(e.t-d.t)+" s)"
+            :"🧭 Personne n'est passé à "+PIECES[cible][2]};
+        }
+
+        case 'riposte':   j.riposte=p.duree;return {ok:true};
+        case 'piege':
+          if(e.pieges.filter(x=>x.id===j.id).length>=2)return {ok:false,message:"2 pièges maximum"};
+          e.pieges.push({x:j.x,y:j.y,id:j.id});
+          return {ok:true,message:"🪤 Piège posé"};
+
+        case 'bouclierCible':{
+          const c=vivantCible(j,cible,true);
+          if(!c)return {ok:false,message:"Choisis un joueur"};
+          if(c.bouclier>0)return {ok:false,message:"Cette personne est déjà protégée"};
+          c.bouclier=1;
+          if(c!==j)e.notifier(c.id,"🛡️ Un talisman t'a été offert.");
+          return {ok:true};
+        }
+        case 'protegeVote':{
+          const c=vivantCible(j,cible,true);
+          if(!c)return {ok:false,message:"Choisis un joueur"};
+          c.protegeVote=true;
+          if(c!==j)e.notifier(c.id,"🗳️ Tu es protégé(e) lors du prochain vote.");
+          return {ok:true};
+        }
+        case 'voteDouble': j.voteDouble=true;return {ok:true};
+        case 'gardeSoi':   j.gardeReste=p.duree;return {ok:true};
+        case 'reveler':    j.revele=p.duree;return {ok:true};
+
+        case 'camSur':{
+          const zi=ZONES.findIndex(z=>dedans(z,j.x,j.y));
+          if(zi<0)return {ok:false,message:"Aucune caméra ne couvre cet endroit"};
+          e.camSlot=1-e.camSlot;
+          const slot=e.camSlot,autre=1-slot;
+          if(e.camZ[autre]===zi)e.camZ[autre]=e.camZ[slot];
+          e.camZ[slot]=zi;
+          e.camT=C.dureeCamera||20;
+          return {ok:true,message:"📹 CAM "+(slot+1)+" : "+ZONES[zi].nom};
+        }
+
+        case 'alerte':{
+          if(e.alerte)return {ok:false,message:"Une alerte est déjà en cours"};
+          const elig=Object.values(e.joueurs).filter(o=>o.camp!=='cultiste');
+          if(elig.length<2)return {ok:false,message:"Pas assez d'invités ou d'esprits"};
+          const mi=Math.floor(Math.random()*M.missions.length);
+          e.alerte={mi,reste:p.duree,requis:2,faits:new Set()};
+          const lieu=ManoirMissions.creer(mi,'civil').lieu||"un endroit précis";
+          elig.forEach(o=>e.notifier(o.id,"🚨 ALERTE ! Mission urgente : "+lieu+" (30 s)"));
+          return {ok:true};
+        }
       }
 
       /* Pouvoirs des fantômes : ciblent l'invité vivant le plus proche */
       const c=procheInvite(j);
-      if(!c)return {ok:false,message:"Aucun invité à portée"};
+      if(!c)return {ok:false,message:"Aucun joueur à portée"};
 
       switch(p.effet){
-        case 'bouclierProche':
-          if(c.bouclier>0)return {ok:false,message:"Cet invité est déjà protégé"};
-          c.bouclier=1;
-          e.notifier(c.id,"🕊️ Une lueur bienveillante t'enveloppe…");
-          return {ok:true};
         case 'visionProche':
           c.visBonus=p.val;c.visReste=p.duree;
           e.notifier(c.id,"🔆 Ta vue s'éclaircit mystérieusement…");
@@ -604,7 +839,7 @@ const Moteur = (() => {
       return {ok:false,message:"Pouvoir inconnu"};
     }
 
-    e.acheter=(id,pid)=>{
+    e.acheter=(id,pid,cible)=>{
       const j=e.joueurs[id];
       if(e.phase!=='jeu'||!j)
         return {ok:false,message:"Action impossible"};
@@ -612,10 +847,45 @@ const Moteur = (() => {
       if(!p)return {ok:false,message:"Pouvoir indisponible"};
       if(j.points<p.cout)
         return {ok:false,message:"Il te manque "+(p.cout-j.points)+" ★"};
-      const r=appliquer(j,p);
+      const r=appliquer(j,p,cible);
       if(!r.ok)return r;
       j.points-=p.cout;
-      return {ok:true,message:p.emoji+" "+p.nom+" activé !"};
+      return {ok:true,message:r.message||(p.emoji+" "+p.nom+" activé !")};
+    };
+
+    /* ───────────── CAPACITÉS DE RÔLE (bouton de base) ───────────── */
+
+    e.capa=(id,cible)=>{
+      const j=e.joueurs[id];
+      if(e.phase!=='jeu'||!j||j.mort||j.tunnel)
+        return {ok:false,message:"Action impossible"};
+      if(j.capaCd>0)
+        return {ok:false,message:"Attends encore "+Math.ceil(j.capaCd)+" s"};
+
+      if(j.role==='detective'){
+        j.empreintes=5;
+        j.capaCd=15;
+        return {ok:true,message:"👣 Empreintes révélées"};
+      }
+
+      if(j.role==='metamorphe'){
+        const c=vivantCible(j,cible,false);
+        if(!c)return {ok:false,message:"Choisis un joueur"};
+        j.deguise={id:c.id,reste:15};
+        j.capaCd=C.cooldownMeta||35;
+        return {ok:true,message:"🎭 Tu as l'apparence de "+c.pseudo};
+      }
+
+      if(j.role==='garde'){
+        const c=vivantCible(j,cible,true);
+        if(!c)return {ok:false,message:"Choisis un joueur"};
+        c.gardeReste=15;
+        j.capaCd=C.cooldownGarde||40;
+        if(c!==j)e.notifier(c.id,"🛡️ Un garde du corps veille sur toi (15 s)");
+        return {ok:true,message:"🛡️ "+c.pseudo+" est protégé(e) 15 s"};
+      }
+
+      return {ok:false,message:"Tu n'as pas de capacité active"};
     };
 
     /* ───────────── BOUCLE ───────────── */
@@ -627,6 +897,7 @@ const Moteur = (() => {
         if(j.cooldown>0)j.cooldown=Math.max(0,j.cooldown-dt);
         if(j.trappeCd>0)j.trappeCd=Math.max(0,j.trappeCd-dt);
         if(j.veilleurCd>0)j.veilleurCd=Math.max(0,j.veilleurCd-dt);
+        if(j.capaCd>0)j.capaCd=Math.max(0,j.capaCd-dt);
       }
 
       if(e.phase==='fin')return;
@@ -649,6 +920,16 @@ const Moteur = (() => {
       if(e.phase==='resultats'){
         e.tPhase-=dt;
         if(e.tPhase<=0)revelerElimination();
+        return;
+      }
+
+      if(e.phase==='chasseur'){
+        e.tPhase-=dt;
+        if(e.tPhase<=0){
+          e.chasse=null;
+          e.phase='revelation';
+          e.tPhase=3;
+        }
         return;
       }
 
@@ -675,6 +956,16 @@ const Moteur = (() => {
 
       if(e.camCoupe>0)e.camCoupe=Math.max(0,e.camCoupe-dt);
 
+      /* Alerte des imposteurs morts : si le temps est écoulé, ils gagnent */
+      if(e.alerte){
+        e.alerte.reste-=dt;
+        if(e.alerte.reste<=0){
+          e.alerte=null;
+          terminer('cultiste');
+          if(e.fin)return;
+        }
+      }
+
       if(ZONES.length>1){
         e.camT-=dt;
         if(e.camT<=0){
@@ -688,6 +979,22 @@ const Moteur = (() => {
         if(j.vitReste>0){j.vitReste-=dt;if(j.vitReste<=0){j.vitReste=0;j.vitMult=1;}}
         if(j.visReste>0){j.visReste-=dt;if(j.visReste<=0){j.visReste=0;j.visBonus=0;}}
         if(j.invis>0)j.invis=Math.max(0,j.invis-dt);
+        for(const k of TIM)if(j[k]>0)j[k]=Math.max(0,j[k]-dt);
+
+        if(j.deguise){
+          j.deguise.reste-=dt;
+          if(j.deguise.reste<=0||!e.joueurs[j.deguise.id])j.deguise=null;
+        }
+
+        /* Cartographe : révélation automatique de 5 s toutes les 25 s */
+        if(j.role==='cartographe'&&!j.mort){
+          if(j.cartoReste>0)j.cartoReste=Math.max(0,j.cartoReste-dt);
+          j.cartoCd-=dt;
+          if(j.cartoCd<=0){
+            j.cartoCd=25;
+            j.cartoReste=Math.max(j.cartoReste,5);
+          }
+        }
 
         if(j.poison>0){
           j.poison-=dt;
@@ -703,7 +1010,7 @@ const Moteur = (() => {
           continue;
         }
 
-        const vm=j.vitReste>0?j.vitMult:1;
+        const vm=j.fige>0?0:(j.vitReste>0?j.vitMult:1);
         const vx=j.dx*C.vitesse*vm*dt;
         const vy=j.dy*C.vitesse*vm*dt;
 
@@ -714,8 +1021,36 @@ const Moteur = (() => {
           const r=C.rayonJoueur;
           if(libre(j.x+vx,j.y,r))j.x+=vx;
           if(libre(j.x,j.y+vy,r))j.y+=vy;
+
+          /* Empreintes (un pas tous les 0,6 case) */
+          if(j.dx||j.dy){
+            const l=j.lastTr;
+            if(!l||Math.hypot(j.x-l[0],j.y-l[1])>=.6){
+              e.traces.push({x:j.x,y:j.y,t:e.t,id:j.id});
+              j.lastTr=[j.x,j.y];
+            }
+          }
+
+          /* Dernier passage dans chaque pièce */
+          const idx=pieceProche(j.x,j.y);
+          if(idx>=0&&idx!==j.piece)e.derniers[idx]={id:j.id,pseudo:j.pseudo,t:e.t};
+          j.piece=idx;
+
+          /* Pièges du chasseur (invisibles) */
+          for(let k=e.pieges.length-1;k>=0;k--){
+            const pg=e.pieges[k];
+            if(pg.id!==j.id&&Math.hypot(pg.x-j.x,pg.y-j.y)<.8){
+              e.pieges.splice(k,1);
+              j.fige=5;
+              e.notifier(j.id,"🪤 Tu es pris dans un piège !");
+              e.notifier(pg.id,"🪤 Ton piège a capturé "+j.pseudo);
+              break;
+            }
+          }
         }
       }
+
+      while(e.traces.length&&e.t-e.traces[0].t>30)e.traces.shift();
     };
 
     e.camsActives=()=>{
@@ -726,6 +1061,15 @@ const Moteur = (() => {
         if(z&&!l.includes(z))l.push(z);
       });
       return l;
+    };
+
+    /* Ids des joueurs dévoilés sur la carte de l'hôte (cartographe, balise du martyr) */
+    e.reveles=()=>{
+      const tous=Object.values(e.joueurs);
+      const vivants=tous.filter(p=>!p.mort&&!p.tunnel&&!(p.invis>0));
+      if(tous.some(p=>!p.mort&&p.role==='cartographe'&&p.cartoReste>0))
+        return vivants.map(p=>p.id);
+      return vivants.filter(p=>p.revele>0).map(p=>p.id);
     };
 
     /* 0 = rien, 1 = point orange (filmé dans < 5 s), 2 = point rouge (filmé) */
@@ -803,40 +1147,64 @@ const Moteur = (() => {
       return {ok:true,message:"CAM "+(slot+1)+" : "+ZONES[zone].nom};
     };
 
-    e.etatHote=()=>({
-      phase:e.phase,
-      reste:Math.max(0,Math.ceil(e.tPhase)),
-      fin:e.fin||null,
-      vote:e.vote?{
-        total:Object.values(e.joueurs).filter(j=>!j.mort).length,
-        votesRecus:Object.keys(e.vote.votes).length,
-        candidats:e.phase==='resultats'||e.phase==='revelation'
-          ?e.vote.resultats
-          :e.vote.candidats,
-        details:e.vote.details,
-        elimine:e.vote.elimine,
-        reporter:e.vote.signalePar,
-        corps:e.vote.corps
-      }:null
-    });
+    /* Phase vue par les écrans : « chasseur » s'affiche comme la révélation */
+    const phaseVue=()=>e.phase==='chasseur'?'revelation':e.phase;
+
+    e.etatHote=()=>{
+      const ph=phaseVue();
+      return {
+        phase:ph,
+        reste:Math.max(0,Math.ceil(e.tPhase)),
+        fin:e.fin||null,
+        vote:e.vote?{
+          total:Object.values(e.joueurs).filter(j=>!j.mort).length,
+          votesRecus:Object.keys(e.vote.votes).length,
+          candidats:ph==='resultats'||ph==='revelation'
+            ?e.vote.resultats
+            :e.vote.candidats,
+          details:e.vote.details,
+          elimine:e.vote.elimine,
+          reporter:e.vote.signalePar,
+          corps:e.vote.corps
+        }:null
+      };
+    };
 
     e.vue=id=>{
       const j=e.joueurs[id];
       if(!j)return null;
 
+      const ph=phaseVue();
       const autres=[],cadavres=[];
 
       /* Rayon de vision : base + bonus/malus temporaire (minimum 2 cases) */
       const rv=Math.max(2,C.rayonVision+(j.visReste>0?j.visBonus:0));
+      const enZone=o=>ZONES.some(z=>dedans(z,o.x,o.y));
 
+      /* Joueur : [idRéel, x, y, couleur, pseudo, empoisonné, vuParCaméra, fantôme, idAvatar] */
       for(const o of Object.values(e.joueurs)){
-        if(o===j||o.mort)continue;
+        if(o===j)continue;
+
+        if(o.mort){
+          /* Médium : voir les fantômes proches */
+          if(!j.mort&&j.fantomes>0&&Math.hypot(o.x-j.x,o.y-j.y)<=rv&&voit(j.x,j.y,o.x,o.y))
+            autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),"#8cecff",o.pseudo,0,0,1,o.id]);
+          continue;
+        }
+
         if(o.tunnel&&!j.mort)continue;
-        if(o.invis>0&&!j.mort)continue;              // Voile d'ombre
-        const lim=typeCase(o.x,o.y)==='~'?C.rayonBuisson:rv;
+        if(o.invis>0&&!j.mort)continue;              // invisibilité
+
+        const lim=typeCase(o.x,o.y)==='~'?(j.buis>0?rv:C.rayonBuisson):rv;
         /* voit() non strict : on voit à travers les vitres */
-        if(j.mort || (Math.hypot(o.x-j.x,o.y-j.y)<=lim && voit(j.x,j.y,o.x,o.y))){
-          autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),o.couleur,o.pseudo]);
+        const vu=j.mort || (Math.hypot(o.x-j.x,o.y-j.y)<=lim && voit(j.x,j.y,o.x,o.y));
+        /* Veilleur : toutes les caméras */
+        const force=!vu&&!j.mort&&j.camTout>0&&enZone(o);
+
+        if(vu||force){
+          const ap=(o.deguise&&e.joueurs[o.deguise.id])||o;   // métamorphe
+          autres.push([o.id,+o.x.toFixed(2),+o.y.toFixed(2),ap.couleur,ap.pseudo,
+            (o.poison>0&&!o.poisonFurtif)?1:0,force?1:0,0,ap.id]);
         }
       }
 
@@ -847,10 +1215,45 @@ const Moteur = (() => {
         }
       }
 
+      /* Détective : empreintes */
+      let traces=null;
+      if(!j.mort&&(j.empreintes>0||j.cibleTraceReste>0)){
+        const cible=j.cibleTraceReste>0?j.cibleTrace:null;
+        const dureeMax=cible?30:20;
+        traces=[];
+        for(let k=e.traces.length-1;k>=0&&traces.length<150;k--){
+          const t=e.traces[k];
+          if(t.id===j.id)continue;
+          const age=e.t-t.t;
+          if(cible){
+            if(t.id!==cible)continue;
+          }else if(age>dureeMax||Math.hypot(t.x-j.x,t.y-j.y)>7)continue;
+          traces.push([+t.x.toFixed(1),+t.y.toFixed(1),+(age/dureeMax).toFixed(2),
+            cible?((e.joueurs[cible]||{}).couleur||null):null]);
+        }
+      }
+
+      /* Liste des joueurs vivants pour les capacités à cible */
+      const veutListe=!j.mort&&(j.role==='metamorphe'||j.role==='detective'||j.role==='garde');
+      const liste=veutListe
+        ?Object.values(e.joueurs).filter(o=>!o.mort&&(o!==j||j.role==='garde')).map(o=>[o.id,o.pseudo])
+        :null;
+
+      const alerte=e.alerte?{
+        reste:Math.ceil(e.alerte.reste),
+        faits:e.alerte.faits.size,
+        requis:e.alerte.requis,
+        mission:alerteMission(j)
+      }:null;
+
+      const chasse=(e.phase==='chasseur'&&e.chasse&&e.chasse.id===id)
+        ?{candidats:Object.values(e.joueurs).filter(o=>!o.mort).map(o=>[o.id,o.pseudo])}
+        :null;
+
       const voteTelephone=e.vote?{
         candidats:e.vote.candidats,
         aVote:Object.prototype.hasOwnProperty.call(e.vote.votes,id),
-        elimine:e.phase==='revelation'?e.vote.elimine:null,
+        elimine:ph==='revelation'?e.vote.elimine:null,
         reporter:e.vote.signalePar,
         corps:e.vote.corps
       }:null;
@@ -864,7 +1267,7 @@ const Moteur = (() => {
         mort:j.mort,
         cooldown:+j.cooldown.toFixed(1),
         poison:+j.poison.toFixed(1),
-        phase:e.phase,
+        phase:ph,
         reste:Math.max(0,Math.ceil(e.tPhase)),
         vote:voteTelephone,
         fin:e.fin||null,
@@ -878,7 +1281,18 @@ const Moteur = (() => {
         rayon:+rv.toFixed(1),
         points:j.points,
         bouclier:j.bouclier,
-        missions:j.missions
+        missions:j.missions,
+        alerte,
+        /* capacités de rôle */
+        capaCd:+(j.role==='cartographe'?j.cartoCd:j.capaCd).toFixed(1),
+        capaActif:+(j.role==='detective'?j.empreintes
+          :j.role==='metamorphe'?(j.deguise?j.deguise.reste:0)
+          :j.role==='cartographe'?j.cartoReste:0).toFixed(1),
+        liste,
+        traces,
+        chasse,
+        pieges:j.role==='chasseur'?e.pieges.filter(p=>p.id===j.id).map(p=>[p.x,p.y]):null,
+        zonesTout:j.camTout>0?ZONES.map(z=>[z.x,z.y,z.l,z.h]):null
       };
     };
 
