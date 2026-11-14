@@ -1167,6 +1167,7 @@ function dessinerT(){
       pion(cx,w/2,hh/2,cs*.4,tf?tf.couleur:T.couleur,tf?tf.id:T.id,tf?tf.pseudo:T.pseudo);
       cx.globalAlpha=1;
       if(tf){cx.strokeStyle="#b48cff";cx.lineWidth=3*K;cx.beginPath();cx.arc(w/2,hh/2,cs*.5,0,7);cx.stroke()}
+    }
 
     // Dégradé de bord
     var g=cx.createRadialGradient(
