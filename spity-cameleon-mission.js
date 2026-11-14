@@ -171,35 +171,71 @@ const ManoirMissions = (() => {
 
   /* ───────────────────────── BOUTIQUE DE POUVOIRS ─────────────────────────
      Clé = id du rôle, sinon "invite" / "cultiste". Morts : mort_invite / mort_cultiste.
-     P(id, emoji, nom, coût, description, effet, valeur, durée en s)            */
-  const P = (id, emoji, nom, cout, desc, effet, val, duree) =>
-    ({ id, emoji, nom, cout, desc, effet, val: val || 0, duree: duree || 0 });
+     P(id, emoji, nom, coût, description, effet, valeur, durée en s, cible)
+     cible = "joueur" ou "piece" : le téléphone demande de choisir avant d'acheter. */
+  const P = (id, emoji, nom, cout, desc, effet, val, duree, cible) =>
+    ({ id, emoji, nom, cout, desc, effet, val: val || 0, duree: duree || 0, cible: cible || null });
 
   const sprint = P("sprint", "👟", "Sprint", 3, "+40 % de vitesse pendant 8 s", "vitesse", 1.4, 8);
+  const sprint2 = P("sprint2", "💨", "Sprint x2", 4, "Vitesse x2 pendant 8 s", "vitesse", 2, 8);
   const lanterne = P("lanterne", "🏮", "Lanterne", 3, "Vision +1,5 case pendant 20 s", "vision", 1.5, 20);
   const talisman = P("talisman", "🛡️", "Talisman", 5, "Annule la prochaine attaque ou le prochain poison", "bouclier");
   const lame = P("lame", "🗡️", "Lame affûtée", 3, "Ton attaque est rechargée instantanément", "cooldown");
   const court = P("court", "⚡", "Court-circuit", 4, "Coupe les caméras pendant 15 s", "camCoupe", 1, 15);
+  const ombre = (n, d, c) => P("ombre", "🌑", n, c, "Invisible (joueurs et caméras) pendant " + d + " s", "invisible", 1, d);
 
   const POUVOIRS = {
+    /* ── Camp des cultistes ── */
+    cultiste: [court, sprint2, lame],
+    empoisonneur: [
+      P("furtif", "🫥", "Poison furtif", 4, "Tes victimes ne verdissent pas pendant 30 s", "furtif", 1, 30),
+      P("entrave", "🕸️", "Entrave", 5, "Ralentit tous les joueurs hors imposteurs pendant 15 s", "ralentirTous", .6, 15),
+      P("fiole", "🧪", "Fiole fraîche", 3, "Ton poison est rechargé instantanément", "cooldown")],
+    metamorphe: [
+      ombre("Voile d’ombre", 8, 5), lame,
+      P("eblouir", "🌟", "Éblouissement", 5, "Réduit la vision de tous les civils pendant 10 s", "aveuglerTous", -1.5, 10)],
+
+    /* ── Camp des invités ── */
     invite: [sprint, lanterne, talisman],
-    innocent: [sprint, P("antidote", "🧪", "Antidote", 2, "Soigne un empoisonnement en cours", "antidote"), talisman],
-    veilleur: [P("lynx", "🦉", "Œil de lynx", 2, "Recharge instantanée des caméras", "camReset"), lanterne, talisman],
-    medium: [P("vue", "🔮", "Seconde vue", 4, "Vision +3 cases pendant 10 s", "vision", 3, 10), sprint, talisman],
+    innocent: [sprint, P("lanterne2", "🏮", "Longue-vue", 3, "Vision +2 cases pendant 15 s", "vision", 2, 15), ombre("Disparition", 5, 4)],
+    veilleur: [
+      P("toutes", "📺", "Toutes les caméras", 5, "Voit les joueurs filmés par TOUTES les caméras pendant 12 s", "camTout", 1, 12),
+      P("lynx2", "🦉", "Vision x2", 3, "Vision doublée pendant 15 s", "visionX", 2, 15),
+      P("lynx", "🔄", "Recharge caméras", 2, "Tu peux changer de caméra tout de suite", "camReset")],
+    detective: [
+      P("recharge", "🔁", "Recharge", 2, "Tes empreintes sont de nouveau disponibles", "capaReset"),
+      P("pisteur", "🐾", "Pisteur", 4, "Voit les empreintes d’un seul joueur pendant 30 s", "traceCible", 1, 30, "joueur"),
+      P("trappes", "🕳️", "Détecteur de trappes", 3, "Indique si quelqu’un est dans une trappe", "trappeVoir")],
+    medium: [
+      P("lieu", "📍", "Lieu du drame", 3, "Révèle la pièce où est mort le dernier joueur", "lieuMort"),
+      P("esprits", "👻", "Voir les esprits", 7, "Voit les fantômes proches pendant 20 s", "fantomes", 1, 20),
+      P("buissons", "🌿", "Œil des buissons", 3, "Voit dans les buissons de loin pendant 20 s", "buissons", 1, 20)],
+    cartographe: [
+      P("carte", "🗺️", "Carte étendue", 4, "Dévoile tout le monde sur la carte de l’hôte pendant 15 s", "carte", 15, 15),
+      P("relance", "🔁", "Recharge", 3, "Relance ta révélation immédiatement", "cartoReset"),
+      P("passage", "🧭", "Dernier passage", 3, "Choisis une pièce : qui y est passé en dernier ?", "dernierPassage", 1, 0, "piece")],
+    chasseur: [
+      P("riposte", "🎯", "Contre-attaque", 5, "Si les imposteurs te tuent dans les 40 s, ils meurent avec toi", "riposte", 1, 40),
+      P("piege", "🪤", "Piège invisible", 4, "Fige 5 s le premier qui marche dessus", "piege", 1, 5),
+      sprint],
+    garde: [
+      P("offert", "🛡️", "Bouclier offert", 4, "Donne un talisman à la personne de ton choix", "bouclierCible", 1, 0, "joueur"),
+      P("immunite", "🗳️", "Immunité au vote", 5, "Protège la personne choisie du prochain vote", "protegeVote", 1, 0, "joueur"),
+      P("double", "✌️", "Vote double", 4, "Ton prochain vote compte double", "voteDouble")],
+    martyr: [
+      sprint,
+      P("egide", "🔰", "Égide", 4, "Te protège des imposteurs pendant 15 s", "gardeSoi", 1, 15),
+      P("balise", "📡", "Balise", 3, "Révèle ta position sur la carte de l’hôte pendant 10 s", "reveler", 1, 10)],
 
-    cultiste: [P("ombre", "🌑", "Voile d’ombre", 5, "Invisible (joueurs et caméras) pendant 8 s", "invisible", 1, 8), lame, court],
-    empoisonneur: [P("fiole", "🧪", "Fiole fraîche", 3, "Ton poison est rechargé instantanément", "cooldown"),
-                   P("brume", "🌫️", "Brume toxique", 5, "Invisible (joueurs et caméras) pendant 6 s", "invisible", 1, 6), court],
-    metamorphe: [P("visage", "🎭", "Second visage", 5, "Invisible (joueurs et caméras) pendant 8 s", "invisible", 1, 8), lame, sprint],
-
+    /* ── Esprits ── */
     mort_invite: [
-      P("lueur", "🕊️", "Lueur protectrice", 4, "Un invité vivant proche reçoit un talisman", "bouclierProche"),
-      P("eclaireur", "🔆", "Éclaireur", 2, "Un invité vivant proche voit +1,5 case pendant 15 s", "visionProche", 1.5, 15),
-      P("souffle", "🍃", "Souffle d’élan", 3, "Un invité vivant proche gagne +30 % de vitesse pendant 8 s", "vitesseProche", 1.3, 8)],
+      P("camsur", "📹", "Œil fantôme", 3, "Une caméra filme la pièce où tu te trouves", "camSur"),
+      P("souffle", "🍃", "Souffle d’élan", 3, "Le joueur proche gagne +30 % de vitesse pendant 8 s", "vitesseProche", 1.3, 8),
+      P("eclaireur", "🔆", "Éclaireur", 2, "Le joueur proche voit +1,5 case pendant 15 s", "visionProche", 1.5, 15)],
     mort_cultiste: [
-      P("polter", "👹", "Poltergeist", 3, "Ralentit l’invité vivant le plus proche pendant 6 s", "ralentirProche", .6, 6),
-      P("obscur", "🌘", "Obscurité", 4, "Réduit la vision de l’invité le plus proche pendant 8 s", "aveuglerProche", -1.5, 8),
-      P("court", "⚡", "Court-circuit", 5, "Coupe les caméras pendant 15 s", "camCoupe", 1, 15)]
+      P("polter", "👹", "Poltergeist", 3, "Ralentit le joueur vivant le plus proche pendant 15 s", "ralentirProche", .6, 15),
+      P("obscur", "🌘", "Obscurité", 4, "Réduit la vision du joueur le plus proche pendant 10 s", "aveuglerProche", -1.5, 10),
+      P("alerte", "🚨", "Alerte", 6, "2 invités ou esprits doivent accomplir une mission urgente en 30 s, sinon les imposteurs gagnent", "alerte", 1, 30)]
   };
 
   const pouvoirs = (role, camp, mort) => {
