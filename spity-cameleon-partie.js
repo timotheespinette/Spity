@@ -112,6 +112,9 @@ st.textContent = `
 .mnShopD{font-size:.85rem;opacity:.75}
 .mnShopBuy{padding:10px 14px;border-radius:14px;border:0;font-weight:900;background:#ffd45c;color:#241800;white-space:nowrap}
 .mnShopBuy:disabled{opacity:.35}
+.mnAlerte{position:absolute;top:calc(env(safe-area-inset-top,0px) + 52px);left:50%;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:999px;font-weight:900;color:#fff;background:rgba(190,20,40,.82);border:1.5px solid rgba(255,140,150,.6);pointer-events:none;display:none;animation:mnPulse 1s infinite;white-space:nowrap}
+.mnCapaB{background:linear-gradient(145deg,#8a5cf6,#4a2bb0)}
+.mnPick{z-index:9}
 `;
 document.head.appendChild(st);
 
@@ -134,7 +137,7 @@ var AV={};
 function avSrc(a){return typeof a==="string"&&(a.indexOf("data:image/")===0||/^[\w.\-]+\.(png|jpe?g|webp)$/i.test(a))?a:""}
 function avCharger(id,a){var s=avSrc(a);if(!s)return;var im=new Image();im.src=s;AV[id]=im}
 /* Dessine un joueur : anneau de sa couleur + sa photo (ou son initiale s'il n'en a pas) */
-function pion(cx,x,y,r,couleur,id,nom){
+function pion(cx,x,y,r,couleur,id,nom,vert){
   cx.fillStyle=couleur;cx.beginPath();cx.arc(x,y,r,0,7);cx.fill();
   var im=AV[id],ri=r*.8;
   cx.save();cx.beginPath();cx.arc(x,y,ri,0,7);cx.clip();
@@ -142,7 +145,13 @@ function pion(cx,x,y,r,couleur,id,nom){
   else{cx.fillStyle="#fff";cx.fillRect(x-ri,y-ri,ri*2,ri*2);
     cx.fillStyle=couleur;cx.font="800 "+Math.round(ri*1.2)+'px "Baloo 2",system-ui,sans-serif';
     cx.textAlign="center";cx.textBaseline="middle";cx.fillText((nom||"?").charAt(0).toUpperCase(),x,y)}
-  cx.restore()}
+  cx.restore();
+  if(vert){
+    cx.save();cx.globalAlpha=.55;cx.fillStyle="#58ff3a";
+    cx.beginPath();cx.arc(x,y,r,0,7);cx.fill();cx.restore();
+    cx.strokeStyle="#7dff4a";cx.lineWidth=Math.max(2,r*.14);
+    cx.beginPath();cx.arc(x,y,r*1.05,0,7);cx.stroke();
+  }}
 function dessinerCadavre(cx,x,y,r,couleur,id,nom){
   cx.save();
 
@@ -329,15 +338,28 @@ function recevoir(id,m){
     O.envoyer(id,{t:"mn:action",ok:cm.ok,message:cm.message});
     return;
   }
-  if(m.t==="mn:mission"){
+
+    if(m.t==="mn:mission"){
     var mi=m.action==="debut"?mo.missionDebut(id,+m.id):mo.missionFin(id,+m.id);
     O.envoyer(id,{t:"mn:action",ok:mi.ok,message:mi.message});
     return;
   }
 
   if(m.t==="mn:acheter"){
-    var ac=mo.acheter(id,String(m.pouvoir));
+    var ac=mo.acheter(id,String(m.pouvoir),m.cible);
     O.envoyer(id,{t:"mn:action",ok:ac.ok,message:ac.message});
+    return;
+  }
+
+  if(m.t==="mn:capa"){
+    var ca=mo.capa(id,m.cible);
+    O.envoyer(id,{t:"mn:action",ok:ca.ok,message:ca.message});
+    return;
+  }
+
+  if(m.t==="mn:tirer"){
+    var ti=mo.tirer(id,m.cible);
+    O.envoyer(id,{t:"mn:action",ok:ti.ok,message:ti.message});
     return;
   }
 
@@ -377,11 +399,12 @@ function dessinerFlux(cx,z,px,py,pw,ph,titre){
   Object.keys(mo.joueurs).forEach(function(id){
     var j=mo.joueurs[id];
     if(j.mort||j.tunnel||j.invis>0||!dedansZ(z,j.x,j.y)||Moteur.typeCase(j.x,j.y)==="~")return;
+    var ap=(j.deguise&&mo.joueurs[j.deguise.id])||j;
     var X=ox+(j.x-z.x)*cs,Y=oy+(j.y-z.y)*cs;
-    pion(cx,X,Y,cs*.4,j.couleur,id,j.pseudo);
+    pion(cx,X,Y,cs*.4,ap.couleur,ap.id,ap.pseudo,j.poison>0&&!j.poisonFurtif);
     cx.font="700 "+Math.round(cs*.4)+"px system-ui";
     cx.textAlign="center";cx.textBaseline="alphabetic";
-    cx.fillStyle="#fff";cx.fillText(j.pseudo,X,Y-cs*.5);
+    cx.fillStyle="#fff";cx.fillText(ap.pseudo,X,Y-cs*.5);
   });
   cx.fillStyle="rgba(0,0,0,.65)";cx.fillRect(px,py,pw,barre);
   cx.fillStyle="#ff3b47";cx.beginPath();cx.arc(px+barre*.5,py+barre*.5,barre*.2,0,7);cx.fill();
@@ -418,12 +441,22 @@ function dessinerH(){
     cx.fillText("CAM "+(i+1),ox+z.x*cs+cs*.2,oy+z.y*cs+cs*.1);
   });
 
-  if(voir)Object.keys(mo.joueurs).forEach(function(id){
-    if(mo.joueurs[id].mort)return;
+  var rev=mo.reveles();
+  Object.keys(mo.joueurs).forEach(function(id){
     var j=mo.joueurs[id];
-    pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo);
+    if(j.mort)return;
+    var montreRole=voir,revele=rev.indexOf(id)>=0;
+    if(!montreRole&&!revele)return;
+    pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo,j.poison>0&&!j.poisonFurtif);
+    if(revele&&!montreRole){
+      cx.strokeStyle="#ffd45c";cx.lineWidth=Math.max(2,cs*.12);
+      cx.beginPath();cx.arc(ox+j.x*cs,oy+j.y*cs,cs*.6,0,7);cx.stroke();
+    }
     cx.font="700 "+Math.round(cs*.5)+"px system-ui";cx.textAlign="center";cx.textBaseline="alphabetic";
-    cx.fillStyle="#fff";cx.fillText((MM_ROLES.filter(function(r){return r.id===j.role})[0]||{}).emoji||"",ox+j.x*cs,oy+j.y*cs-cs*.5)});
+    cx.fillStyle="#fff";
+    cx.fillText(montreRole?((MM_ROLES.filter(function(r){return r.id===j.role})[0]||{}).emoji||""):j.pseudo,ox+j.x*cs,oy+j.y*cs-cs*.6);
+  });
+  dessinerAlerteH(cx,ox,oy,cs,w);
 
   /* les 2 flux caméras à droite */
   if(avec){
@@ -432,6 +465,30 @@ function dessinerH(){
       dessinerFlux(cx,z,px,m+i*(ph+m),pw,ph,"CAM "+(i+1)+(z.nom?" : "+z.nom:""));
     });
   }
+}
+
+/* Alerte lancée par un imposteur mort : grand cercle rouge + compte à rebours */
+function dessinerAlerteH(cx,ox,oy,cs,w){
+  var a=mo.alerte;if(!a)return;
+  var m=M.missions[a.mi],X=ox+(m[0]+.5)*cs,Y=oy+(m[1]+.5)*cs,
+      t=performance.now()/1000,p=.5+.5*Math.sin(t*6);
+  cx.save();
+  cx.strokeStyle="#ff2d3d";cx.lineWidth=Math.max(3,cs*.18);
+  cx.globalAlpha=.5+.5*p;
+  cx.beginPath();cx.arc(X,Y,cs*(1.6+.5*p),0,7);cx.stroke();
+  cx.globalAlpha=1;
+  cx.fillStyle="rgba(190,20,40,.9)";cx.beginPath();cx.arc(X,Y,cs*.9,0,7);cx.fill();
+  cx.fillStyle="#fff";cx.font="800 "+Math.round(cs*1.1)+"px system-ui";
+  cx.textAlign="center";cx.textBaseline="middle";cx.fillText("🚨",X,Y);
+  var txt="ALERTE  "+Math.ceil(a.reste)+" s  ·  "+a.faits.size+"/"+a.requis,
+      fs=Math.round(cs*1.3);
+  cx.font="900 "+fs+"px system-ui";
+  var tw=cx.measureText(txt).width+fs;
+  cx.fillStyle="rgba(190,20,40,.88)";
+  cx.fillRect(w/2-tw/2,oy+cs*.3,tw,fs*1.5);
+  cx.fillStyle="#fff";cx.textBaseline="middle";
+  cx.fillText(txt,w/2,oy+cs*.3+fs*.75);
+  cx.restore();
 }
 
 /* Chaque mission = pastille à l'avatar du joueur concerné (couleur + pseudo + ★).
@@ -526,10 +583,12 @@ function telStart(m){
     flashMort:0,
     points:0, missions:[], rayon:null, rA:null,
     cibleMission:null, mi:null, shopOuvert:false, cleShop:""
+    ,liste:null,alerte:null,traces:null,capaCd:0,capaActif:0,chasse:null,chasseTire:false,
+    pieges:null,zonesTout:null,pick:null
   };
   var r=TO.root;r.innerHTML="";
   cvT=h("canvas","mncv");cxT=cvT.getContext("2d");r.appendChild(cvT);
-  
+
   hudT=h("div","mnhud glass","Connexion…");
   r.appendChild(hudT);
   T.camDot=h("div","mnCam");
@@ -598,8 +657,22 @@ function telStart(m){
   r.appendChild(T.shopPanel);
   T.pts=h("div","mnPts","★ 0");
   r.appendChild(T.pts);
-  T.camPanel=h("div","mnCamPanel");
+  T.alertEl=h("div","mnAlerte");
+  r.appendChild(T.alertEl);
+
+    T.camPanel=h("div","mnCamPanel");
   r.appendChild(T.camPanel);
+  T.btnCapa=h("button","mnAction mnCapaB","CAPACITÉ");
+  T.btnCapa.style.display="none";
+  T.actions.appendChild(T.btnCapa);
+  T.btnCapa.onclick=function(){
+    var role=T.role&&T.role.role;
+    if(role==="detective"){TO.envoyer({t:"mn:capa"});return}
+    var opts=(T.liste||[]).map(function(o){return [o[0],o[1]]});
+    ouvrirChoix(role==="garde"?"🛡️ Qui protéger ?":"🎭 Quelle apparence ?",opts,function(v){TO.envoyer({t:"mn:capa",cible:v})});
+  };
+  T.pickPanel=h("div","mnShopPanel mnPick");
+  r.appendChild(T.pickPanel);
   r.appendChild(T.actions);
 
   T.flash=h("div","mnFlash");
@@ -676,6 +749,36 @@ function majPanneauCam(){
   });
 }
 
+/* Choisir un joueur / une pièce dans une liste (capacités, boutique, tir du chasseur) */
+function ouvrirChoix(titre,opts,cb,fermable,chasse){
+  fermerChoix();
+  var p=T.pickPanel;p.innerHTML="";p.style.display="flex";
+  var top=h("div","mnShopTop");top.appendChild(h("h3","",titre));
+  if(fermable!==false){var f=h("button","mnb glass","Annuler");f.onclick=fermerChoix;top.appendChild(f)}
+  p.appendChild(top);
+  if(!opts.length)p.appendChild(h("div","mnShopD","Personne à cibler."));
+  opts.forEach(function(o){
+    var b=h("button","mnShopBuy",o[1]);
+    b.style.width="100%";b.style.padding="14px";
+    b.onclick=function(){fermerChoix();cb(o[0])};
+    p.appendChild(b);
+  });
+  T.pick={chasse:!!chasse};
+}
+function fermerChoix(){
+  if(!T||!T.pickPanel)return;
+  T.pickPanel.style.display="none";T.pickPanel.innerHTML="";T.pick=null;
+}
+function majChoix(){
+  if(!T||!T.pickPanel)return;
+  if(!T.chasse)T.chasseTire=false;
+  if(T.chasse&&!T.pick&&!T.chasseTire){
+    ouvrirChoix("🎯 Éliminé… emmène quelqu'un avec toi",T.chasse.candidats.map(function(o){return [o[0],o[1]]}),
+      function(v){T.chasseTire=true;TO.envoyer({t:"mn:tirer",cible:v})},false,true);
+  }else if(!T.chasse&&T.pick&&T.pick.chasse)fermerChoix();
+  else if(T.pick&&!T.pick.chasse&&T.phase!=="jeu")fermerChoix();
+}
+
 function majBoutique(){
   if(!T||!T.shopPanel)return;
   var ok=T.phase==="jeu"&&T.role&&!T.tunnel;
@@ -698,17 +801,23 @@ function majBoutique(){
     row.appendChild(i);
     var b=h("button","mnShopBuy","★ "+po.cout);
     b.disabled=T.points<po.cout;
-    b.onclick=function(){TO.envoyer({t:"mn:acheter",pouvoir:po.id})};
+    b.onclick=function(){
+      if(!po.cible){TO.envoyer({t:"mn:acheter",pouvoir:po.id});return}
+      var opts=po.cible==="piece"
+        ?(M.pieces||[]).map(function(p,i){return [i,p[2]]})
+        :(T.liste||[]).map(function(o){return [o[0],o[1]]});
+      ouvrirChoix(po.nom+" : choisis",opts,function(v){TO.envoyer({t:"mn:acheter",pouvoir:po.id,cible:v})});
+    };
     row.appendChild(b);p.appendChild(row);
   });
 }
-   
+
 /* Détection des actions disponibles */
 function majActionsT(){
   if(!T||!T.actions)return;
-  majPanneauCam();majBoutique();
+  majPanneauCam();majBoutique();majChoix();
 
-  var B=[T.btnAttaque,T.btnReport,T.btnTrappe,T.btnSortir,T.btnRetour,T.btnSonner,T.btnCam,T.btnMission,T.btnShop];
+  var B=[T.btnAttaque,T.btnReport,T.btnTrappe,T.btnSortir,T.btnRetour,T.btnSonner,T.btnCam,T.btnMission,T.btnShop,T.btnCapa];
   function montrer(b,v){b.style.display=v?"block":"none"}
 
   if(T.phase!=="jeu"){
@@ -742,7 +851,7 @@ function majActionsT(){
     if(d<bm){bm=d;T.cibleMission=m}
   });
   if(T.mi&&!(T.missions||[]).some(function(m){return m.id===T.mi.id}))T.mi.fermer();
-   
+
   var pretCloche=false;
 
   if(!T.mort){
@@ -806,11 +915,20 @@ function majActionsT(){
   if(pretCloche)T.btnSonner.textContent="SONNER ("+T.cloches+")";
 
   montrer(T.btnCam,role==="veilleur"&&!T.mort);
+  var aCapa=!T.mort&&(role==="detective"||role==="metamorphe"||role==="garde");
+  montrer(T.btnCapa,aCapa);
+  if(aCapa){
+    var cdc=Math.ceil(T.capaCd||0),
+        nomCapa=role==="detective"?"👣 EMPREINTES":role==="metamorphe"?"🎭 MÉTAMORPHOSE":"🛡️ PROTÉGER";
+    T.btnCapa.disabled=cdc>0;
+    T.btnCapa.textContent=nomCapa+(cdc>0?" ("+cdc+" s)":"");
+  }
   montrer(T.btnMission,!!T.cibleMission&&!T.mi);
   if(T.cibleMission)T.btnMission.textContent=T.cibleMission.emoji+" MISSION";
   montrer(T.btnShop,true);
   T.btnShop.textContent="★ "+T.points;
 }
+
 /* Vue locale avec brouillard de guerre */
 
 /* Vue locale avec vision claire + décor assombri autour */
@@ -916,12 +1034,33 @@ function dessinerT(){
       cx.arc(ox+(M.cloche[0]+.5)*cs,oy+(M.cloche[1]+.5)*cs,cs*.4,0,7);
       cx.fill();
     }
-    
+
+    // Zones des caméras (veilleur), pièges (chasseur), empreintes (détective)
+    if(T.zonesTout){
+      cx.save();cx.setLineDash([cs*.3,cs*.2]);cx.strokeStyle="#ff3b47";cx.lineWidth=2*K;
+      T.zonesTout.forEach(function(z){cx.strokeRect(ox+z[0]*cs,oy+z[1]*cs,z[2]*cs,z[3]*cs)});
+      cx.restore();
+    }
+    if(T.pieges){
+      cx.font=Math.round(cs*.6)+"px system-ui";cx.textAlign="center";cx.textBaseline="middle";
+      T.pieges.forEach(function(p){cx.fillText("🪤",ox+p[0]*cs,oy+p[1]*cs)});
+    }
+    if(T.traces){
+      T.traces.forEach(function(t){
+        var X=ox+t[0]*cs,Y=oy+t[1]*cs;
+        cx.globalAlpha=Math.max(.12,1-t[2])*.85;
+        cx.fillStyle=t[3]||"#e8f1ff";
+        cx.beginPath();cx.ellipse(X-cs*.09,Y,cs*.07,cs*.12,0,0,7);cx.fill();
+        cx.beginPath();cx.ellipse(X+cs*.09,Y+cs*.06,cs*.07,cs*.12,0,0,7);cx.fill();
+      });
+      cx.globalAlpha=1;
+    }
+
     // Missions du joueur (pastilles lumineuses, flèches sur les bords si hors écran)
     var tt=performance.now()/1000;
     T.missions.forEach(function(m,k){
       var X=ox+m.x*cs,Y=oy+m.y*cs,p=.5+.5*Math.sin(tt*3+k*1.7),
-          col=m.cat==="imposteur"?"#ff6b78":m.cat==="mort"?"#8cecff":"#5ff2c8";
+          col=m.alerte?"#ff3b47":m.cat==="imposteur"?"#ff6b78":m.cat==="mort"?"#8cecff":"#5ff2c8";
       if(X<0||X>w||Y<0||Y>hh){
         var mg=34*K,ex=Math.max(mg,Math.min(w-mg,X)),ey=Math.max(mg,Math.min(hh-mg,Y)),
             an2=Math.atan2(Y-ey,X-ex);
@@ -962,36 +1101,22 @@ function dessinerT(){
       );
     }
 
-    // Autres joueurs vivants visibles
+    // Autres joueurs visibles
     for(i=0;i<T.autres.length;i++){
-
       var o=T.autres[i];
-
-      if(!T.mort){
+      if(!T.mort&&!o[6]){                         // o[6] : vu par les caméras du veilleur
         if(Math.hypot(o[1]-T.x,o[2]-T.y)>R)continue;
         if(!Moteur.voit(T.x,T.y,o[1],o[2]))continue;
       }
-
-      pion(
-        cx,
-        ox+o[1]*cs,
-        oy+o[2]*cs,
-        cs*.4,
-        o[3],
-        o[0],
-        o[4]
-      );
-
+      cx.save();
+      if(o[7])cx.globalAlpha=.4;                  // o[7] : fantôme
+      pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*.4,o[3],o[8]||o[0],o[4],!!o[5]);   // o[5] : empoisonné → vert
+      cx.restore();
       cx.textAlign="center";
       cx.textBaseline="alphabetic";
       cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
       cx.fillStyle="#fff";
-
-      cx.fillText(
-        o[4],
-        ox+o[1]*cs,
-        oy+o[2]*cs-cs*.5
-      );
+      cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.5);
     }
 
     // Personnage du joueur
@@ -1142,7 +1267,19 @@ function telRecevoir(m){
     var ancienPts=T.points;
     T.points=m.points||0;
     T.rayon=m.rayon||null;
-    T.missions=m.missions||[];
+    T.missions=(m.missions||[]).concat(m.alerte&&m.alerte.mission?[m.alerte.mission]:[]);
+    T.alerte=m.alerte||null;
+    T.liste=m.liste||null;
+    T.traces=m.traces||null;
+    T.capaCd=m.capaCd||0;
+    T.capaActif=m.capaActif||0;
+    T.chasse=m.chasse||null;
+    T.pieges=m.pieges||null;
+    T.zonesTout=m.zonesTout||null;
+    if(m.alerte&&m.phase==="jeu"){
+      T.alertEl.style.display="block";
+      T.alertEl.textContent="🚨 ALERTE · "+m.alerte.reste+" s · "+m.alerte.faits+"/"+m.alerte.requis;
+    }else T.alertEl.style.display="none";
     T.pts.textContent="★ "+T.points;
     if(T.points>ancienPts){
       T.pts.classList.add("up");
@@ -1175,7 +1312,7 @@ function telRecevoir(m){
 
       T.messageTimer=setTimeout(function(){
         if(T&&hudT)hudT.style.display="none";
-      },2200);
+      },Math.max(2200,String(m.message).length*55));
     }
   }
   else if(m.t==="mn:fin"){
