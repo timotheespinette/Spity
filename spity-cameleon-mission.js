@@ -193,7 +193,7 @@ const ManoirMissions = (() => {
       P("fiole", "🧪", "Fiole fraîche", 3, "Ton poison est rechargé instantanément", "cooldown")],
     metamorphe: [
       ombre("Voile d’ombre", 8, 5), lame,
-      P("eblouir", "🌟", "Éblouissement", 5, "Réduit la vision de tous les civils pendant 10 s", "aveuglerTous", -1.5, 10)],
+      P("eblouir", "🌟", "Éblouissement", 5, "Réduit la vision de tous les civils pendant 10 s", "aveuglerTous", -3.5, 10)],
 
     /* ── Camp des invités ── */
     invite: [sprint, lanterne, talisman],
@@ -205,14 +205,14 @@ const ManoirMissions = (() => {
     detective: [
       P("recharge", "🔁", "Recharge", 2, "Tes empreintes sont de nouveau disponibles", "capaReset"),
       P("pisteur", "🐾", "Pisteur", 4, "Voit les empreintes d’un seul joueur pendant 30 s", "traceCible", 1, 30, "joueur"),
-      P("trappes", "🕳️", "Détecteur de trappes", 3, "Indique si quelqu’un est dans une trappe", "trappeVoir")],
+      P("trappes", "🕳️", "Détecteur de trappes", 3, "Voit les joueurs cachés dans les trappes pendant 20 s", "trappeVoir", 1, 20)],
     medium: [
       P("lieu", "📍", "Lieu du drame", 3, "Révèle la pièce où est mort le dernier joueur", "lieuMort"),
       P("esprits", "👻", "Voir les esprits", 7, "Voit les fantômes proches pendant 20 s", "fantomes", 1, 20),
       P("buissons", "🌿", "Œil des buissons", 3, "Voit dans les buissons de loin pendant 20 s", "buissons", 1, 20)],
     cartographe: [
       P("carte", "🗺️", "Carte étendue", 4, "Dévoile tout le monde sur la carte de l’hôte pendant 15 s", "carte", 15, 15),
-      P("relance", "🔁", "Recharge", 3, "Relance ta révélation immédiatement", "cartoReset"),
+      P("relance", "🔁", "Recharge", 3, "Relance ta révélation immédiatement", "capaReset"),
       P("passage", "🧭", "Dernier passage", 3, "Choisis une pièce : qui y est passé en dernier ?", "dernierPassage", 1, 0, "piece")],
     chasseur: [
       P("riposte", "🎯", "Contre-attaque", 5, "Si les imposteurs te tuent dans les 40 s, ils meurent avec toi", "riposte", 1, 40),
@@ -230,11 +230,11 @@ const ManoirMissions = (() => {
     /* ── Esprits ── */
     mort_invite: [
       P("camsur", "📹", "Œil fantôme", 3, "Une caméra filme la pièce où tu te trouves", "camSur"),
-      P("souffle", "🍃", "Souffle d’élan", 3, "Le joueur proche gagne +30 % de vitesse pendant 8 s", "vitesseProche", 1.3, 8),
-      P("eclaireur", "🔆", "Éclaireur", 2, "Le joueur proche voit +1,5 case pendant 15 s", "visionProche", 1.5, 15)],
+      P("souffle", "🍃", "Souffle d’élan", 3, "Le joueur proche gagne +80 % de vitesse pendant 10 s", "vitesseProche", 1.8, 10),
+      P("eclaireur", "🔆", "Éclaireur", 2, "Le joueur proche voit +3 cases pendant 20 s", "visionProche", 3, 20)],
     mort_cultiste: [
       P("polter", "👹", "Poltergeist", 3, "Ralentit le joueur vivant le plus proche pendant 15 s", "ralentirProche", .6, 15),
-      P("obscur", "🌘", "Obscurité", 4, "Réduit la vision du joueur le plus proche pendant 10 s", "aveuglerProche", -1.5, 10),
+      P("obscur", "🌘", "Obscurité", 4, "Réduit la vision du joueur le plus proche pendant 10 s", "aveuglerProche", -3.5, 10),
       P("alerte", "🚨", "Alerte", 6, "2 invités ou esprits doivent accomplir une mission urgente en 30 s, sinon les imposteurs gagnent", "alerte", 1, 30)]
   };
 
