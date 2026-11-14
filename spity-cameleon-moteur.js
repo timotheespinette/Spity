@@ -89,7 +89,7 @@ const Moteur = (() => {
 
   /* Effets temporaires (secondes restantes) remis à zéro à la mort */
   const TIM=['furtif','fige','riposte','gardeReste','empreintes','cibleTraceReste',
-             'fantomes','buis','camTout','revele'];
+             'fantomes','buis','camTout','revele','trappeVue'];
 
   function nouveau(){
     const e={
@@ -301,6 +301,9 @@ const Moteur = (() => {
       ){
         return {ok:false,message:"Tu ne possèdes pas cette capacité"};
       }
+
+      if(c.camp==='cultiste')
+        return {ok:false,message:"Tu ne peux pas attaquer un allié"};
 
       if(a.cooldown>0)
         return {ok:false,message:"Attends encore "+Math.ceil(a.cooldown)+" s"};
@@ -687,7 +690,7 @@ const Moteur = (() => {
     /* ───────────── POUVOIRS ───────────── */
 
     function procheInvite(j){
-      let best=null,d=5;
+      let best=null,d=12;
       Object.values(e.joueurs).forEach(o=>{
         if(o===j||o.mort||o.tunnel||o.camp==='cultiste')return;
         const k=Math.hypot(o.x-j.x,o.y-j.y);
@@ -746,13 +749,12 @@ const Moteur = (() => {
           j.cibleTrace=c.id;j.cibleTraceReste=p.duree;
           return {ok:true};
         }
-        case 'trappeVoir':{
-          const n=Object.values(e.joueurs).filter(o=>o.tunnel).length;
-          return {ok:true,message:n?"🕳️ Quelqu'un est dans les trappes !":"🕳️ Personne dans les trappes."};
-        }
+        case 'trappeVoir':
+          j.trappeVue=p.duree;
+          return {ok:true,long:true,message:"🕳️ Tu vois qui est dans les trappes ("+p.duree+" s)"};
         case 'lieuMort':
           if(!e.dernierMort)return {ok:false,message:"Personne n'est mort pour l'instant"};
-          return {ok:true,message:"📍 Le dernier mort est tombé : "+e.dernierMort.lieu};
+          return {ok:true,long:true,message:"📍 Le dernier mort est tombé : "+e.dernierMort.lieu};
         case 'fantomes':  j.fantomes=p.duree;return {ok:true};
         case 'buissons':  j.buis=p.duree;return {ok:true};
 
@@ -761,7 +763,7 @@ const Moteur = (() => {
         case 'dernierPassage':{
           if(!Number.isInteger(cible)||!PIECES[cible])return {ok:false,message:"Choisis une pièce"};
           const d=e.derniers[cible];
-          return {ok:true,message:d
+          return {ok:true,long:true,message:d
             ?"🧭 "+PIECES[cible][2]+" : "+d.pseudo+" (il y a "+Math.round(e.t-d.t)+" s)"
             :"🧭 Personne n'est passé à "+PIECES[cible][2]};
         }
@@ -822,22 +824,20 @@ const Moteur = (() => {
         case 'visionProche':
           c.visBonus=p.val;c.visReste=p.duree;
           e.notifier(c.id,"🔆 Ta vue s'éclaircit mystérieusement…");
-          return {ok:true};
+          return {ok:true,message:"🔆 "+c.pseudo+" voit plus loin"};
         case 'vitesseProche':
           c.vitMult=p.val;c.vitReste=p.duree;
           e.notifier(c.id,"🍃 Un souffle te pousse en avant…");
-          return {ok:true};
+          return {ok:true,message:"🍃 "+c.pseudo+" court plus vite"};
         case 'ralentirProche':
           c.vitMult=p.val;c.vitReste=p.duree;
           e.notifier(c.id,"👹 Une présence glaciale te ralentit…");
-          return {ok:true};
+          return {ok:true,message:"👹 "+c.pseudo+" est ralenti"};
         case 'aveuglerProche':
           c.visBonus=p.val;c.visReste=p.duree;
           e.notifier(c.id,"🌘 Les ténèbres se referment sur toi…");
-          return {ok:true};
+          return {ok:true,message:"🌘 "+c.pseudo+" est aveuglé"};
       }
-      return {ok:false,message:"Pouvoir inconnu"};
-    }
 
     e.acheter=(id,pid,cible)=>{
       const j=e.joueurs[id];
@@ -850,7 +850,7 @@ const Moteur = (() => {
       const r=appliquer(j,p,cible);
       if(!r.ok)return r;
       j.points-=p.cout;
-      return {ok:true,message:r.message||(p.emoji+" "+p.nom+" activé !")};
+      return {ok:true,long:!!r.long,message:r.message||(p.emoji+" "+p.nom+" activé !")};
     };
 
     /* ───────────── CAPACITÉS DE RÔLE (bouton de base) ───────────── */
@@ -883,6 +883,12 @@ const Moteur = (() => {
         j.capaCd=C.cooldownGarde||40;
         if(c!==j)e.notifier(c.id,"🛡️ Un garde du corps veille sur toi (15 s)");
         return {ok:true,message:"🛡️ "+c.pseudo+" est protégé(e) 15 s"};
+      }
+
+      if(j.role==='cartographe'){
+        j.cartoReste=C.dureeCarto||5;
+        j.capaCd=C.cooldownCarto||30;
+        return {ok:true,message:"🗺️ Tout le monde est révélé sur l'écran"};
       }
 
       return {ok:false,message:"Tu n'as pas de capacité active"};
@@ -987,14 +993,8 @@ const Moteur = (() => {
         }
 
         /* Cartographe : révélation automatique de 5 s toutes les 25 s */
-        if(j.role==='cartographe'&&!j.mort){
-          if(j.cartoReste>0)j.cartoReste=Math.max(0,j.cartoReste-dt);
-          j.cartoCd-=dt;
-          if(j.cartoCd<=0){
-            j.cartoCd=25;
-            j.cartoReste=Math.max(j.cartoReste,5);
-          }
-        }
+        if(j.role==='cartographe'&&!j.mort&&j.cartoReste>0)
+          j.cartoReste=Math.max(0,j.cartoReste-dt);
 
         if(j.poison>0){
           j.poison-=dt;
