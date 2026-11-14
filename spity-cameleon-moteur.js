@@ -838,6 +838,8 @@ const Moteur = (() => {
           e.notifier(c.id,"🌘 Les ténèbres se referment sur toi…");
           return {ok:true,message:"🌘 "+c.pseudo+" est aveuglé"};
       }
+      return {ok:false,message:"Effet inconnu"};
+  }
 
     e.acheter=(id,pid,cible)=>{
       const j=e.joueurs[id];
