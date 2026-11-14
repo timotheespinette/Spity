@@ -420,13 +420,17 @@ function dessinerH(){
   var w,hh;ajuster(cvH);w=cvH.width;hh=cvH.height;
   if(!w||!mo)return;
   var cx=cxH,cams=mo.camsActives(),avec=cams.length>0,
-      wCarte=avec?Math.floor(w*.62):w,
+      wCarte=avec?Math.floor(w*(cams.length>2?.5:.62)):w,
       cs=Math.floor(Math.min(wCarte/M.largeur,hh/M.hauteur)),
       ox=(wCarte-cs*M.largeur)/2,oy=(hh-cs*M.hauteur)/2,x,y;
   cx.fillStyle="#0b1511";cx.fillRect(0,0,w,hh);
   for(y=0;y<M.hauteur;y++)for(x=0;x<M.largeur;x++){
     tuile(cx,M.grille[y][x],ox+x*cs,oy+y*cs,cs)}
   dessinerMissionsH(cx,ox,oy,cs);
+  TRAP.forEach(function(p,k){p.forEach(function(q){
+    var tx=ox+q[0]*cs+cs*.15,ty=oy+q[1]*cs+cs*.15;
+    cx.fillStyle=TCOL[k%TCOL.length];cx.fillRect(tx,ty,cs*.7,cs*.7);
+    cx.strokeStyle="#fff";cx.lineWidth=2;cx.strokeRect(tx,ty,cs*.7,cs*.7)})});
   cx.fillStyle="#e0a800";cx.beginPath();
   cx.arc(ox+(M.cloche[0]+.5)*cs,oy+(M.cloche[1]+.5)*cs,cs*.4,0,7);cx.fill();
 
@@ -461,9 +465,13 @@ function dessinerH(){
 
   /* les 2 flux caméras à droite */
   if(avec){
-    var m=Math.round(w*.012),px=wCarte+m,pw=w-wCarte-2*m,ph=Math.floor((hh-3*m)/2);
-    cams.slice(0,2).forEach(function(z,i){
-      dessinerFlux(cx,z,px,m+i*(ph+m),pw,ph,"CAM "+(i+1)+(z.nom?" : "+z.nom:""));
+    var n=cams.length,m=Math.round(w*.012),
+        cols=n<=2?1:(n<=6?2:3),rows=Math.ceil(n/cols),
+        pw=Math.floor((w-wCarte-(cols+1)*m)/cols),
+        ph=Math.floor((hh-(rows+1)*m)/rows);
+    cams.forEach(function(z,i){
+      var c=i%cols,r=Math.floor(i/cols);
+      dessinerFlux(cx,z,wCarte+m+c*(pw+m),m+r*(ph+m),pw,ph,"CAM "+(i+1)+(z.nom?" : "+z.nom:""));
     });
   }
 }
@@ -670,7 +678,7 @@ function telStart(m){
   T.actions.appendChild(T.btnCapa);
   T.btnCapa.onclick=function(){
     var role=T.role&&T.role.role;
-    if(role==="detective"){TO.envoyer({t:"mn:capa"});return}
+    if(role==="detective"||role==="cartographe"){TO.envoyer({t:"mn:capa"});return}
     var opts=(T.liste||[]).map(function(o){return [o[0],o[1]]});
     ouvrirChoix(role==="garde"?"🛡️ Qui protéger ?":"🎭 Quelle apparence ?",opts,function(v){TO.envoyer({t:"mn:capa",cible:v})});
   };
@@ -698,6 +706,8 @@ function telStart(m){
   addEventListener("keydown",kd);addEventListener("keyup",ku);
 
   tickT=setInterval(envoyerDir,C.tick);
+  function veille(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request("screen").then(function(l){if(T)T.wake=l;else l.release()}).catch(function(){})}catch(e){}}
+  veille();document.addEventListener("visibilitychange",veille);T.veille=veille;
   TO.afficher("mnTel");
   boucleT()}
 
@@ -706,6 +716,8 @@ function telStop(){
   removeEventListener("keydown",kd);removeEventListener("keyup",ku);
   if(T && T.voteUI && T.voteUI.destroy) T.voteUI.destroy();
   if(T && T.mi) T.mi.fermer();
+  if(T&&T.veille)document.removeEventListener("visibilitychange",T.veille);
+  if(T&&T.wake){try{T.wake.release()}catch(e){}}
   T=null}
 function majPanneauCam(){
   if(!T||!T.camPanel)return;
@@ -805,11 +817,14 @@ function majBoutique(){
     var b=h("button","mnShopBuy","★ "+po.cout);
     b.disabled=T.points<po.cout;
     b.onclick=function(){
-      if(!po.cible){TO.envoyer({t:"mn:acheter",pouvoir:po.id});return}
+      if(!po.cible){T.shopOuvert=false;T.cleShop="";TO.envoyer({t:"mn:acheter",pouvoir:po.id});return}
       var opts=po.cible==="piece"
         ?(M.pieces||[]).map(function(p,i){return [i,p[2]]})
         :(T.liste||[]).map(function(o){return [o[0],o[1]]});
-      ouvrirChoix(po.nom+" : choisis",opts,function(v){TO.envoyer({t:"mn:acheter",pouvoir:po.id,cible:v})});
+      ouvrirChoix(po.nom+" : choisis",opts,function(v){
+        T.shopOuvert=false;T.cleShop="";
+        TO.envoyer({t:"mn:acheter",pouvoir:po.id,cible:v});
+      });
     };
     row.appendChild(b);p.appendChild(row);
   });
@@ -831,7 +846,7 @@ function majActionsT(){
 
   var role=T.role&&T.role.role,camp=T.role&&T.role.camp;
   var peutAttaquer=role==="cultiste"||role==="empoisonneur"||role==="metamorphe";
-  var peutTrappe=role==="cultiste"||(C.trappesTous&&camp==="cultiste");
+  var peutTrappe=camp==="cultiste";
 
   T.cibleAttaque=null;
   T.cibleCadavre=null;
@@ -861,6 +876,7 @@ function majActionsT(){
     if(peutAttaquer){
       var meilleure=1.2;
       T.autres.forEach(function(o){
+        if(o[9])return;
         var d=Math.hypot(o[1]-T.x,o[2]-T.y);
         if(d<meilleure&&Moteur.voit(T.x,T.y,o[1],o[2],true)){
           meilleure=d;
@@ -918,11 +934,11 @@ function majActionsT(){
   if(pretCloche)T.btnSonner.textContent="SONNER ("+T.cloches+")";
 
   montrer(T.btnCam,role==="veilleur"&&!T.mort);
-  var aCapa=!T.mort&&(role==="detective"||role==="metamorphe"||role==="garde");
+  var aCapa=!T.mort&&(role==="detective"||role==="metamorphe"||role==="garde"||role==="cartographe");
   montrer(T.btnCapa,aCapa);
   if(aCapa){
     var cdc=Math.ceil(T.capaCd||0),
-        nomCapa=role==="detective"?"👣 EMPREINTES":role==="metamorphe"?"🎭 MÉTAMORPHOSE":"🛡️ PROTÉGER";
+        nomCapa=role==="detective"?"👣 EMPREINTES":role==="metamorphe"?"🎭 MÉTAMORPHOSE":role==="cartographe"?"🗺️ RÉVÉLER":"🛡️ PROTÉGER";
     T.btnCapa.disabled=cdc>0;
     T.btnCapa.textContent=nomCapa+(cdc>0?" ("+cdc+" s)":"");
   }
@@ -946,7 +962,7 @@ function dessinerT(){
   var cx=cxT,Rb=C.rayonVision;
   T.rA=(T.rA==null?(T.rayon||Rb):T.rA+((T.rayon||Rb)-T.rA)*.12);
   var R=T.rA;
-  var cs=Math.floor(Math.min(w,hh)/(2*Rb+1));
+  var cs=Math.floor(Math.min(w,hh)/(2*Math.max(R,Rb)+1));
   var x,y,a,i;
 
   T.vx+=(T.x-T.vx)*.35;
@@ -973,7 +989,7 @@ function dessinerT(){
     // Le voile noir et la restriction de vision s'appliquent uniquement si le joueur est vivant
     if(!T.mort){
       // Assombrissement extérieur
-      cx.fillStyle="rgba(0,0,0,.68)";
+      cx.fillStyle=R<Rb-.5?"rgba(0,0,0,.94)":"rgba(0,0,0,.68)";
       cx.fillRect(0,0,w,hh);
 
       // Calcul de la vision
@@ -1019,7 +1035,7 @@ function dessinerT(){
       cx.restore();
     }
 
-    if(!T.mort&&T.role&&(T.role.role==="cultiste"||(C.trappesTous&&T.role.camp==="cultiste"))){
+    {
       TRAP.forEach(function(p,k){
         p.forEach(function(q){
           if(Math.hypot(q[0]+.5-T.x,q[1]+.5-T.y)>R+.5)return;
@@ -1115,10 +1131,11 @@ function dessinerT(){
       if(o[7])cx.globalAlpha=.4;                  // o[7] : fantôme
       pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*.4,o[3],o[8]||o[0],o[4],!!o[5]);   // o[5] : empoisonné → vert
       cx.restore();
+      if(o[9]){cx.strokeStyle="#ff3b47";cx.lineWidth=3*K;cx.beginPath();cx.arc(ox+o[1]*cs,oy+o[2]*cs,cs*.5,0,7);cx.stroke()}
       cx.textAlign="center";
       cx.textBaseline="alphabetic";
       cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
-      cx.fillStyle="#fff";
+      cx.fillStyle=o[9]?"#ff6b78":"#fff";
       cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.5);
     }
 
@@ -1145,13 +1162,11 @@ function dessinerT(){
 
     }else{
 
-      if(T.tunnel)cx.globalAlpha=.45;
-      pion(
-        cx,w/2,hh/2,cs*.4,
-        T.couleur,T.id,T.pseudo
-      );
+      if(T.tunnel||T.invis>0)cx.globalAlpha=.45;
+      var tf=T.transfo;
+      pion(cx,w/2,hh/2,cs*.4,tf?tf.couleur:T.couleur,tf?tf.id:T.id,tf?tf.pseudo:T.pseudo);
       cx.globalAlpha=1;
-    }
+      if(tf){cx.strokeStyle="#b48cff";cx.lineWidth=3*K;cx.beginPath();cx.arc(w/2,hh/2,cs*.5,0,7);cx.stroke()}
 
     // Dégradé de bord
     var g=cx.createRadialGradient(
@@ -1279,6 +1294,13 @@ function telRecevoir(m){
     T.chasse=m.chasse||null;
     T.pieges=m.pieges||null;
     T.zonesTout=m.zonesTout||null;
+    T.transfo=m.transfo||null;
+    T.invis=m.invis||0;
+    var st2="";
+    if(m.transfo)st2="🎭 Transformé en "+m.transfo.pseudo+" · "+m.transfo.reste+" s";
+    else if(m.invis>0)st2="🌑 Invisible · "+m.invis+" s";
+    T.statutEl.textContent=st2;
+    T.statutEl.style.display=(st2&&m.phase==="jeu")?"block":"none";
     if(m.alerte&&m.phase==="jeu"){
       T.alertEl.style.display="block";
       T.alertEl.textContent="🚨 ALERTE · "+m.alerte.reste+" s · "+m.alerte.faits+"/"+m.alerte.requis;
@@ -1315,7 +1337,7 @@ function telRecevoir(m){
 
       T.messageTimer=setTimeout(function(){
         if(T&&hudT)hudT.style.display="none";
-      },Math.max(2200,String(m.message).length*55));
+      },Math.max(m.long?9000:2200,String(m.message).length*55));
     }
   }
   else if(m.t==="mn:fin"){
