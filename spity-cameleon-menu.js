@@ -12,7 +12,7 @@ var MM_TITRE = "Caméléon";
    info  : true = rôle d'information (leur nombre est limité selon le nombre de joueurs) */
 var MM_ROLES = [
   {id:"cultiste",     nom:"Le Cultiste",       emoji:"🔪", camp:"cultiste", fixe:true,
-   desc:"Attaque au contact. Seul à pouvoir utiliser les trappes."},
+   desc:"Attaque au contact. Tous les cultistes peuvent utiliser les trappes."},
   {id:"empoisonneur", nom:"L’Empoisonneur",    emoji:"🧪", camp:"cultiste",
    desc:"Sa cible meurt 15 secondes plus tard, sans être prévenue."},
   {id:"metamorphe",   nom:"Le Métamorphe",     emoji:"🎭", camp:"cultiste",
