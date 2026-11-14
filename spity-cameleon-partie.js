@@ -114,7 +114,8 @@ st.textContent = `
 .mnShopBuy:disabled{opacity:.35}
 .mnAlerte{position:absolute;top:calc(env(safe-area-inset-top,0px) + 52px);left:50%;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:999px;font-weight:900;color:#fff;background:rgba(190,20,40,.82);border:1.5px solid rgba(255,140,150,.6);pointer-events:none;display:none;animation:mnPulse 1s infinite;white-space:nowrap}
 .mnCapaB{background:linear-gradient(145deg,#8a5cf6,#4a2bb0)}
-.mnPick{z-index:9}
+.mnPick{z-index:20}
+.mnStatut{position:absolute;top:calc(env(safe-area-inset-top,0px) + 90px);left:50%;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:999px;font-weight:900;color:#fff;background:rgba(122,87,245,.88);border:1.5px solid rgba(200,180,255,.7);pointer-events:none;display:none;white-space:nowrap}
 `;
 document.head.appendChild(st);
 
@@ -347,7 +348,7 @@ function recevoir(id,m){
 
   if(m.t==="mn:acheter"){
     var ac=mo.acheter(id,String(m.pouvoir),m.cible);
-    O.envoyer(id,{t:"mn:action",ok:ac.ok,message:ac.message});
+    O.envoyer(id,{t:"mn:action",ok:ac.ok,message:ac.message,long:ac.long});
     return;
   }
 
@@ -659,6 +660,8 @@ function telStart(m){
   r.appendChild(T.pts);
   T.alertEl=h("div","mnAlerte");
   r.appendChild(T.alertEl);
+  T.statutEl=h("div","mnStatut");
+  r.appendChild(T.statutEl);
 
     T.camPanel=h("div","mnCamPanel");
   r.appendChild(T.camPanel);
