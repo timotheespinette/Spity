@@ -10,7 +10,7 @@ var JEUX=[
    info:"Chacun reçoit un mot en secret. Les civils ont tous le même mot, l’undercover en a un très proche. Décris le tien sans le dire, puis votez pour démasquer l’intrus."},
   {id:"bzzz", nom:"Bzzz", sous:"Quiz TV", fond:"jeux/bzzz.png", couleurs:["#f6c453","#d9822b"], dispo:true, equipes:true, local:true, min:2, max:20,
    info:"Questions, buzzer et QCM : réponds vite et juste depuis ton téléphone, seul ou en équipes."},
-  {id:"manoir", nom:"Caméléon", sous:"Déduction sociale", fond:"", couleurs:["#2fb86a","#0f6b3b"], dispo:true, equipes:false, local:false, min:4, max:15,
+  {id:"manoir", nom:"Caméléon", sous:"Déduction sociale", fond:"jeux/cameleon.png", couleurs:["#2fb86a","#0f6b3b"], dispo:true, equipes:false, local:false, min:4, max:15,
    info:"Des intrus se cachent parmi vous, déguisés en joueurs ordinaires. Remplis tes missions, observe les autres et vote pour démasquer les coupables avant qu’il ne soit trop tard."},
   {id:"battest", nom:"Bat-Test", sous:"Blindtest", fond:"", couleurs:["#6a4bd6","#2a1470"], dispo:false, equipes:true, local:true, min:2, max:20,
    info:"Reconnais la chanson le plus vite possible, seul ou en équipes."},
