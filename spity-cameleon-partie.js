@@ -1056,7 +1056,10 @@ function dessinerT(){
         }
       }
 
-    {
+      cx.restore();
+    }
+
+    if(!T.mort&&T.role&&T.role.camp==="cultiste"){
       TRAP.forEach(function(p,k){
         p.forEach(function(q){
           if(Math.hypot(q[0]+.5-T.x,q[1]+.5-T.y)>R+.5)return;
