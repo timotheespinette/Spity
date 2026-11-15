@@ -1,4 +1,5 @@
 const MANOIR_MAP = {
+  "image": "jeux/cameleon-map",
   "largeur": 48,
   "hauteur": 32,
   "legende": "# mur, . sol, ~ buisson, V vitre",
