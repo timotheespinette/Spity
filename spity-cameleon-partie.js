@@ -17,6 +17,15 @@ var MN_DEBUG = true;
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
 var M = MANOIR_MAP, C = MANOIR_CFG;
+var MAP_IMG = null;
+if (M.image) {
+  MAP_IMG = new Image();
+  MAP_IMG.src = M.image;
+}
+
+function mapPrete() {
+  return MAP_IMG && MAP_IMG.complete && MAP_IMG.naturalWidth > 0;
+}
 var TRAP = [];
 var tmpTrappes = {};
 (M.trappes||[]).forEach(function(t){
@@ -387,10 +396,14 @@ function dessinerFlux(cx,z,px,py,pw,ph,titre){
   cx.fillStyle="#000";cx.fillRect(px,py,pw,ph);
   var cs=Math.floor(Math.min(pw/z.l,(ph-barre)/z.h)),
       ox=px+(pw-cs*z.l)/2,oy=py+barre+(ph-barre-cs*z.h)/2;
-  for(y=0;y<z.h;y++)for(x=0;x<z.l;x++){
-    gx=z.x+x;gy=z.y+y;
-    c=(gy>=0&&gy<M.hauteur&&gx>=0&&gx<M.largeur)?M.grille[gy][gx]:"#";
-    tuile(cx,c,ox+x*cs,oy+y*cs,cs+1);
+  if (mapPrete()) {
+    cx.drawImage(MAP_IMG, ox - z.x * cs, oy - z.y * cs, M.largeur * cs, M.hauteur * cs);
+  } else {
+    for(y=0;y<z.h;y++)for(x=0;x<z.l;x++){
+      gx=z.x+x;gy=z.y+y;
+      c=(gy>=0&&gy<M.hauteur&&gx>=0&&gx<M.largeur)?M.grille[gy][gx]:"#";
+      tuile(cx,c,ox+x*cs,oy+y*cs,cs+1);
+    }
   }
   Object.keys(mo.cadavres).forEach(function(id){
     var k=mo.cadavres[id];
@@ -424,8 +437,13 @@ function dessinerH(){
       cs=Math.floor(Math.min(wCarte/M.largeur,hh/M.hauteur)),
       ox=(wCarte-cs*M.largeur)/2,oy=(hh-cs*M.hauteur)/2,x,y;
   cx.fillStyle="#0b1511";cx.fillRect(0,0,w,hh);
-  for(y=0;y<M.hauteur;y++)for(x=0;x<M.largeur;x++){
-    tuile(cx,M.grille[y][x],ox+x*cs,oy+y*cs,cs)}
+  if (mapPrete()) {
+    cx.drawImage(MAP_IMG, ox, oy, M.largeur * cs, M.hauteur * cs);
+  } else {
+    for(y=0;y<M.hauteur;y++)for(x=0;x<M.largeur;x++){
+      tuile(cx,M.grille[y][x],ox+x*cs,oy+y*cs,cs);
+    }
+  }
   dessinerMissionsH(cx,ox,oy,cs);
   TRAP.forEach(function(p,k){p.forEach(function(q){
     var tx=ox+q[0]*cs+cs*.15,ty=oy+q[1]*cs+cs*.15;
@@ -978,11 +996,15 @@ function dessinerT(){
   if(T.init){
 
     // Toute la carte est dessinée
-    var x0=Math.max(0,Math.floor(-ox/cs)),x1=Math.min(M.largeur-1,Math.ceil((w-ox)/cs));
-    var y0=Math.max(0,Math.floor(-oy/cs)),y1=Math.min(M.hauteur-1,Math.ceil((hh-oy)/cs));
-    for(y=y0;y<=y1;y++){
-      for(x=x0;x<=x1;x++){
-        tuile(cx,M.grille[y][x],ox+x*cs,oy+y*cs,cs+1);
+    if (mapPrete()) {
+      cx.drawImage(MAP_IMG, ox, oy, M.largeur * cs, M.hauteur * cs);
+    } else {
+      var x0=Math.max(0,Math.floor(-ox/cs)),x1=Math.min(M.largeur-1,Math.ceil((w-ox)/cs));
+      var y0=Math.max(0,Math.floor(-oy/cs)),y1=Math.min(M.hauteur-1,Math.ceil((hh-oy)/cs));
+      for(y=y0;y<=y1;y++){
+        for(x=x0;x<=x1;x++){
+          tuile(cx,M.grille[y][x],ox+x*cs,oy+y*cs,cs+1);
+        }
       }
     }
 
@@ -1022,18 +1044,17 @@ function dessinerT(){
       cx.clip();
 
       // Décor éclairé normalement dans le cône de vision
-      for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
-        for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
-
-          var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)
-            ?M.grille[y][x]:"#";
-
-          tuile(cx,c,ox+x*cs,oy+y*cs,cs+1);
+      if (mapPrete()) {
+        cx.drawImage(MAP_IMG, ox, oy, M.largeur * cs, M.hauteur * cs);
+      } else {
+        for(y=Math.floor(T.vy-R-1);y<=T.vy+R+1;y++){
+          for(x=Math.floor(T.vx-R-1);x<=T.vx+R+1;x++){
+            var c=(y>=0&&y<M.hauteur&&x>=0&&x<M.largeur)
+              ?M.grille[y][x]:"#";
+            tuile(cx,c,ox+x*cs,oy+y*cs,cs+1);
+          }
         }
       }
-
-      cx.restore();
-    }
 
     {
       TRAP.forEach(function(p,k){
