@@ -264,6 +264,7 @@ function addPlayer(p){
     existant.id = p.id;
     existant.offline = false;
     render();
+    window.ManoirPartie && ManoirPartie.hote.sync && ManoirPartie.hote.sync(p.uid, p.id);
     window.UsPartie && UsPartie.hote.sync && UsPartie.hote.sync(p.uid, p.id);
     return;
   }
