@@ -294,6 +294,10 @@ function sync(uid, newId){
   if(!p)return;
   var oldId=p.id;
   p.id=newId;
+  if(G.ordre)G.ordre=G.ordre.map(function(x){return x===oldId?newId:x});
+  if(G.egaux)G.egaux=G.egaux.map(function(x){return x===oldId?newId:x});
+  if(G.gagnants)G.gagnants=G.gagnants.map(function(x){return x===oldId?newId:x});
+  if(G.elim===oldId)G.elim=newId;
   if(G.vu[oldId]){G.vu[newId]=1;delete G.vu[oldId]}
   if(G.votes[oldId]){G.votes[newId]=G.votes[oldId];delete G.votes[oldId]}
   if(G.devineId===oldId)G.devineId=newId;
