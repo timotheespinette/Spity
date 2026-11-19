@@ -224,15 +224,14 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 });
 window.addEventListener("pageshow",function(){document.getElementById("screen").classList.remove("leaving")});
 var mod=document.getElementById("settingsModal"),inp=document.getElementById("geminiKeyInput");
-document.getElementById("openSettings").onclick=function(){inp.value=localStorage.getItem("spity_gemini_key")||"";mod.hidden=false};
+document.getElementById("openSettings").onclick=function(){inp.value=localStorage.getItem("spity-gemini-cle")||"";mod.hidden=false};
 document.getElementById("closeSettings").onclick=function(){mod.hidden=true};
 document.getElementById("saveKeyBtn").onclick=function(){
-  localStorage.setItem("spity_gemini_key",inp.value.trim());
-  if(window.Mots&&Mots.cle)Mots.cle(inp.value.trim());
+  localStorage.setItem("spity-gemini-cle",inp.value.trim());
   mod.hidden=true;t.textContent="Clé API enregistrée !";t.classList.add("on");
   setTimeout(function(){t.classList.remove("on")},2000);
 };
-document.getElementById("clearKeyBtn").onclick=function(){localStorage.removeItem("spity_gemini_key");inp.value=""};
+document.getElementById("clearKeyBtn").onclick=function(){localStorage.removeItem("spity-gemini-cle");inp.value=""};
 })();
 </script>
 </body>
