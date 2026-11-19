@@ -338,49 +338,49 @@ function recevoir(id,m){
 
   if(m.t==="mn:trappe"){
     var tr=mo.trappe(id);
-    O.envoyer(id,{t:"mn:action",ok:tr.ok,message:tr.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:tr.ok,message:tr.message});
     return;
   } 
 
   if(m.t==="mn:sortir"){
     var so=mo.sortirTrappe(id,m.choix);
-    O.envoyer(id,{t:"mn:action",ok:so.ok,message:so.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:so.ok,message:so.message});
     return;
   }
 
   if(m.t==="mn:sonner"){
     var sn=mo.sonner(id);
-    O.envoyer(id,{t:"mn:action",ok:sn.ok,message:sn.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:sn.ok,message:sn.message});
     return;
   }
 
   if(m.t==="mn:cam"){
     var cm=mo.changerCamera(id,+m.slot,+m.zone);
-    O.envoyer(id,{t:"mn:action",ok:cm.ok,message:cm.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:cm.ok,message:cm.message});
     return;
   }
 
     if(m.t==="mn:mission"){
     var mi=m.action==="debut"?mo.missionDebut(id,+m.id):mo.missionFin(id,+m.id);
-    O.envoyer(id,{t:"mn:action",ok:mi.ok,message:mi.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:mi.ok,message:mi.message});
     return;
   }
 
   if(m.t==="mn:acheter"){
     var ac=mo.acheter(id,String(m.pouvoir),m.cible);
-    O.envoyer(id,{t:"mn:action",ok:ac.ok,message:ac.message,long:ac.long});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:ac.ok,message:ac.message,long:ac.long});
     return;
   }
 
   if(m.t==="mn:capa"){
     var ca=mo.capa(id,m.cible);
-    O.envoyer(id,{t:"mn:action",ok:ca.ok,message:ca.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:ca.ok,message:ca.message});
     return;
   }
 
   if(m.t==="mn:tirer"){
     var ti=mo.tirer(id,m.cible);
-    O.envoyer(id,{t:"mn:action",ok:ti.ok,message:ti.message});
+    O.envoyer(versPeer(id),{t:"mn:action",ok:ti.ok,message:ti.message});
     return;
   }
 
