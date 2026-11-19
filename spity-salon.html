@@ -425,6 +425,7 @@ function connecterJoueur(){
       if(m.t==="kicked"){net.kicked=1;monProfil=null;toast("Tu as été retiré du salon.");net.close();show("code")}
     },
     close:function(){
+      net.estConnecte = false;
       if(net !== C || net.manuel || net.kicked)return;
       if(document.visibilityState==="visible"){
         clearTimeout(reconnexionTimer);
@@ -445,10 +446,32 @@ function connecterJoueur(){
   C = net;
 }
 
+var pageEtaitEnVeille = false;
+
 document.addEventListener("visibilitychange", function(){
-  if(document.visibilityState==="visible" && monProfil && (!C || !C.kicked)){
+
+  // Le téléphone vient de passer en veille
+  if(document.visibilityState === "hidden"){
+    pageEtaitEnVeille = true;
+    return;
+  }
+
+  // On ne fait rien si la page n'était pas en veille
+  if(!pageEtaitEnVeille)return;
+
+  pageEtaitEnVeille = false;
+
+  // On ne reconnecte que si le joueur avait déjà réussi
+  // à rejoindre le salon auparavant
+  if(
+    monProfil &&
+    C &&
+    C.dejaConnecte &&
+    !C.kicked
+  ){
     connecterJoueur();
   }
+
 });
 
 $("pGo").onclick=function(){
