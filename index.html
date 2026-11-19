@@ -88,6 +88,15 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 }
 @media (max-height:520px){.btn small{display:none}.btn{padding:10px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Modale Paramètres */
+.modal-bg{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:18px;background:rgba(10,5,30,.65);backdrop-filter:blur(8px)}
+.modal{width:100%;max-width:420px;padding:22px;border-radius:26px;background:linear-gradient(180deg,var(--bg-2),var(--bg-1));border:1.5px solid var(--glass-line)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-head h2{margin:0;font-size:1.4rem}
+.api-input{width:100%;box-sizing:border-box;padding:11px 14px;margin:8px 0 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1.5px solid var(--glass-line);color:#fff;font:inherit}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-actions .btn{padding:11px;font-size:1rem;border-radius:16px}
 </style>
 <link rel="apple-touch-icon" href="./logo192.png">
 </head>
@@ -97,7 +106,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
     <button class="pill" data-soon aria-label="Ouvrir le magasin">
       <img class="coin" src="spity-piece.png" alt="" width="42" height="42">Magasin
     </button>
-    <button class="icon-btn" data-soon aria-label="Ouvrir les paramètres">
+    <button class="icon-btn" id="openSettings" aria-label="Ouvrir les paramètres">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
@@ -118,6 +127,20 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
     <button class="btn btn-mid" data-go="spity-salon.html?mode=join">Rejoindre<small>Avec un code</small></button>
     <button class="btn btn-edge btn-create" data-go="spity-salon.html">Créer un salon<small>Pour jouer à plusieurs</small></button>
   </nav>
+</div>
+<div class="modal-bg" id="settingsModal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Paramètres</h2>
+      <button class="icon-btn" id="closeSettings" style="width:36px;height:36px">✕</button>
+    </div>
+    <label for="geminiKeyInput">Clé API Gemini (enregistrée sur cet appareil)</label>
+    <input class="api-input" id="geminiKeyInput" type="password" placeholder="AIza...">
+    <div class="modal-actions">
+      <button class="btn btn-edge" id="clearKeyBtn" type="button">Effacer</button>
+      <button class="btn btn-mid" id="saveKeyBtn" type="button">Enregistrer</button>
+    </div>
+  </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -200,6 +223,16 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
   });
 });
 window.addEventListener("pageshow",function(){document.getElementById("screen").classList.remove("leaving")});
+var mod=document.getElementById("settingsModal"),inp=document.getElementById("geminiKeyInput");
+document.getElementById("openSettings").onclick=function(){inp.value=localStorage.getItem("spity_gemini_key")||"";mod.hidden=false};
+document.getElementById("closeSettings").onclick=function(){mod.hidden=true};
+document.getElementById("saveKeyBtn").onclick=function(){
+  localStorage.setItem("spity_gemini_key",inp.value.trim());
+  if(window.Mots&&Mots.cle)Mots.cle(inp.value.trim());
+  mod.hidden=true;t.textContent="Clé API enregistrée !";t.classList.add("on");
+  setTimeout(function(){t.classList.remove("on")},2000);
+};
+document.getElementById("clearKeyBtn").onclick=function(){localStorage.removeItem("spity_gemini_key");inp.value=""};
 })();
 </script>
 </body>
