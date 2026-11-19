@@ -264,6 +264,7 @@ function addPlayer(p){
     existant.id = p.id;
     existant.offline = false;
     render();
+    window.UsPartie && UsPartie.hote.sync && UsPartie.hote.sync(p.uid, p.id);
     return;
   }
   if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
