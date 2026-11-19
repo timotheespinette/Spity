@@ -288,10 +288,29 @@ function dessiner(){
     w.appendChild(bt)}
 }
 
+function sync(uid, newId){
+  if(!G)return;
+  var p=G.ps.find(function(x){return x.uid===uid});
+  if(!p)return;
+  var oldId=p.id;
+  p.id=newId;
+  if(G.vu[oldId]){G.vu[newId]=1;delete G.vu[oldId]}
+  if(G.votes[oldId]){G.votes[newId]=G.votes[oldId];delete G.votes[oldId]}
+  if(G.devineId===oldId)G.devineId=newId;
+  var roster=G.ps.map(function(x){return{id:x.id,name:x.name,avatar:x.avatar,ring:x.ring,contour:x.contour,acc:x.acc}});
+  O.envoyer(newId,{t:"us:start",moi:newId,roster:roster,mrwhite:p.role==="mrwhite",
+    mot:p.role==="mrwhite"?"":(p.role==="undercover"?G.mots.b:G.mots.a)});
+  var etat={t:"us:etat",phase:G.phase,vivants:ids(vivants())};
+  if(G.phase==="devine")etat.devine=G.devineId;
+  if(G.phase==="fin"){etat.gagnants=G.gagnants;etat.roles=G.roles}
+  O.envoyer(newId,etat);
+}
+
 var Hote={
   init:function(o){O=o},
   lancer:lancer,
   recevoir:recevoir,
+  sync:sync,
   points:function(){return scores}
 };
 
