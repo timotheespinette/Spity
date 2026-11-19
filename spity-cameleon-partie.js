@@ -264,14 +264,14 @@ function lancer(cfg){
     if(!mo)return;
     var t=performance.now(),dt=Math.min(.1,(t-t0)/1000);t0=t;
     mo.maj(dt);
-    mo.prendreNotifs().forEach(function(n){O.envoyer(n.id,{t:"mn:action",ok:true,message:n.message})});
+    mo.prendreNotifs().forEach(function(n){O.envoyer(versPeer(n.id),{t:"mn:action",ok:true,message:n.message})});
     if(votePanelH)ManoirVote.afficherHote(votePanelH,mo.etatHote());
 
     /* Flash rouge du Médium (vivant) à chaque mort */
     if(mo.prendreMorts().length){
       Object.keys(mo.joueurs).forEach(function(id){
         var j=mo.joueurs[id];
-        if(j.role==="medium"&&!j.mort)O.envoyer(id,{t:"mn:death"});
+        if(j.role==="medium"&&!j.mort)O.envoyer(versPeer(id),{t:"mn:death"});
       });
     }
 
@@ -282,7 +282,7 @@ function lancer(cfg){
         if(votePanelH) ManoirVote.afficherHote(votePanelH, mo.etatHote());
         for(var id in mo.joueurs){
           var vue=mo.vue(id);
-          if(vue){vue.t="mn:vue";O.envoyer(id,vue)}
+          if(vue){vue.t="mn:vue";O.envoyer(versPeer(id), vue)}
         }
         clearInterval(tickH);
       }
@@ -291,7 +291,7 @@ function lancer(cfg){
 
     for(var id in mo.joueurs){
       var vue=mo.vue(id);
-      if(vue){vue.t="mn:vue";O.envoyer(id,vue)}
+      if(vue){vue.t="mn:vue";O.envoyer(versPeer(id), vue)}
     }
   },C.tick);
   boucleH()}
