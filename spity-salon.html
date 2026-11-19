@@ -410,6 +410,8 @@ function connecterJoueur(){
   var net = clientNet(CODE,{
     open:function(){
       if(net !== C)return;
+      net.estConnecte = true;
+      net.dejaConnecte = true;
       net.send(Object.assign({t:"join",uid:UID}, monProfil));
       if($("profile").classList.contains("on") || $("code").classList.contains("on")) show("wait");
     },
