@@ -214,6 +214,9 @@ function ajuster(cv){
 var O={}, mo=null, cvH=null, cxH=null, tickH=0, rafH=0, actifH=false, voir=false, finEnvoyee=false;
 var cfgPartie=null;
 var votePanelH=null;
+var uidToOrig={}, origToPeer={}, peerToOrig={};
+function versPeer(id){return origToPeer[id]||id}
+function versOrig(id){return peerToOrig[id]||id}
 
 function lancer(cfg){
   var l=O.joueurs();
@@ -229,12 +232,19 @@ function lancer(cfg){
   if(cfg.options && cfg.options.reveler !== undefined) C.revelerCamp = !!cfg.options.reveler;
   stopHote();
   mo=Moteur.nouveau();voir=false;
-  l.forEach(function(p){mo.ajouter(p.id,p.name);avCharger(p.id,p.avatar)});
+  uidToOrig={};origToPeer={};peerToOrig={};
+  l.forEach(function(p){
+    uidToOrig[p.uid||p.id]=p.id;
+    origToPeer[p.id]=p.id;
+    peerToOrig[p.id]=p.id;
+    mo.ajouter(p.id,p.name);
+    avCharger(p.id,p.avatar);
+  });
   mo.distribuer(cfg.roles);
   l.forEach(function(p){
     var j=mo.joueurs[p.id];
-    O.envoyer(p.id,{t:"mn:start",id:p.id,pseudo:p.name,couleur:j.couleur,rayon:C.rayonVision});
-    O.envoyer(p.id,roleMsg(j))});
+    O.envoyer(versPeer(p.id),{t:"mn:start",id:p.id,pseudo:p.name,couleur:j.couleur,rayon:C.rayonVision});
+    O.envoyer(versPeer(p.id),roleMsg(j))});
   l.forEach(function(p,i){                              /* les photos, une par une pour ne pas surcharger */
     var s=avSrc(p.avatar);if(s)setTimeout(function(){O.tous({t:"mn:av",id:p.id,img:s})},250+i*100)});
 
@@ -299,6 +309,7 @@ function quitter(dest){
 
 function recevoir(id,m){
   if(!mo||!m)return;
+  id=versOrig(id);
 
   if(m.t==="mn:dir"){
     mo.dir(id,+m.dx||0,+m.dy||0);
@@ -384,7 +395,25 @@ function recevoir(id,m){
 }
 
 
-function retirer(id){mo&&mo.retirer(id)}
+function retirer(id){mo&&mo.retirer(versOrig(id))}
+
+function sync(uid,newId){
+  if(!mo)return;
+  var origId=uidToOrig[uid];
+  if(!origId||!mo.joueurs[origId])return;
+  origToPeer[origId]=newId;
+  peerToOrig[newId]=origId;
+  mo.dir(origId,0,0); // Stoppe le déplacement si l'écran s'est verrouillé en marchant
+  var j=mo.joueurs[origId];
+  O.envoyer(newId,{t:"mn:start",id:origId,pseudo:j.pseudo,couleur:j.couleur,rayon:C.rayonVision});
+  O.envoyer(newId,roleMsg(j));
+  O.joueurs().forEach(function(p){
+    var s=avSrc(p.avatar);
+    if(s)O.envoyer(newId,{t:"mn:av",id:uidToOrig[p.uid||p.id]||p.id,img:s});
+  });
+  var vue=mo.vue(origId);
+  if(vue){vue.t="mn:vue";O.envoyer(newId,vue);}
+}
 
 /* Carte globale SANS les joueurs (sauf avec le bouton de test) */
 function dedansZ(z,x,y){return x>=z.x&&x<z.x+z.l&&y>=z.y&&y<z.y+z.h}
@@ -1372,7 +1401,7 @@ function telRecevoir(m){
 }
 
 window.ManoirPartie={
-  hote:{init:function(o){O=o},lancer:lancer,recevoir:recevoir,retirer:retirer},
+  hote:{init:function(o){O=o},lancer:lancer,recevoir:recevoir,retirer:retirer,sync:sync},
   tel:{init:function(o){TO=o},recevoir:telRecevoir}
 };
 })();
