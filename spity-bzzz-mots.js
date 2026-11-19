@@ -11,7 +11,7 @@ var BZM_IMG = ["jeux/abeille.png", "jeux/ecureuil.png", "jeux/ours.png"];
 
 /* Clé Gemini : la même que celle des mots d'UnderSea (Mots.cle("ta clé")).
    Tu peux aussi la coller ici en attendant (mais ne la publie pas sur GitHub). */
-var BZM_CLE_GEMINI = localStorage.getItem("spity_gemini_key") || "";
+var BZM_CLE_GEMINI = "";
 
 /* Nom du modèle Gemini : à vérifier dans la doc de Google si la génération échoue. */
 var BZM_MODELE = "gemini-3.6-flash";
