@@ -179,6 +179,18 @@ var MODE_LOCAL=new URLSearchParams(location.search).get("mode")==="local";
 function $(i){return document.getElementById(i)}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2400)}
 function show(id){document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
+var wakeLock = null;
+function garderAllume() {
+  if ("wakeLock" in navigator && document.visibilityState === "visible") {
+    navigator.wakeLock.request("screen").then(function(lock) {
+      wakeLock = lock;
+    }).catch(function() {});
+  }
+}
+document.addEventListener("visibilitychange", garderAllume);
+document.addEventListener("pointerdown", function() {
+  if (!wakeLock) garderAllume();
+}, { once: true });
 document.querySelectorAll("[data-soon]").forEach(function(b){b.onclick=function(){toast("Bientôt : disponible avec la boutique.")}});
 
 /* ---- Réseau : PeerJS (WebRTC) ; sinon canal local entre onglets (tests) ---- */
@@ -199,9 +211,21 @@ function hostNet(code,on){
 function clientNet(code,on){
     if(peerOK){var p=new Peer(),c,ok=0;
     p.on("error",function(e){console.log(e);on.error(e)});
-    p.on("open",function(){c=p.connect(PRE+code,{reliable:true});c.on("open",function(){ok=1;on.open()});c.on("data",on.msg);c.on("close",on.close)});
+    var hb = null;
+    p.on("open",function(){
+      c=p.connect(PRE+code,{reliable:true});
+      c.on("open",function(){
+        ok=1;
+        hb=setInterval(function(){
+          if(c&&c.open){try{c.send({t:"ping"})}catch(e){clearInterval(hb);on.close()}}
+        },3000);
+        on.open();
+      });
+      c.on("data",on.msg);
+      c.on("close",function(){clearInterval(hb);on.close()});
+    });
     setTimeout(function(){ok||on.error({type:"timeout"})},10000);
-    return{send:function(m){c&&c.open&&c.send(m)},close:function(){p.destroy()}}}
+    return{send:function(m){c&&c.open&&c.send(m)},close:function(){clearInterval(hb);p.destroy()}}}
   var id="c"+Math.random().toString(36).slice(2),ch=new BroadcastChannel(PRE+code),ok=0;
   ch.onmessage=function(e){var d=e.data;if(d.to!=="*"&&d.to!==id)return;
     if(d.m.t==="welcome"){ok=1;on.open()}else if(d.m.t==="closed")on.close();else on.msg(d.m)};
@@ -234,18 +258,44 @@ function burst(el){
   }
 }
 function kick(id){window.ManoirPartie&&ManoirPartie.hote.retirer(id);H&&H.kick&&H.kick(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render();H&&H.all({t:"players",n:P.length})}
-function addPlayer(p){if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
-    P.push({id:p.id,name:String(p.name||"Joueur").slice(0,14),avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc});render();
-    var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
-  H&&H.all({t:"players",n:P.length})}
+function addPlayer(p){
+  var existant = p.uid && P.find(function(x){return x.uid === p.uid});
+  if(existant){
+    existant.id = p.id;
+    existant.offline = false;
+    render();
+    return;
+  }
+  if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
+  P.push({id:p.id,uid:p.uid||p.id,name:String(p.name||"Joueur").slice(0,14),avatar:img(p.avatar),ring:p.ring,contour:p.contour,acc:p.acc});
+  render();
+  var s=$((P.length-1)%2?"sr":"sl");burst(s.lastElementChild&&s.lastElementChild.querySelector(".av"));
+  H&&H.all({t:"players",n:P.length});
+}
 function startHost(tries){
   var code=String(Math.floor(100000+Math.random()*900000));
   H=hostNet(code,{
     open:function(){$("codeTxt").textContent=code.slice(0,3)+" "+code.slice(3);
       try{var q=qrcode(0,"M");q.addData(location.href.split("?")[0].split("#")[0]+"?code="+code);q.make();$("qr").innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true})}catch(e){$("qr").textContent=code}},
     error:function(e){if(e&&e.type==="unavailable-id"&&tries<3)startHost(tries+1);else toast("Connexion impossible. Vérifie Internet.")},
-    msg:function(id,m){if(!m)return;if(m.t==="join")addPlayer({id:id,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("mn:")===0)ManoirPartie.hote.recevoir(id,m);else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m)},
-    leave:function(id){window.ManoirPartie&&ManoirPartie.hote.retirer(id);P=P.filter(function(x){return x.id!==id});delete shown[id];render()}});
+    msg:function(id,m){
+      if(!m || m.t==="ping")return;
+      if(m.t==="join")addPlayer({id:id,uid:m.uid,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});
+      else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);
+      else if(String(m.t).indexOf("mn:")===0)ManoirPartie.hote.recevoir(id,m);
+      else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m);
+    },
+    leave:function(id){
+      if($("host").classList.contains("on")){
+        window.ManoirPartie&&ManoirPartie.hote.retirer(id);
+        P=P.filter(function(x){return x.id!==id});
+        delete shown[id];
+      }else{
+        var j=P.find(function(x){return x.id===id});
+        if(j)j.offline=true;
+      }
+      render();
+    }});
 }
 $("hB").onclick=function(){H&&H.close();location.href="index.html"};
 var jeuBzzz=null;
@@ -341,15 +391,57 @@ $("rmB").onclick=function(){photo="";$("file").value="";prev()};
 $("file").onchange=$("fileCam").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){
   var s=Math.min(im.width,im.height),c=document.createElement("canvas");c.width=c.height=192;
   c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,192,192);photo=c.toDataURL("image/jpeg",.8);prev()};im.src=r.result};r.readAsDataURL(f)};
-$("pGo").onclick=function(){var name=$("pseudo").value.trim();
+var UID = sessionStorage.getItem("spity_uid");
+if(!UID){
+  UID = "u" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  sessionStorage.setItem("spity_uid", UID);
+}
+var monProfil = null;
+
+function connecterJoueur(){
+  if(!monProfil || CODE.length!==6)return;
+  C&&C.close();
+  C=clientNet(CODE,{
+    open:function(){
+      C.send(Object.assign({t:"join",uid:UID}, monProfil));
+      if($("profile").classList.contains("on") || $("code").classList.contains("on")) show("wait");
+    },
+    msg:function(m){
+      if(String(m.t).indexOf("mn:")===0)return ManoirPartie.tel.recevoir(m);
+      if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);
+      if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);
+      if(m.t==="role")$("wGo").hidden=!m.chef;
+      if(m.t==="start")toast("La partie démarre !");
+      if(m.t==="kicked"){C.kicked=1;monProfil=null;toast("Tu as été retiré du salon.");C.close();show("code")}
+    },
+    close:function(){
+      if(C&&C.kicked)return;
+      if(document.visibilityState==="visible") setTimeout(connecterJoueur, 1000);
+    },
+    error:function(){
+      if($("profile").classList.contains("on")){
+        toast("Salon introuvable. Vérifie le code.");
+        show("code");
+      }else if(document.visibilityState==="visible"){
+        setTimeout(connecterJoueur, 2000);
+      }
+    }
+  });
+}
+
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState==="visible" && monProfil && (!C || !C.kicked)){
+    connecterJoueur();
+  }
+});
+
+$("pGo").onclick=function(){
+  var name=$("pseudo").value.trim();
   if(!name)return toast("Choisis un pseudo.");
   if(CODE.length!==6)return show("code");
-  C&&C.close();
-  C=clientNet(CODE,{open:function(){C.send({t:"join",name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc});show("wait")},
-    msg:function(m){if(String(m.t).indexOf("mn:")===0)return ManoirPartie.tel.recevoir(m);if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);if(m.t==="role")$("wGo").hidden=!m.chef;if(m.t==="start")toast("La partie démarre !");
-      if(m.t==="kicked"){C.kicked=1;toast("Tu as été retiré du salon.");C.close();show("code")}},
-    close:function(){if(!C.kicked)toast("Le salon a été fermé.");show("code")},
-    error:function(){toast("Salon introuvable. Vérifie le code.");show("code")}})};
+  monProfil={name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc};
+  connecterJoueur();
+};
 /* Scan du QR code avec la caméra */
 var stream,scanning=0;
 function stopScan(){scanning=0;$("scan").classList.remove("on");stream&&stream.getTracks().forEach(function(t){t.stop()})}
