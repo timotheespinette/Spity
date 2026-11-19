@@ -254,7 +254,7 @@ function commencer(cfg,items,n){
   if(cfg.mode==="qcm"&&O.local)return O.toast("Choix multiples : en ligne uniquement.");
   if(!l.length)return O.toast("Aucun joueur.");
   G={cfg:cfg,mode:cfg.mode,i:-1,phase:"",gain:{},qs:mel(items).slice(0,n),
-     ps:l.map(function(p){return{id:p.id,name:p.name,avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc}})};
+     ps:l.map(function(p){return{id:p.id,uid:p.uid||p.id,name:p.name,avatar:p.avatar,ring:p.ring,contour:p.contour,acc:p.acc}})};
   G.units=creerUnites(cfg,G.ps);
   G.ps.forEach(function(p){
     var u=unitDe(p.id);
@@ -324,13 +324,62 @@ var E={h:h,bouton:bouton,chip:chip,unit:unit,unitDe:unitDe,pts:pts,finQ:finQ,des
   etat:etat,timer:timer,cd:cd,presents:present,fmt:fmt,
   local:function(){return !!O.local}};
 
+function sync(uid,newId){
+  if(!G)return;
+  var p=G.ps.find(function(x){return x.uid===uid});
+  if(!p)return;
+  var oldId=p.id;
+  p.id=newId;
+
+  /* Mettre à jour l'ID dans les équipes / unités */
+  G.units.forEach(function(u){
+    var idx=u.membres.indexOf(oldId);
+    if(idx>=0)u.membres[idx]=newId;
+    if(u.id===oldId)u.id=newId;
+  });
+
+  /* Transférer les éventuelles réponses déjà enregistrées sur la question en cours */
+  if(G.rep&&G.rep[oldId]!==undefined){G.rep[newId]=G.rep[oldId];delete G.rep[oldId]}
+  if(G.qui===oldId)G.qui=newId;
+
+  var u=unitDe(newId);
+  O.envoyer(newId,{t:"bz:start",moi:newId,mode:G.mode,unite:u?u.id:""});
+
+  var M=MODES[G.mode];
+  if(G.phase==="q"&&G.q){
+    var x=M.debut(G,E)||{},m={t:"bz:q",i:G.i,n:G.qs.length,bonus:G.bonus};
+    if(G.q.choix){
+      m.nbChoix=G.q.choix.length;
+      m.multi=G.q.bonnes.length>1;
+    }
+    for(var k in x)m[k]=x[k];
+    if(G.fin)m.duree=Math.max(0,Math.ceil((G.fin-Date.now())/1000));
+    O.envoyer(newId,m);
+  }
+  else if(G.phase==="cl"&&u){
+    var cl=classe(),c=cl.filter(function(item){return item.u===u})[0];
+    if(c){
+      var mCl={t:"bz:cl",rang:c.rang,pts:u.pts,gain:G.gain[u.id]||0,n:G.units.length};
+      var e=M.res&&M.res(newId,G);if(e)for(var k2 in e)mCl[k2]=e[k2];
+      O.envoyer(newId,mCl);
+    }
+  }
+  else if(G.phase==="fin"&&u){
+    var clF=classe(),cF=clF.filter(function(item){return item.u===u})[0];
+    if(cF){
+      O.envoyer(newId,{t:"bz:fin",rang:cF.rang,pts:u.pts,gagne:G.gagnants.indexOf(u)>=0,n:G.units.length});
+    }
+  }
+}
+
 var Hote={
   init:function(o){O=o},
   lancer:function(cfg){O.afficher("bzHote");config(cfg)},
   recevoir:function(id,m){
     if(!G||!G.q)return;
     var u=unitDe(id);if(!u)return;
-    MODES[G.mode].recevoir(id,m,G,E,u)}
+    MODES[G.mode].recevoir(id,m,G,E,u)},
+  sync:sync
 };
 
 /* ======================= TÉLÉPHONE ======================= */
