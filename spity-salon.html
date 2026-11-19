@@ -403,46 +403,86 @@ var monProfil = null;
 
 var reconnexionTimer = null;
 
-function connecterJoueur(){
+function connecterJoueur(force){
   clearTimeout(reconnexionTimer);
-  if(!monProfil || CODE.length!==6)return;
-  if(C){ C.manuel = true; C.close(); }
+
+  if(!monProfil || CODE.length !== 6)return;
+
+  // Si une connexion est déjà active ou en cours,
+  // on ne la relance pas inutilement.
+  if(C && !force && (C.estConnecte || C.enCours)){
+    return;
+  }
+
+  // On ferme l'ancienne connexion uniquement
+  // lorsqu'on veut réellement en créer une nouvelle.
+  if(C){
+    C.manuel = true;
+    C.close();
+  }
+
   var net = clientNet(CODE,{
     open:function(){
       if(net !== C)return;
+
+      net.enCours = false;
       net.estConnecte = true;
       net.dejaConnecte = true;
-      net.send(Object.assign({t:"join",uid:UID}, monProfil));
-      if($("profile").classList.contains("on") || $("code").classList.contains("on")) show("wait");
+
+      net.send(Object.assign({t:"join",uid:UID},monProfil));
+
+      if($("profile").classList.contains("on") || $("code").classList.contains("on")){
+        show("wait");
+      }
     },
+
     msg:function(m){
       if(net !== C)return;
+
       if(String(m.t).indexOf("mn:")===0)return ManoirPartie.tel.recevoir(m);
       if(String(m.t).indexOf("bz:")===0)return BzzzPartie.tel.recevoir(m);
       if(String(m.t).indexOf("us:")===0)return UsPartie.tel.recevoir(m);
+
       if(m.t==="role")$("wGo").hidden=!m.chef;
       if(m.t==="start")toast("La partie démarre !");
-      if(m.t==="kicked"){net.kicked=1;monProfil=null;toast("Tu as été retiré du salon.");net.close();show("code")}
-    },
-    close:function(){
-      net.estConnecte = false;
-      if(net !== C || net.manuel || net.kicked)return;
-      if(document.visibilityState==="visible"){
-        clearTimeout(reconnexionTimer);
-        reconnexionTimer = setTimeout(connecterJoueur, 1000);
+
+      if(m.t==="kicked"){
+        net.kicked=1;
+        monProfil=null;
+        toast("Tu as été retiré du salon.");
+        net.close();
+        show("code");
       }
     },
+
+    close:function(){
+      net.estConnecte = false;
+      net.enCours = false;
+
+      if(net !== C || net.manuel || net.kicked)return;
+
+      if(document.visibilityState==="visible"){
+        clearTimeout(reconnexionTimer);
+        reconnexionTimer = setTimeout(connecterJoueur,1000);
+      }
+    },
+
     error:function(){
+      net.enCours = false;
+
       if(net !== C)return;
+
       if($("profile").classList.contains("on")){
         toast("Salon introuvable. Vérifie le code.");
         show("code");
       }else if(document.visibilityState==="visible"){
         clearTimeout(reconnexionTimer);
-        reconnexionTimer = setTimeout(connecterJoueur, 2000);
+        reconnexionTimer = setTimeout(connecterJoueur,2000);
       }
     }
   });
+
+  net.enCours = true;
   C = net;
 }
 
@@ -469,7 +509,7 @@ document.addEventListener("visibilitychange", function(){
     C.dejaConnecte &&
     !C.kicked
   ){
-    connecterJoueur();
+    connecterJoueur(true);
   }
 
 });
