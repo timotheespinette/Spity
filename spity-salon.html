@@ -219,6 +219,7 @@ function clientNet(code,on){
         hb=setInterval(function(){
           if(c&&c.open){try{c.send({t:"ping"})}catch(e){clearInterval(hb);on.close()}}
         },3000);
+        toast("1b : canal ouvert");
         on.open();
       });
       c.on("data",on.msg);
@@ -423,6 +424,7 @@ function connecterJoueur(force){
 
   var net = clientNet(CODE,{
     open:function(){
+      toast("2 : connecté à l'hôte");
       if(net !== C)return;
 
       net.enCours = false;
@@ -468,6 +470,7 @@ function connecterJoueur(force){
     },
 
     error:function(){
+      toast("Erreur : " + ((e && e.type) || "inconnue"));
       net.enCours = false;
 
       if(net !== C)return;
@@ -519,6 +522,7 @@ $("pGo").onclick=function(){
   if(!name)return toast("Choisis un pseudo.");
   if(CODE.length!==6)return show("code");
   monProfil={name:name,avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc};
+  toast("1 : clic OK");
   connecterJoueur();
 };
 /* Scan du QR code avec la caméra */
