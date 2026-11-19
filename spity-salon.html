@@ -266,6 +266,7 @@ function addPlayer(p){
     render();
     window.ManoirPartie && ManoirPartie.hote.sync && ManoirPartie.hote.sync(p.uid, p.id);
     window.UsPartie && UsPartie.hote.sync && UsPartie.hote.sync(p.uid, p.id);
+    window.BzzzPartie && BzzzPartie.hote.sync && BzzzPartie.hote.sync(p.uid, p.id);
     return;
   }
   if(P.length>=20||P.some(function(x){return x.id===p.id}))return;
