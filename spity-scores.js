@@ -13,6 +13,7 @@ function ajouter(id, n){
   l.forEach(function(i){
     var d=data[i]||(data[i]={pts:0,seq:Infinity});
     d.pts+=n; d.seq=seq});}
+    if(n>0&&window.donnerPieces)donnerPieces(i,n);
 
 function points(id){return data[id]?data[id].pts:0}
 
