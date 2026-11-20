@@ -7,10 +7,11 @@
    base   = true → offert dès le départ (toujours possédé, prix ignoré) */
 var CATALOGUE=[
   {id:"moustache", type:"acc",     nom:"Moustache", img:"acc/moustache.png",     prix:0,   theme:"fête",   rarete:"commun",     base:true},
+  {id:"globy", type:"acc",     nom:"Globy", img:"acc/globe.png",     prix:5,   theme:"mer",   rarete:"commun"},
   {id:"plage",     type:"contour", nom:"Plage",     img:"contours/plage.png",    prix:0,   theme:"mer",    rarete:"commun",     base:true},
   {id:"panda",     type:"contour", nom:"Panda",     img:"contours/panda.png",    prix:10,  theme:"jungle", rarete:"rare"},
   {id:"flamme",    type:"contour", nom:"Flamme",    img:"contours/flamme.png",   prix:20,  theme:"feu",    rarete:"epique"},
-  {id:"creator",   type:"contour", nom:"Creator",   img:"contours/creator.png",  prix:1000, theme:"fête",   rarete:"legendaire"}
+  {id:"creator",   type:"contour", nom:"Creator",   img:"contours/creator.png",  prix:1000, theme:"fête",   rarete:"exclusif"}
 ];
 var PIECES_DEPART=10; /* pièces données au tout premier lancement */
 
