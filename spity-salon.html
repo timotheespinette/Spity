@@ -644,7 +644,19 @@ coins.innerHTML='<img src="spity-piece.png" alt="" style="width:1.3em;height:1.3
       var card=document.createElement("div");card.className="ws-card";
       var im=document.createElement("img");im.src=it.img;im.alt=it.nom;
       var nm=document.createElement("div");nm.className="ws-nm";nm.textContent=it.nom;
-      var rar=document.createElement("div");rar.className="ws-rar";rar.textContent=it.rarete;
+      var RARETES={
+        commun:     {nom:"Commun",     col:"#cfd8dc"},
+        rare:       {nom:"Rare",       col:"#4aa3ff"},
+        epique:     {nom:"Épique",     col:"#b46bff"},
+        legendaire: {nom:"Légendaire", col:"#ffc23d"},
+        exclusif:   {nom:"Exclusif",   col:"#ff4d6d"}
+      };
+      var rInfo=RARETES[it.rarete]||{nom:it.rarete,col:"#fff"};
+      var rar=document.createElement("div");rar.className="ws-rar";
+      rar.textContent=rInfo.nom;
+      rar.style.color=rInfo.col;
+      rar.style.fontWeight="800";
+      rar.style.opacity="1";
       var btn=document.createElement("button");btn.className="btn sun";
       var own=Avatar.possede(it);
       if(own){
