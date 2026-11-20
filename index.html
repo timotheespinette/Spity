@@ -103,7 +103,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 <body>
 <div class="screen" id="screen">
   <header class="top">
-    <button class="pill" data-soon aria-label="Ouvrir le magasin">
+    <button class="pill" data-go="spity-magasin.html" aria-label="Ouvrir le magasin">
       <img class="coin" src="spity-piece.png" alt="" width="42" height="42">Magasin
     </button>
     <button class="icon-btn" id="openSettings" aria-label="Ouvrir les paramètres">
@@ -209,13 +209,6 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
     s.appendChild(b);
   }
   var t=document.getElementById("toast"),timer;
-  document.querySelectorAll("[data-soon]").forEach(function(b){
-    b.addEventListener("click",function(){
-      t.textContent="Bientôt : cet écran sera ajouté à l’étape suivante.";
-      t.classList.add("on");clearTimeout(timer);
-      timer=setTimeout(function(){t.classList.remove("on")},2200);
-    });
-  });
   document.querySelectorAll("[data-go]").forEach(function(b){
   b.addEventListener("click",function(){
     document.getElementById("screen").classList.add("leaving");
