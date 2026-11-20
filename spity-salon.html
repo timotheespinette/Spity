@@ -87,6 +87,23 @@ body{animation:in .35s ease-out}
 #host.dense{--hs:clamp(30px,10.5vw,80px)}
 #host.dense .side{grid-template-columns:repeat(4,minmax(0,1fr));gap:1vh 1vw}}
 #undersea,#mots,#usHote,#usTel{padding:0;overflow-y:auto}
+#wQuit{border:1.5px solid var(--line);background:var(--glass)}
+#waitShop{display:none;position:fixed;inset:0;z-index:9;background:rgba(8,14,48,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);place-items:center;padding:16px;box-sizing:border-box}
+#waitShop.on{display:grid}
+.ws-box{width:min(96vw,560px);max-height:90vh;box-sizing:border-box;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.ws-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ws-coins{padding:6px 14px;border-radius:999px;background:rgba(255,194,61,.2);border:1.5px solid #ffc23d;color:#ffd96e;font-weight:800;font-size:1.1rem}
+.ws-prev{display:flex;justify-content:center;margin:2px 0}
+.ws-prev .av{width:105px;border-width:5px}
+.ws-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ws-tabs .btn{padding:10px;font-size:1.1rem}
+.ws-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:36vh;overflow-y:auto;padding:4px}
+.ws-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border-radius:16px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);text-align:center}
+.ws-card img{width:52px;height:52px;object-fit:contain}
+.ws-card .ws-nm{font-weight:800;font-size:.95rem;line-height:1.1}
+.ws-card .ws-rar{font-size:.75rem;opacity:.8;text-transform:capitalize}
+.ws-card .btn{padding:6px 12px 8px;font-size:.95rem;width:100%;margin-top:auto}
+.ws-card .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
 </style>
 </head>
 <body>
@@ -124,8 +141,10 @@ body{animation:in .35s ease-out}
 </section>
 
 <section id="wait" class="scr">
+  <button class="back glass" id="wQuit">← Quitter</button>
   <h2 id="wTxt">En attente<br>de l’hôte</h2>
   <img class="fish" src="spity-poisson-face.png" alt="">
+  <button class="btn" id="wShop">🛍️ Magasin</button>
   <button class="btn sun" id="wGo" hidden>Démarrer</button>
 </section>
 <section id="games" class="scr"></section>
@@ -147,6 +166,7 @@ body{animation:in .35s ease-out}
 <div id="scan"><video id="vid" playsinline muted></video><button class="btn" id="scX">Fermer</button></div>
 <input type="file" id="qrFile" accept="image/*" capture="environment" hidden>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="waitShop"><div class="ws-box glass" id="wsBox"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -178,7 +198,7 @@ var DEMO=false,PRE="spity-",FISH="spity-poisson-face.png";
 var MODE_LOCAL=new URLSearchParams(location.search).get("mode")==="local";
 function $(i){return document.getElementById(i)}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2400)}
-function show(id){document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
+function show(id){$("waitShop")&&$("waitShop").classList.remove("on");document.querySelectorAll(".scr").forEach(function(s){s.classList.toggle("on",s.id===id)});if(id==="code")$("codeIn").focus&&!DEMO&&$("codeIn").focus()}
 var wakeLock = null;
 function garderAllume() {
   if ("wakeLock" in navigator && document.visibilityState === "visible") {
@@ -284,6 +304,7 @@ function startHost(tries){
     msg:function(id,m){
       if(!m || m.t==="ping")return;
       if(m.t==="join")addPlayer({id:id,uid:m.uid,name:m.name,avatar:m.avatar,ring:m.ring,contour:m.contour,acc:m.acc});
+      else if(m.t==="profil"){var j=P.find(function(x){return x.id===id});if(j){j.contour=m.contour||"";j.acc=m.acc||"";render()}}
       else if(String(m.t).indexOf("us:")===0)UsPartie.hote.recevoir(id,m);
       else if(String(m.t).indexOf("mn:")===0)ManoirPartie.hote.recevoir(id,m);
       else if(String(m.t).indexOf("bz:")===0)BzzzPartie.hote.recevoir(id,m);
@@ -558,6 +579,103 @@ if(DEMO){
 else if(mode==="join")show("code");
 else if(MODE_LOCAL)show("local");
 else{show("host");startHost(0)}
+/* ---- Boutons Quitter & Magasin sur l'écran d'attente ---- */
+$("wQuit").onclick=function(){
+  if(C){C.manuel=true;C.close()}
+  location.href="index.html";
+};
+
+function syncProfil(){
+  if(monProfil){
+    monProfil.contour=Avatar.mine.contour;
+    monProfil.acc=Avatar.mine.acc;
+  }
+  if(C&&C.estConnecte){
+    C.send({t:"profil",contour:Avatar.mine.contour,acc:Avatar.mine.acc});
+  }
+  prev();
+}
+
+var wsOnglet="equiper";
+function dessinerMagasinWait(){
+  var box=$("wsBox");
+  box.innerHTML="";
+
+  /* Haut : solde de pièces + bouton fermer */
+  var top=document.createElement("div");top.className="ws-top";
+  var coins=document.createElement("div");coins.className="ws-coins";
+  var nb=Avatar.pieces();
+  coins.textContent="🪙 "+nb+" pièce"+(nb>1?"s":"");
+  var close=document.createElement("button");close.className="btn";close.style.padding="8px 16px 10px";close.style.fontSize="1rem";
+  close.textContent="Fermer";
+  close.onclick=function(){$("waitShop").classList.remove("on")};
+  top.appendChild(coins);top.appendChild(close);box.appendChild(top);
+
+  /* Aperçu de l'avatar en direct */
+  var pv=document.createElement("div");pv.className="ws-prev";
+  function majPrev(){
+    pv.innerHTML="";
+    pv.appendChild(Avatar.make({avatar:photo,ring:"#ffffff",contour:Avatar.mine.contour,acc:Avatar.mine.acc}));
+  }
+  majPrev();box.appendChild(pv);
+
+  /* Onglets Équiper / Boutique */
+  var tabs=document.createElement("div");tabs.className="ws-tabs";
+  var bEq=document.createElement("button");bEq.className="btn"+(wsOnglet==="equiper"?" sun":"");bEq.textContent="Équiper";
+  var bBo=document.createElement("button");bBo.className="btn"+(wsOnglet==="boutique"?" sun":"");bBo.textContent="Boutique";
+  bEq.onclick=function(){wsOnglet="equiper";dessinerMagasinWait()};
+  bBo.onclick=function(){wsOnglet="boutique";dessinerMagasinWait()};
+  tabs.appendChild(bEq);tabs.appendChild(bBo);box.appendChild(tabs);
+
+  if(wsOnglet==="equiper"){
+    var pk=document.createElement("div");
+    box.appendChild(pk);
+    Avatar.picker(pk,function(){majPrev();syncProfil()});
+  }else{
+    var grid=document.createElement("div");grid.className="ws-shop";
+    Avatar.catalogue.forEach(function(it){
+      if(it.base)return;
+      var card=document.createElement("div");card.className="ws-card";
+      var im=document.createElement("img");im.src=it.img;im.alt=it.nom;
+      var nm=document.createElement("div");nm.className="ws-nm";nm.textContent=it.nom;
+      var rar=document.createElement("div");rar.className="ws-rar";rar.textContent=it.rarete;
+      var btn=document.createElement("button");btn.className="btn sun";
+      var own=Avatar.possede(it);
+      if(own){
+        var equipe=Avatar.mine[it.type]===it.id;
+        btn.className="btn"+(equipe?"":" sun");
+        btn.textContent=equipe?"Équipé ✓":"Équiper";
+        btn.disabled=equipe;
+        btn.onclick=function(){
+          Avatar.mine[it.type]=it.id;
+          try{localStorage.setItem("spity-equipe",JSON.stringify(Avatar.mine))}catch(e){}
+          syncProfil();dessinerMagasinWait();
+        };
+      }else{
+        btn.textContent="🪙 "+it.prix;
+        btn.disabled=Avatar.pieces()<it.prix;
+        btn.onclick=function(){
+          if(Avatar.acheter(it)==="ok"){
+            Avatar.mine[it.type]=it.id;
+            try{localStorage.setItem("spity-equipe",JSON.stringify(Avatar.mine))}catch(e){}
+            syncProfil();
+            toast(it.nom+" acheté et équipé !");
+            dessinerMagasinWait();
+          }
+        };
+      }
+      card.appendChild(im);card.appendChild(nm);card.appendChild(rar);card.appendChild(btn);
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+}
+
+$("wShop").onclick=function(){
+  wsOnglet="equiper";
+  dessinerMagasinWait();
+  $("waitShop").classList.add("on");
+};
 </script>
 </body>
 </html>
