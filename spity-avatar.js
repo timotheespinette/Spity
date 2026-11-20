@@ -8,9 +8,9 @@
 var CATALOGUE=[
   {id:"moustache", type:"acc",     nom:"Moustache", img:"acc/moustache.png",     prix:0,   theme:"fête",   rarete:"commun",     base:true},
   {id:"plage",     type:"contour", nom:"Plage",     img:"contours/plage.png",    prix:0,   theme:"mer",    rarete:"commun",     base:true},
-  {id:"panda",     type:"contour", nom:"Panda",     img:"contours/panda.png",    prix:40,  theme:"jungle", rarete:"rare"},
-  {id:"flamme",    type:"contour", nom:"Flamme",    img:"contours/flamme.png",   prix:50,  theme:"feu",    rarete:"epique"},
-  {id:"creator",   type:"contour", nom:"Creator",   img:"contours/creator.png",  prix:100, theme:"fête",   rarete:"legendaire"}
+  {id:"panda",     type:"contour", nom:"Panda",     img:"contours/panda.png",    prix:10,  theme:"jungle", rarete:"rare"},
+  {id:"flamme",    type:"contour", nom:"Flamme",    img:"contours/flamme.png",   prix:20,  theme:"feu",    rarete:"epique"},
+  {id:"creator",   type:"contour", nom:"Creator",   img:"contours/creator.png",  prix:1000, theme:"fête",   rarete:"legendaire"}
 ];
 var PIECES_DEPART=10; /* pièces données au tout premier lancement */
 
