@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spity — Magasin</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--glass:rgba(14,22,70,.5);--line:rgba(255,255,255,.3);--violet:#7a57f5;--violet-top:#9170ff;--violet-edge:#3f26a8;
+--sun:#ffc23d;--sun-top:#ffd96e;--sun-edge:#c27f00;--mint:#34d9bc;--mint-edge:#14917c;
+--font:"Baloo 2","Nunito",system-ui,-apple-system,sans-serif;box-sizing:border-box;
+padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;font-family:var(--font);color:#fff;-webkit-tap-highlight-color:transparent;
+background:url("spity-fond.png") center bottom/cover fixed no-repeat;background-color:#0a5d8a}
+button,select{font:inherit}button{cursor:pointer;border:0;color:inherit}
+.glass{background:var(--glass);border:1.5px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.wrap{max-width:1100px;margin:0 auto;padding:14px clamp(14px,4vw,40px) 40px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.back{padding:8px 18px;border-radius:999px;font-weight:800;color:#fff;text-decoration:none}
+.pill{display:flex;align-items:center;gap:8px;padding:4px 20px 4px 6px;border-radius:999px;font-weight:800;font-size:1.2rem}
+.pill img{width:38px;height:38px}
+h1{margin:14px 0 10px;text-align:center;font-size:clamp(2rem,6vw,3.2rem);text-shadow:0 4px 18px rgba(0,40,90,.5)}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:12px;border-radius:22px;margin-bottom:16px}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:.8rem;font-weight:800;opacity:.9}
+.filters select{padding:9px 10px;border-radius:14px;border:0;background:rgba(255,255,255,.92);color:#12264d;font-weight:800}
+.count{text-align:center;font-weight:600;margin:0 0 12px;opacity:.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px 12px;border-radius:22px;text-align:center}
+.card.own{border-color:var(--mint)}
+.thumb{width:100%;aspect-ratio:1;display:grid;place-items:center;border-radius:16px;background:rgba(255,255,255,.14)}
+.thumb img{width:80%;height:80%;object-fit:contain}
+.nm{font-weight:800;font-size:1.15rem;line-height:1.1}
+.tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.tag{padding:1px 10px;border-radius:999px;font-size:.75rem;font-weight:800;background:rgba(255,255,255,.2)}
+.r-commun{background:#9aa4b8;color:#12264d}.r-rare{background:#4aa3ff;color:#06264d}
+.r-epique{background:#b36bff;color:#2a0a54}.r-legendaire{background:var(--sun);color:#4a2a00}
+.type{position:absolute;top:8px;left:8px;padding:1px 9px;border-radius:999px;font-size:.7rem;font-weight:800;background:var(--glass)}
+.price{display:flex;align-items:center;gap:5px;font-weight:800;font-size:1.1rem}.price img{width:22px;height:22px}
+.btn{width:100%;padding:9px 10px 11px;border-radius:16px;font-weight:800;font-size:1rem;color:#4a2a00;
+background:linear-gradient(180deg,var(--sun-top),var(--sun));box-shadow:0 5px 0 var(--sun-edge);transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translateY(5px);box-shadow:none}
+.btn.has{background:var(--mint);color:#082a24;box-shadow:0 5px 0 var(--mint-edge);cursor:default}
+.btn.no{background:#8b8fa6;color:#fff;box-shadow:0 5px 0 #4b4e66}
+.vide{grid-column:1/-1;text-align:center;padding:30px;border-radius:22px;font-weight:800}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translate(-50%,-10px);opacity:0;pointer-events:none;z-index:10;
+background:#fff;color:#12264d;padding:10px 18px;border-radius:14px;font-weight:600;transition:.25s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back glass" href="index.html">← Accueil</a>
+    <div class="pill glass"><img src="spity-piece.png" alt="Pièces"><span id="pieces">0</span></div>
+  </header>
+  <h1>Magasin</h1>
+
+  <section class="filters glass" aria-label="Filtres et tri">
+    <label>Type<select id="fType"><option value="">Tout</option><option value="acc">Accessoires</option><option value="contour">Contours</option></select></label>
+    <label>Thème<select id="fTheme"><option value="">Tous</option></select></label>
+    <label>Rareté<select id="fRare"><option value="">Toutes</option></select></label>
+    <label>Possession<select id="fOwn"><option value="">Tout</option><option value="own">Possédés</option><option value="not">Non possédés</option></select></label>
+    <label>Trier par<select id="fSort">
+      <option value="">Catalogue</option><option value="asc">Prix croissant</option><option value="desc">Prix décroissant</option>
+      <option value="rareAsc">Rareté croissante</option><option value="rareDesc">Rareté décroissante</option>
+      <option value="nom">Nom (A → Z)</option></select></label>
+  </section>
+  <p class="count" id="count"></p>
+  <main class="grid" id="grid"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="spity-avatar.js"></script>
+<script>
+var RARETES=[["commun","Commun"],["rare","Rare"],["epique","Épique"],["legendaire","Légendaire"]];
+var ORDRE={};RARETES.forEach(function(r,i){ORDRE[r[0]]=i});
+function $(i){return document.getElementById(i)}
+function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2200)}
+function nomRar(k){return (RARETES.filter(function(r){return r[0]===k})[0]||[0,k||"—"])[1]}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):"—"}
+
+/* Remplit les listes Thème et Rareté à partir du catalogue */
+(function(){
+  var th=[];Avatar.catalogue.forEach(function(it){if(it.theme&&th.indexOf(it.theme)<0)th.push(it.theme)});
+  th.sort().forEach(function(t){var o=document.createElement("option");o.value=t;o.textContent=cap(t);$("fTheme").appendChild(o)});
+  RARETES.forEach(function(r){var o=document.createElement("option");o.value=r[0];o.textContent=r[1];$("fRare").appendChild(o)});
+})();
+
+function prixDe(it){return it.base?0:(it.prix||0)}
+function liste(){
+  var t=$("fType").value,th=$("fTheme").value,ra=$("fRare").value,ow=$("fOwn").value,so=$("fSort").value;
+  var l=Avatar.catalogue.map(function(it,i){return{it:it,i:i}}).filter(function(x){
+    var it=x.it,own=Avatar.possede(it);
+    return(!t||it.type===t)&&(!th||it.theme===th)&&(!ra||it.rarete===ra)&&(ow!=="own"||own)&&(ow!=="not"||!own)});
+  l.sort(function(a,b){
+    if(so==="asc")return prixDe(a.it)-prixDe(b.it)||a.i-b.i;
+    if(so==="desc")return prixDe(b.it)-prixDe(a.it)||a.i-b.i;
+    if(so==="rareAsc")return(ORDRE[a.it.rarete]||0)-(ORDRE[b.it.rarete]||0)||a.i-b.i;
+    if(so==="rareDesc")return(ORDRE[b.it.rarete]||0)-(ORDRE[a.it.rarete]||0)||a.i-b.i;
+    if(so==="nom")return a.it.nom.localeCompare(b.it.nom,"fr");
+    return a.i-b.i});
+  return l.map(function(x){return x.it})}
+
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+
+function carte(it){
+  var own=Avatar.possede(it),c=el("article","card glass"+(own?" own":"")),th=el("div","thumb"),im=document.createElement("img");
+  im.src=it.img;im.alt="";im.onerror=function(){this.remove()};th.appendChild(im);
+  c.appendChild(el("span","type",it.type==="acc"?"Accessoire":"Contour"));
+  c.appendChild(th);c.appendChild(el("div","nm",it.nom));
+  var tg=el("div","tags");tg.appendChild(el("span","tag",cap(it.theme)));tg.appendChild(el("span","tag r-"+it.rarete,nomRar(it.rarete)));c.appendChild(tg);
+  var pr=el("div","price");
+  if(it.base){pr.textContent="De base"}
+  else{var co=document.createElement("img");co.src="spity-piece.png";co.alt="";pr.appendChild(co);pr.appendChild(document.createTextNode(it.prix))}
+  c.appendChild(pr);
+  var b=el("button","btn");
+  if(own){b.className+=" has";b.textContent=it.base?"Offert":"Possédé";b.disabled=true}
+  else{var ok=Avatar.pieces()>=it.prix;b.textContent="Acheter";if(!ok)b.className+=" no";
+    b.onclick=function(){var r=Avatar.acheter(it);
+      if(r==="ok")toast(it.nom+" acheté !");else if(r==="pas-assez")toast("Il te manque "+(it.prix-Avatar.pieces())+" pièces.");else toast("Achat impossible.");
+      rendre()}}
+  c.appendChild(b);return c}
+
+function rendre(){
+  $("pieces").textContent=Avatar.pieces();
+  var g=$("grid"),l=liste();g.innerHTML="";
+  $("count").textContent=l.length+" objet"+(l.length>1?"s":"");
+  if(!l.length)g.appendChild(el("div","vide glass","Aucun objet ne correspond à ces filtres."));
+  l.forEach(function(it){g.appendChild(carte(it))})}
+
+["fType","fTheme","fRare","fOwn","fSort"].forEach(function(id){$(id).onchange=rendre});
+window.addEventListener("pageshow",rendre);
+rendre();
+</script>
+</body>
+</html>
