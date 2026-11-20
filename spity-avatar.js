@@ -17,6 +17,8 @@ var PIECES_DEPART=100; /* pièces données au tout premier lancement */
 /* 2) Code (ne pas toucher) */
 (function(){
 var FISH="spity-poisson-face.png",mine={contour:"",acc:""};
+try{var sv=JSON.parse(localStorage.getItem("spity-equipe"));if(sv){mine.contour=sv.contour||"";mine.acc=sv.acc||""}}catch(e){}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 
 /* --- Possession (localStorage, partagé par toutes les pages du site) --- */
 function lire(){try{return JSON.parse(localStorage.getItem("spity-possedes"))||[]}catch(e){return[]}}
@@ -66,7 +68,7 @@ function picker(root,onChange){
   function btn(t){var b=document.createElement("button");b.className="btn";b.textContent=t;return b}
   tabs.className="two";g.className="apk-grid";
   tabs.appendChild(bC);tabs.appendChild(bA);root.appendChild(tabs);root.appendChild(g);
-  function pick(id){mine[tab]=id;draw();onChange&&onChange()}
+  function pick(id){mine[tab]=id;try{localStorage.setItem("spity-equipe",JSON.stringify(mine))}catch(e){}draw();onChange&&onChange()}
   function draw(){
     bC.classList.toggle("sun",tab==="contour");bA.classList.toggle("sun",tab==="acc");g.innerHTML="";
     /* sécurité : si l'objet équipé n'est plus possédé, on l'enlève */
