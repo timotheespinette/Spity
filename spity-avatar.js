@@ -12,7 +12,7 @@ var CATALOGUE=[
   {id:"flamme",    type:"contour", nom:"Flamme",    img:"contours/flamme.png",   prix:50,  theme:"feu",    rarete:"epique"},
   {id:"creator",   type:"contour", nom:"Creator",   img:"contours/creator.png",  prix:100, theme:"fête",   rarete:"legendaire"}
 ];
-var PIECES_DEPART=10000; /* pièces données au tout premier lancement */
+var PIECES_DEPART=10; /* pièces données au tout premier lancement */
 
 /* 2) Code (ne pas toucher) */
 (function(){
