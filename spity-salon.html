@@ -608,7 +608,10 @@ function dessinerMagasinWait(){
   var top=document.createElement("div");top.className="ws-top";
   var coins=document.createElement("div");coins.className="ws-coins";
   var nb=Avatar.pieces();
-  coins.textContent="🪙 "+nb+" pièce"+(nb>1?"s":"");
+  coins.style.display="inline-flex";
+coins.style.alignItems="center";
+coins.style.gap="8px";
+coins.innerHTML='<img src="spity-piece.png" alt="" style="width:1.3em;height:1.3em;object-fit:contain"> '+nb+" pièce"+(nb>1?"s":"");
   var close=document.createElement("button");close.className="btn";close.style.padding="8px 16px 10px";close.style.fontSize="1rem";
   close.textContent="Fermer";
   close.onclick=function(){$("waitShop").classList.remove("on")};
@@ -655,7 +658,11 @@ function dessinerMagasinWait(){
           syncProfil();dessinerMagasinWait();
         };
       }else{
-        btn.textContent="🪙 "+it.prix;
+        btn.style.display="inline-flex";
+        btn.style.alignItems="center";
+        btn.style.justifyContent="center";
+        btn.style.gap="6px";
+        btn.innerHTML='<img src="spity-piece.png" alt="" style="width:1.2em;height:1.2em;object-fit:contain"> '+it.prix;
         btn.disabled=Avatar.pieces()<it.prix;
         btn.onclick=function(){
           if(Avatar.acheter(it)==="ok"){
