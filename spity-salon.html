@@ -302,7 +302,7 @@ function startHost(tries){
 }
 $("hB").onclick=function(){H&&H.close();location.href="index.html"};
 var jeuBzzz=null;
-
+function donnerPieces(id,n){n=Math.floor(n);if(n>0&&n<=1000&&H)H.send(id,{t:"coins",n:n})}
 function ouvrirEquipes(j){
   if(Equipes.ouvrir(P,j))show("equipes");
 }
@@ -445,6 +445,7 @@ function connecterJoueur(force){
 
       if(m.t==="role")$("wGo").hidden=!m.chef;
       if(m.t==="start")toast("La partie démarre !");
+      if(m.t==="coins"&&m.n>0&&m.n<=1000){Avatar.gagner(m.n);toast("+"+m.n+" pièce"+(m.n>1?"s":"")+" !")}
 
       if(m.t==="kicked"){
         net.kicked=1;
