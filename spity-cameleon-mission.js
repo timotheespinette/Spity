@@ -82,7 +82,7 @@ const ManoirMissions = (() => {
       mort: [T("🎶", "Répéter les cris", "ordre", 6, "Redonne la chanson dans l’ordre."),
              T("💨", "Faire s’envoler le nid", "hold", 3, "Souffle fort.")]
     },
-    // 8 · La Mare aux Crocodiles {
+    /* 8 · La Mare aux Crocodiles */ {
       civil: [T("🥚", "Protéger les œufs", "oeufs", 15, "Écrase les serpents qui rôdent autour du nid."),
               T("🐊", "Nourrir les crocodiles", "nourrir", 4, "Donne à chacun la nourriture qu’il réclame.")],
       imposteur: [T("🔨", "Casser les œufs", "casser", 15, "Écrase les œufs avant qu’ils n’éclosent."),
@@ -407,8 +407,7 @@ const ManoirMissions = (() => {
     }
   };
 
-  Croco epreuves
- · JS
+ /* Croco epreuves · JS */
 /* ═══════════════════════════════════════════════════════════════════════
    ÉPREUVES DE LA MARE AUX CROCODILES  (lieu 8)
    Ce bloc utilise `el` (déjà défini plus haut dans ton fichier).
