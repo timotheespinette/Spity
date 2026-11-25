@@ -82,13 +82,13 @@ const ManoirMissions = (() => {
       mort: [T("🎶", "Répéter les cris", "ordre", 6, "Redonne la chanson dans l’ordre."),
              T("💨", "Faire s’envoler le nid", "hold", 3, "Souffle fort.")]
     },
-    /* 8 · La Mare aux Crocodiles */ {
-      civil: [T("🐊", "Nourrir le crocodile", "curseur", 3, "Lance la viande au bon moment."),
-              T("🪵", "Réparer la passerelle", "tap", 20, "Cloue les planches.")],
-      imposteur: [T("🥩", "Appâter les crocodiles", "hold", 3, "Étale l’appât sur la berge."),
-                  T("🪝", "Tendre un piège", "seq", 5, "Arme le piège dans l’ordre.")],
-      mort: [T("🫧", "Faire des bulles", "tap", 20, "Fais bouillonner la mare."),
-             T("🌿", "Troubler les nénuphars", "curseur", 3, "Fais onduler la surface.")]
+    // 8 · La Mare aux Crocodiles {
+      civil: [T("🥚", "Protéger les œufs", "oeufs", 15, "Écrase les serpents qui rôdent autour du nid."),
+              T("🐊", "Nourrir les crocodiles", "nourrir", 4, "Donne à chacun la nourriture qu’il réclame.")],
+      imposteur: [T("🔨", "Casser les œufs", "casser", 15, "Écrase les œufs avant qu’ils n’éclosent."),
+                  T("🍽️", "Servir les crocodiles", "avatars", 10, "Jette des joueurs dans la gueule des crocodiles.")],
+      mort: [T("🧺", "Sauver les œufs", "panier", 15, "Rattrape les œufs qui tombent du ciel."),
+             T("🛟", "Sauver le joueur", "sauver", 15, "Repousse les crocodiles avant qu’ils ne l’attrapent.")]
     },
     /* 9 · Le Pont des Singes */ {
       civil: [T("🐒", "Retendre les cordes", "tap", 20, "Serre les haubans."),
@@ -133,6 +133,9 @@ const ManoirMissions = (() => {
 
   /* Durée minimale réaliste (secondes) : anti-triche côté hôte */
   const dureeMin = (t, p) =>
+    t === "oeufs" || t === "casser" || t === "panier" || t === "sauver" ? p * .9 :
+    t === "nourrir" ? p * 2.2 :
+    t === "avatars" ? p * .9 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -403,6 +406,362 @@ const ManoirMissions = (() => {
       return () => { vivant = false; cancelAnimationFrame(raf); };
     }
   };
+
+  Croco epreuves
+ · JS
+/* ═══════════════════════════════════════════════════════════════════════
+   ÉPREUVES DE LA MARE AUX CROCODILES  (lieu 8)
+   Ce bloc utilise `el` (déjà défini plus haut dans ton fichier).
+   Types ajoutés : oeufs, nourrir, casser, avatars, panier, sauver
+   ═══════════════════════════════════════════════════════════════════════ */
+ 
+const CROCO_CSS = `
+.crScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#3aa58a 0,#1f7463 48%,#0e3b38 100%);border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 50px rgba(0,0,0,.55);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.crScene::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 25% 75%,rgba(255,255,255,.07) 0 5px,transparent 5px 24px),repeating-radial-gradient(circle at 80% 30%,rgba(255,255,255,.05) 0 4px,transparent 4px 20px);pointer-events:none}
+.crScene.crHit{animation:mnShake .28s}
+.crDeco{position:absolute;pointer-events:none;opacity:.9;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.crLayer{position:absolute;inset:0}
+.crHud{position:absolute;top:8px;left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;z-index:5;pointer-events:none;text-shadow:0 1px 3px #000}
+.crT{position:absolute;width:62px;height:62px;margin:-31px 0 0 -31px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;touch-action:none;cursor:pointer;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5));z-index:2}
+.crT>span{display:block}
+.crSp{animation:crSpawn .25s ease-out}
+.crWig{animation:crWig .45s ease-in-out infinite alternate}
+.crPoof{pointer-events:none;animation:crPoof .32s forwards}
+.crNest{position:absolute;left:50%;top:54%;width:100px;height:58px;margin:-29px 0 0 -50px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#b0854a 0,#6b4a24 72%);box-shadow:0 6px 12px rgba(0,0,0,.55),inset 0 -6px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:1.7rem;z-index:1}
+.crNest span{transition:opacity .3s,transform .3s}
+.crHero{position:absolute;left:50%;top:54%;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.6rem;background:radial-gradient(circle,rgba(255,255,255,.35),rgba(255,255,255,.05));box-shadow:0 0 0 3px rgba(140,236,255,.6),0 0 26px rgba(140,236,255,.6);z-index:1}
+.crPanier{position:absolute;bottom:4px;width:70px;margin-left:-35px;text-align:center;font-size:3.1rem;z-index:4;pointer-events:none;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.crCrocBox{position:absolute;left:50%;width:200px;margin-left:-100px;z-index:1;transition:transform .2s;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5))}
+.crCrocBox svg{display:block;width:100%;height:auto;overflow:visible}
+.crCrocBox .bas{transform:translateY(18px)}
+.crCrocBox.mange{animation:crBond .45s}
+.crCrocBox.mange .bas{animation:crMord .45s}
+.crCrocBox.non{animation:mnShake .35s}
+.crBulle{position:absolute;right:12px;top:30px;z-index:6;padding:8px 12px;border-radius:16px 16px 4px 16px;background:#fff;color:#12261f;font-weight:800;font-size:1rem;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.crBulle b{font-size:1.6rem;vertical-align:middle;margin-left:4px}
+.crPlateau{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:16px;z-index:6}
+.crSlot{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.3rem;background:radial-gradient(circle at 35% 30%,#f9e9c4,#c79a52);box-shadow:0 6px 12px rgba(0,0,0,.45);touch-action:none;cursor:grab}
+.crSlot.crTaken{opacity:.35}
+.crGhost{position:absolute;z-index:30;font-size:3rem;margin:-30px 0 0 -30px;pointer-events:none;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5));transform:scale(1.15)}
+.crBelt{position:absolute;left:0;right:0;top:34px;height:78px;background:repeating-linear-gradient(90deg,#3a2e22 0 18px,#241b12 18px 20px);box-shadow:0 5px 10px rgba(0,0,0,.5),inset 0 0 14px rgba(0,0,0,.6);animation:crBg .8s linear infinite;z-index:1}
+.crAv{position:absolute;top:8px;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:radial-gradient(circle at 35% 30%,#fff,#bfe3d6);box-shadow:0 4px 8px rgba(0,0,0,.5);touch-action:none;cursor:grab;animation:crAvMove 5.6s linear forwards}
+@keyframes crSpawn{from{transform:scale(.2);opacity:0}}
+@keyframes crWig{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+@keyframes crPoof{to{transform:scale(1.8);opacity:0}}
+@keyframes crMord{0%{transform:translateY(18px)}40%{transform:translateY(0)}100%{transform:translateY(18px)}}
+@keyframes crBond{50%{transform:scale(1.08)}}
+@keyframes crBg{to{background-position:-20px 0}}
+@keyframes crAvMove{from{left:100%}to{left:-70px}}
+`;
+ 
+let crCssOk = false;
+function crCss() {
+  if (crCssOk) return; crCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = CROCO_CSS;
+  document.head.appendChild(s);
+}
+ 
+const rnd = (a, b) => a + Math.random() * (b - a);
+ 
+/* Tête de crocodile (SVG), bouche ouverte par défaut */
+const crocSVG = () => '<svg viewBox="0 0 210 135"><rect x="14" y="52" width="182" height="60" rx="16" fill="#8f1d33"/>' +
+  '<g class="bas"><path d="M10 64H198V82Q198 112 150 112H62Q10 112 10 82Z" fill="#2f7d3b"/>' +
+  '<path d="M34 64l9-14l9 14ZM70 64l9-14l9 14ZM106 64l9-14l9 14ZM142 64l9-14l9 14Z" fill="#fff"/></g>' +
+  '<path d="M8 56Q8 14 62 14H152Q202 14 202 46V58H8Z" fill="#3f9d4d"/>' +
+  '<path d="M32 58l9 14l9-14ZM68 58l9 14l9-14ZM104 58l9 14l9-14ZM140 58l9 14l9-14ZM176 58l9 14l9-14Z" fill="#fff"/>' +
+  '<ellipse cx="62" cy="20" rx="17" ry="14" fill="#56b95f"/><circle cx="66" cy="20" r="7" fill="#fff"/><circle cx="68" cy="21" r="3.5" fill="#111"/>' +
+  '<circle cx="170" cy="28" r="3" fill="#2a6f35"/><circle cx="184" cy="28" r="3" fill="#2a6f35"/></svg>';
+ 
+/* Décor de mare */
+function scene(z, h) {
+  const s = el("div", "crScene"); s.style.height = h + "px";
+  [["🪷", 6, 78, 2], ["🪷", 84, 66, 1.6], ["🌿", 2, 40, 1.8], ["🌾", 90, 30, 2], ["🍃", 70, 88, 1.4], ["🪷", 28, 90, 1.5]]
+    .forEach(([e, x, y, sz]) => {
+      const d = el("div", "crDeco", e);
+      d.style.left = x + "%"; d.style.top = y + "%"; d.style.fontSize = sz + "rem";
+      s.appendChild(d);
+    });
+  z.appendChild(s);
+  return s;
+}
+ 
+/* Fait glisser un élément de x0,y0 vers x1,y1 (en %) en d secondes */
+function venir(e, x0, y0, x1, y1, d) {
+  e.style.left = x0 + "%"; e.style.top = y0 + "%";
+  void e.offsetWidth;
+  e.style.transition = "left " + d + "s linear,top " + d + "s linear";
+  e.style.left = x1 + "%"; e.style.top = y1 + "%";
+}
+ 
+function cible(layer, emoji, wig) {
+  const d = el("div", "crT");
+  d.appendChild(el("span", wig ? "crWig" : "crSp", emoji));
+  layer.appendChild(d);
+  return d;
+}
+ 
+function poof(c, s) {
+  c.el.classList.add("crPoof");
+  const sp = c.el.firstChild;
+  if (sp && s) sp.textContent = s;
+  setTimeout(() => c.el.remove(), 330);
+}
+ 
+/* Glisser-déposer : src → onDrop(clientX, clientY) */
+function glisser(sc, src, emoji, onDrop) {
+  src.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    const g = el("div", "crGhost", emoji); sc.appendChild(g);
+    const r = sc.getBoundingClientRect();
+    const mv = ev => { g.style.left = (ev.clientX - r.left) + "px"; g.style.top = (ev.clientY - r.top) + "px"; };
+    mv(e);
+    const avant = src.style.visibility;
+    src.style.visibility = "hidden";
+    const up = ev => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      g.remove(); src.style.visibility = avant;
+      onDrop(ev.clientX, ev.clientY, src);
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  });
+}
+ 
+const dans = (e, x, y, m) => {
+  const b = e.getBoundingClientRect(); m = m || 0;
+  return x >= b.left - m && x <= b.right + m && y >= b.top - m && y <= b.bottom + m;
+};
+ 
+/* Moteur « manche » : des cibles apparaissent pendant m.p secondes.
+   Une cible touchée disparaît ; une cible qui expire fait perdre une vie.
+   0 vie = on recommence ; tenir m.p secondes = réussi. */
+function manche(z, m, prog, ok, o) {
+  crCss();
+  const sc = scene(z, o.h || 300), layer = el("div", "crLayer"), hud = el("div", "crHud");
+  const vies = el("span"), tm = el("span");
+  hud.appendChild(vies); hud.appendChild(tm); sc.appendChild(layer); sc.appendChild(hud);
+  if (o.init) o.init(sc, layer);
+  const hint = el("div", "mnMiHint", o.hint); z.appendChild(hint);
+  const dur = m.p, cibles = new Set();
+  let vie = o.vies, t = 0, cd = .5, pause = 0, last = performance.now(), raf = 0, vivant = true;
+  const maj = () => {
+    const v = Math.max(0, vie);
+    vies.textContent = o.vieOn.repeat(v) + o.vieOff.repeat(o.vies - v);
+    tm.textContent = Math.max(0, Math.ceil(dur - t)) + " s";
+  };
+  function perdre() {
+    vie--; maj();
+    sc.classList.remove("crHit"); void sc.offsetWidth; sc.classList.add("crHit");
+    if (o.perte) o.perte(vie);
+    if (vie <= 0) {
+      cibles.forEach(c => c.el.remove()); cibles.clear();
+      hint.textContent = "Raté ! On recommence…";
+      pause = 1.3; vie = o.vies; t = 0; cd = .5; prog(0);
+      if (o.reset) o.reset();
+    }
+  }
+  function ajouter() {
+    const c = o.creer(layer, sc, t / dur);
+    if (!c) return;
+    c.age = 0; cibles.add(c);
+    if (!c.notap) c.el.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      if (!cibles.has(c)) return;
+      cibles.delete(c); poof(c, o.poof);
+    });
+  }
+  maj();
+  (function tick(now) {
+    if (!vivant) return;
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    if (pause > 0) {
+      pause -= dt;
+      if (pause <= 0) hint.textContent = o.hint;
+    } else {
+      t += dt; prog(t / dur);
+      cd -= dt;
+      if (cd <= 0) { cd = o.cadence(t / dur); ajouter(); }
+      [...cibles].forEach(c => {
+        if (!cibles.has(c)) return;
+        c.age += dt;
+        if (o.attrape && o.attrape(c)) { cibles.delete(c); c.el.remove(); return; }
+        if (c.age >= c.dur) { cibles.delete(c); if (o.rate) o.rate(c); else c.el.remove(); perdre(); }
+      });
+      maj();
+      if (t >= dur) { vivant = false; prog(1); ok(); return; }
+    }
+    raf = requestAnimationFrame(tick);
+  })(performance.now());
+  return () => { vivant = false; cancelAnimationFrame(raf); };
+}
+ 
+const JEUX_CROCO = {
+ 
+  /* 1 · CIVIL — Protéger les œufs : écrase les serpents (m.p = durée en s) */
+  oeufs(z, m, prog, ok) {
+    let oeufs = [];
+    return manche(z, m, prog, ok, {
+      h: 310, vies: 3, vieOn: "🥚", vieOff: "💔", poof: "💥",
+      hint: "Écrase tous les serpents avant qu’ils n’atteignent le nid !",
+      init(sc) {
+        const nid = el("div", "crNest");
+        oeufs = [0, 1, 2].map(() => { const s = el("span", "", "🥚"); nid.appendChild(s); return s; });
+        sc.appendChild(nid);
+      },
+      perte(v) { if (oeufs[v]) { oeufs[v].style.opacity = ".12"; oeufs[v].style.transform = "scale(.5)"; } },
+      reset() { oeufs.forEach(e => { e.style.opacity = "1"; e.style.transform = ""; }); },
+      cadence: p => 1.05 - .45 * p,
+      creer(layer, sc, p) {
+        const s = Math.floor(Math.random() * 4); let x, y;
+        if (s === 0) { x = rnd(10, 90); y = -8; } else if (s === 1) { x = rnd(10, 90); y = 108; }
+        else if (s === 2) { x = -8; y = rnd(14, 90); } else { x = 108; y = rnd(14, 90); }
+        const d = 2.4 - .8 * p, e = cible(layer, "🐍", true);
+        venir(e, x, y, 50 + rnd(-4, 4), 54 + rnd(-3, 3), d);
+        return { el: e, dur: d };
+      },
+      rate(c) { poof(c, "💢"); }
+    });
+  },
+ 
+  /* 2 · CIVIL — Nourrir les crocodiles : glisse la bonne nourriture (m.p = nb de crocos) */
+  nourrir(z, m, prog, ok) {
+    crCss();
+    const FOODS = [["🐟", "poisson"], ["🌾", "graines"], ["🍖", "viande"]];
+    const sc = scene(z, 330), croc = el("div", "crCrocBox"), bulle = el("div", "crBulle"), plateau = el("div", "crPlateau");
+    croc.style.top = "56px"; croc.innerHTML = crocSVG();
+    sc.appendChild(croc); sc.appendChild(bulle); sc.appendChild(plateau);
+    const hint = el("div", "mnMiHint"); z.appendChild(hint);
+    const tm = []; let n = 0, want = -1, busy = false;
+    const slots = FOODS.map(([e], i) => {
+      const s = el("div", "crSlot", e);
+      glisser(sc, s, e, (x, y) => {
+        if (busy) return;
+        if (!dans(croc, x, y, 14)) return;
+        if (i === want) {
+          busy = true; croc.classList.add("mange"); n++; prog(n / m.p);
+          tm.push(setTimeout(() => {
+            croc.classList.remove("mange");
+            if (n >= m.p) { ok(); return; }
+            busy = false; suivant();
+          }, 650));
+        } else {
+          croc.classList.remove("non"); void croc.offsetWidth; croc.classList.add("non");
+          bulle.innerHTML = "Non ! 🙅";
+          tm.push(setTimeout(() => { if (!busy) afficher(); }, 700));
+        }
+      });
+      plateau.appendChild(s); return s;
+    });
+    const afficher = () => { bulle.innerHTML = "Je veux <b>" + FOODS[want][0] + "</b>"; };
+    function suivant() {
+      let w; do { w = Math.floor(Math.random() * 3); } while (w === want);
+      want = w; afficher();
+      croc.style.filter = "drop-shadow(0 8px 8px rgba(0,0,0,.5)) hue-rotate(" + [0, 45, -40][n % 3] + "deg)";
+      slots.sort(() => Math.random() - .5).forEach(s => plateau.appendChild(s));
+      hint.textContent = "Crocodile " + (n + 1) + "/" + m.p + " · donne-lui ce qu’il demande";
+    }
+    suivant();
+    return () => tm.forEach(clearTimeout);
+  },
+ 
+  /* 1 · IMPOSTEUR — Casser les œufs (m.p = durée en s) */
+  casser(z, m, prog, ok) {
+    return manche(z, m, prog, ok, {
+      h: 310, vies: 4, vieOn: "🔴", vieOff: "⚫", poof: "💥",
+      hint: "Écrase les œufs avant qu’ils n’éclosent !",
+      cadence: p => .95 - .35 * p,
+      creer(layer, sc, p) {
+        const e = cible(layer, "🥚", false), d = 1.7 - .5 * p;
+        e.style.left = rnd(12, 88) + "%"; e.style.top = rnd(24, 86) + "%";
+        e.firstChild.style.animation = "crSpawn .25s, crWig .14s ease-in-out " + (d * .6) + "s infinite alternate";
+        return { el: e, dur: d };
+      },
+      rate(c) { poof(c, "🐣"); }
+    });
+  },
+ 
+  /* 2 · IMPOSTEUR — Servir les joueurs aux crocodiles (m.p = nb d’avatars)
+     Pour mettre les VRAIS avatars des joueurs : passer m.avatars = ["🦊","🐼",...] */
+  avatars(z, m, prog, ok) {
+    crCss();
+    const AV = ["🧑‍🚀", "🦸", "🧙", "🧑‍🍳", "👩‍🔬", "🧑‍🎤", "👨‍🚒", "🥷", "🧑‍🌾", "🦹", "🧛", "🧑‍🎨"];
+    const liste = (m.avatars && m.avatars.length) ? m.avatars : AV;
+    const sc = scene(z, 340), belt = el("div", "crBelt"), croc = el("div", "crCrocBox");
+    croc.style.bottom = "16px"; croc.innerHTML = crocSVG();
+    sc.appendChild(belt); sc.appendChild(croc);
+    const hint = el("div", "mnMiHint", "Glisse les joueurs dans la gueule · 0/" + m.p); z.appendChild(hint);
+    let n = 0, k = 0, vivant = true;
+    function nouvel() {
+      if (!vivant) return;
+      const e = liste[k++ % liste.length], a = el("div", "crAv", e);
+      glisser(sc, a, e, (x, y, src) => {
+        if (!vivant || !dans(croc, x, y, 10)) return;
+        src.remove(); n++; prog(n / m.p);
+        hint.textContent = "Glisse les joueurs dans la gueule · " + n + "/" + m.p;
+        croc.classList.remove("mange"); void croc.offsetWidth; croc.classList.add("mange");
+        if (n >= m.p) { vivant = false; clearInterval(iv); ok(); }
+      });
+      a.addEventListener("animationend", () => a.remove());
+      belt.appendChild(a);
+    }
+    nouvel();
+    const iv = setInterval(nouvel, 1000);
+    return () => { vivant = false; clearInterval(iv); };
+  },
+ 
+  /* 1 · MORT — Sauver les œufs : rattrape-les avec le panier (m.p = durée en s) */
+  panier(z, m, prog, ok) {
+    let bx = 50, pan = null;
+    return manche(z, m, prog, ok, {
+      h: 320, vies: 3, vieOn: "💙", vieOff: "🤍",
+      hint: "Glisse le doigt pour déplacer le panier",
+      init(sc) {
+        pan = el("div", "crPanier", "🧺"); pan.style.left = "50%"; sc.appendChild(pan);
+        const bouge = e => {
+          const r = sc.getBoundingClientRect();
+          bx = Math.max(8, Math.min(92, (e.clientX - r.left) / r.width * 100));
+          pan.style.left = bx + "%";
+        };
+        sc.addEventListener("pointerdown", bouge);
+        sc.addEventListener("pointermove", e => { if (e.buttons) bouge(e); });
+      },
+      cadence: p => .85 - .3 * p,
+      creer(layer, sc, p) {
+        const e = cible(layer, "🥚", false), x = rnd(10, 90), d = 1.9 - .5 * p;
+        venir(e, x, -6, x, 106, d);
+        return { el: e, dur: d, x, notap: true };
+      },
+      attrape(c) {
+        const y = -6 + 112 * c.age / c.dur;
+        return y >= 80 && Math.abs(c.x - bx) <= 16;
+      },
+      rate(c) { poof(c, "🍳"); }
+    });
+  },
+ 
+  /* 2 · MORT — Sauver le joueur : écrase les crocodiles (m.p = durée en s) */
+  sauver(z, m, prog, ok) {
+    return manche(z, m, prog, ok, {
+      h: 310, vies: 3, vieOn: "💙", vieOff: "🤍", poof: "💥",
+      hint: "Écrase les crocodiles avant qu’ils ne l’atteignent !",
+      init(sc) { sc.appendChild(el("div", "crHero", "🧑")); },
+      cadence: p => 1.1 - .4 * p,
+      creer(layer, sc, p) {
+        const gauche = Math.random() < .5, d = 2.6 - .9 * p, e = cible(layer, "🐊", true);
+        venir(e, gauche ? -8 : 108, rnd(24, 82), gauche ? 40 : 60, 54, d);
+        return { el: e, dur: d };
+      },
+      rate(c) { poof(c, "🦷"); }
+    });
+  }
+};
+ 
+/* Enregistre les nouveaux jeux dans JEUX */
+Object.keys(JEUX_CROCO).forEach(k => { JEUX[k] = JEUX_CROCO[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
