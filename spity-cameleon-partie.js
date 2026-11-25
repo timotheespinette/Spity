@@ -7,7 +7,7 @@
 
 /* Nombre de joueurs pour lancer une partie.
    Le cahier des règles dit 4 à 15. Pour tester seul, mets 1 en minimum (et remets 4 ensuite). */
-var MN_MIN_JOUEURS = 4;
+var MN_MIN_JOUEURS = 1;
 var MN_MAX_JOUEURS = 15;
 /* true = la partie s'arrête quand un camp gagne. Mets false pour tester seul. */
 var MN_VICTOIRE = true;
