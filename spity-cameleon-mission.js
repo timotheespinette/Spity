@@ -9,7 +9,7 @@
 */
 const ManoirMissions = (() => {
   const M = MANOIR_MAP;
-  const NB = 7;                     // missions visibles en même temps par joueur
+  const NB = 2;                     // missions visibles en même temps par joueur
 
   const T = (emoji, nom, type, p, desc) => ({ emoji, nom, type, p, desc });
 
