@@ -1,6 +1,6 @@
 // manoir-config.js — constantes du jeu (valeurs de départ, à ajuster aux tests)
 const MANOIR_CFG = {
-  vitesse: 3,          // cases par seconde
+  vitesse: 4,          // cases par seconde
   tick: 50,            // ms entre deux mises à jour (20 par seconde)
   rayonVision: 5,      // cases
   rayonBuisson: 1.5,   // distance max à laquelle on voit quelqu'un caché dans un buisson
