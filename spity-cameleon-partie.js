@@ -821,8 +821,22 @@ function majPanneauCam(){
     p.appendChild(h("h3","","CAM "+(slot+1)));
     var grid=h("div","mnCamGrid");
     zones.forEach(function(z,idx){
+      if(!z.nom){
+        var dedans=(M.pieces||[]).filter(function(pc){
+          return pc[0]>=z.x && pc[0]<=z.x+z.l && pc[1]>=z.y && pc[1]<=z.y+z.h;
+        }).map(function(pc){return pc[2]});
+        if(!dedans.length && M.pieces && M.pieces.length){
+          var best=M.pieces[0], bd=1e9;
+          M.pieces.forEach(function(pc){
+            var d=Math.hypot(pc[0]-(z.x+z.l/2), pc[1]-(z.y+z.h/2));
+            if(d<bd){bd=d;best=pc}
+          });
+          dedans=[best[2]];
+        }
+        z.nom=dedans.join(" / ");
+      }
       var actif=camZ[slot]===idx;
-      var b=h("button","mnCamZ"+(actif?" on":""),z.nom||("Zone "+(idx+1)));
+      var b=h("button","mnCamZ"+(actif?" on":""),"Cam "+(idx+1)+(z.nom?" · "+z.nom:""));
       b.disabled=cd>0||actif;
       b.onclick=function(){
         TO.envoyer({t:"mn:cam",slot:slot,zone:idx});
