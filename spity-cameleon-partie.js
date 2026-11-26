@@ -17,6 +17,7 @@ var MN_DEBUG = true;
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
 var M = MANOIR_MAP, C = MANOIR_CFG;
+var RP = 0.65; // Taille des avatars (était à 0.4 avant l'agrandissement de la map)
 var MAP_IMG = null;
 if (M.image) {
   MAP_IMG = new Image();
@@ -464,17 +465,17 @@ function dessinerFlux(cx,z,px,py,pw,ph,titre){
   Object.keys(mo.cadavres).forEach(function(id){
     var k=mo.cadavres[id];
     if(dedansZ(z,k.x,k.y))
-      dessinerCadavre(cx,ox+(k.x-z.x)*cs,oy+(k.y-z.y)*cs,cs*.4,k.couleur,k.id,k.pseudo);
+      dessinerCadavre(cx,ox+(k.x-z.x)*cs,oy+(k.y-z.y)*cs,cs*RP,k.couleur,k.id,k.pseudo);
   });
   Object.keys(mo.joueurs).forEach(function(id){
     var j=mo.joueurs[id];
     if(j.mort||j.tunnel||j.invis>0||!dedansZ(z,j.x,j.y)||Moteur.typeCase(j.x,j.y)==="~")return;
     var ap=(j.deguise&&mo.joueurs[j.deguise.id])||j;
     var X=ox+(j.x-z.x)*cs,Y=oy+(j.y-z.y)*cs;
-    pion(cx,X,Y,cs*.4,ap.couleur,ap.id,ap.pseudo,j.poison>0&&!j.poisonFurtif);
-    cx.font="700 "+Math.round(cs*.4)+"px system-ui";
+    pion(cx,X,Y,cs*RP,ap.couleur,ap.id,ap.pseudo,j.poison>0&&!j.poisonFurtif);
+    cx.font="700 "+Math.round(cs*.45)+"px system-ui";
     cx.textAlign="center";cx.textBaseline="alphabetic";
-    cx.fillStyle="#fff";cx.fillText(ap.pseudo,X,Y-cs*.5);
+    cx.fillStyle="#fff";cx.fillText(ap.pseudo,X,Y-cs*(RP+.15));
   });
   cx.fillStyle="rgba(0,0,0,.65)";cx.fillRect(px,py,pw,barre);
   cx.fillStyle="#ff3b47";cx.beginPath();cx.arc(px+barre*.5,py+barre*.5,barre*.2,0,7);cx.fill();
@@ -512,7 +513,7 @@ function dessinerH(){
   cams.forEach(function(z,i){
     cx.save();
     cx.strokeStyle="#ff3b47";cx.lineWidth=Math.max(2,cs*.12);
-    cx.setLineDash([cs*.4,cs*.25]);
+    cx.setLineDash([cs*RP,cs*.25]);
     cx.strokeRect(ox+z.x*cs,oy+z.y*cs,z.l*cs,z.h*cs);
     cx.restore();
     cx.fillStyle="#ff3b47";cx.font="800 "+Math.round(cs*.9)+"px system-ui";
@@ -526,7 +527,7 @@ function dessinerH(){
     if(j.mort)return;
     var montreRole=voir,revele=rev.indexOf(id)>=0;
     if(!montreRole&&!revele)return;
-    pion(cx,ox+j.x*cs,oy+j.y*cs,cs*.4,j.couleur,id,j.pseudo,j.poison>0&&!j.poisonFurtif);
+    pion(cx,ox+j.x*cs,oy+j.y*cs,cs*RP,j.couleur,id,j.pseudo,j.poison>0&&!j.poisonFurtif);
     if(revele&&!montreRole){
       cx.strokeStyle="#ffd45c";cx.lineWidth=Math.max(2,cs*.12);
       cx.beginPath();cx.arc(ox+j.x*cs,oy+j.y*cs,cs*.6,0,7);cx.stroke();
@@ -1209,7 +1210,7 @@ function dessinerT(){
         cx,
         ox+corps[1]*cs,
         oy+corps[2]*cs,
-        cs*.4,
+        cs*RP,
         corps[3],
         corps[0],
         corps[4]
@@ -1225,14 +1226,14 @@ function dessinerT(){
       }
       cx.save();
       if(o[7])cx.globalAlpha=.4;                  // o[7] : fantôme
-      pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*.4,o[3],o[8]||o[0],o[4],!!o[5]);   // o[5] : empoisonné → vert
+      pion(cx,ox+o[1]*cs,oy+o[2]*cs,cs*RP,o[3],o[8]||o[0],o[4],!!o[5]);   // o[5] : empoisonné → vert
       cx.restore();
-      if(o[9]){cx.strokeStyle="#ff3b47";cx.lineWidth=3*K;cx.beginPath();cx.arc(ox+o[1]*cs,oy+o[2]*cs,cs*.5,0,7);cx.stroke()}
+      if(o[9]){cx.strokeStyle="#ff3b47";cx.lineWidth=3*K;cx.beginPath();cx.arc(ox+o[1]*cs,oy+o[2]*cs,cs*(RP+.12),0,7);cx.stroke()}
       cx.textAlign="center";
       cx.textBaseline="alphabetic";
-      cx.font='700 '+Math.round(cs*.4)+'px "Baloo 2",system-ui,sans-serif';
+      cx.font='700 '+Math.round(cs*.45)+'px "Baloo 2",system-ui,sans-serif';
       cx.fillStyle=o[9]?"#ff6b78":"#fff";
-      cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*.5);
+      cx.fillText(o[4],ox+o[1]*cs,oy+o[2]*cs-cs*(RP+.15));
     }
 
     // Personnage du joueur
@@ -1243,7 +1244,7 @@ function dessinerT(){
       cx.globalAlpha=.4;
 
       pion(
-        cx,w/2,hh/2,cs*.4,
+        cx,w/2,hh/2,cs*RP,
         "#8cecff",T.id,T.pseudo
       );
 
@@ -1251,18 +1252,35 @@ function dessinerT(){
       cx.strokeStyle="#a4f1ff";
       cx.lineWidth=2*K;
       cx.beginPath();
-      cx.arc(w/2,hh/2,cs*.48,0,Math.PI*2);
+      cx.arc(w/2,hh/2,cs*(RP+.1),0,Math.PI*2);
       cx.stroke();
 
       cx.restore();
 
     }else{
+      var dansBuisson = (Moteur.typeCase ? Moteur.typeCase(T.x, T.y) : (M.grille[Math.floor(T.y)] || "")[Math.floor(T.x)]) === "~";
+      var tf = T.transfo;
 
+      cx.save();
       if(T.tunnel||T.invis>0)cx.globalAlpha=.45;
-      var tf=T.transfo;
-      pion(cx,w/2,hh/2,cs*.4,tf?tf.couleur:T.couleur,tf?tf.id:T.id,tf?tf.pseudo:T.pseudo);
-      cx.globalAlpha=1;
-      if(tf){cx.strokeStyle="#b48cff";cx.lineWidth=3*K;cx.beginPath();cx.arc(w/2,hh/2,cs*.5,0,7);cx.stroke()}
+      else if(dansBuisson){
+        cx.globalAlpha=.62;
+        if("filter" in cx) cx.filter="grayscale(80%) brightness(0.85)";
+      }
+      pion(cx,w/2,hh/2,cs*RP,tf?tf.couleur:T.couleur,tf?tf.id:T.id,tf?tf.pseudo:T.pseudo);
+      cx.restore();
+
+      if(dansBuisson && !T.tunnel){
+        cx.save();
+        cx.setLineDash([5*K, 4*K]);
+        cx.strokeStyle="rgba(155, 225, 175, 0.85)";
+        cx.lineWidth=2.5*K;
+        cx.beginPath();
+        cx.arc(w/2, hh/2, cs*(RP+.1), 0, Math.PI*2);
+        cx.stroke();
+        cx.restore();
+      }
+      if(tf){cx.strokeStyle="#b48cff";cx.lineWidth=3*K;cx.beginPath();cx.arc(w/2,hh/2,cs*(RP+.12),0,7);cx.stroke()}
     }
 
     // Dégradé de bord
