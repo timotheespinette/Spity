@@ -125,6 +125,26 @@ st.textContent = `
 .mnCapaB{background:linear-gradient(145deg,#8a5cf6,#4a2bb0)}
 .mnPick{z-index:20}
 .mnStatut{position:absolute;top:calc(env(safe-area-inset-top,0px) + 90px);left:50%;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:999px;font-weight:900;color:#fff;background:rgba(122,87,245,.88);border:1.5px solid rgba(200,180,255,.7);pointer-events:none;display:none;white-space:nowrap}
+.mnLieu{
+  position:absolute;
+  top:calc(env(safe-area-inset-top,0px) + 12px);
+  right:16px;
+  z-index:3;
+  padding:6px 14px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:.85rem;
+  color:#fff;
+  background:rgba(5,10,8,.62);
+  border:1.5px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  pointer-events:none;
+  white-space:nowrap;
+  display:none;
+}
+.mnLieu.avecCam{padding-right:34px}
+.mnCam{right:22px;top:calc(env(safe-area-inset-top,0px) + 17px);width:14px;height:14px}
 `;
 document.head.appendChild(st);
 
@@ -649,6 +669,8 @@ function telStart(m){
   r.appendChild(hudT);
   T.camDot=h("div","mnCam");
   r.appendChild(T.camDot);
+  T.lieuEl = h("div", "mnLieu");
+  r.appendChild(T.lieuEl);
 
   T.actions=h("div","mnActions");
   T.btnAttaque=h("button","mnAction mnAttack","ATTAQUER");
@@ -1365,6 +1387,25 @@ function telRecevoir(m){
       setTimeout(function(){if(T&&T.pts)T.pts.classList.remove("up")},250);
     }
     T.camDot.className="mnCam"+(m.phase==="jeu"&&m.cam===2?" r":(m.phase==="jeu"&&m.cam===1?" o":""));
+    var nomPiece = "";
+    if (m.phase === "jeu" && !T.tunnel && M.pieces) {
+      var dMin = 9; // rayon de détection autour du centre de la pièce (en cases)
+      M.pieces.forEach(function(p) {
+        var d = Math.hypot(p[0] + .5 - T.x, p[1] + .5 - T.y);
+        if (d < dMin) {
+          dMin = d;
+          nomPiece = p[2];
+        }
+      });
+    }
+
+    if (nomPiece) {
+      T.lieuEl.textContent = "📍 " + nomPiece;
+      T.lieuEl.style.display = "block";
+      T.lieuEl.classList.toggle("avecCam", m.cam === 1 || m.cam === 2);
+    } else {
+      T.lieuEl.style.display = "none";
+    }
     if(T.voteUI){
       ManoirVote.afficherTelephone(T.voteUI,{
         phase:m.phase,
