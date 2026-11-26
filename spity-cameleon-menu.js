@@ -38,7 +38,7 @@ var MM_ROLES = [
 /* Les paramètres réglables : k = nom interne, def = valeur de départ, pas = pas du + et du −.
    zero = texte affiché quand la valeur est 0. */
 var MM_PARAMS = [
-  {k:"vitesse",     nom:"Vitesse de déplacement",       min:2,  max:5,   pas:.5, def:3,  unite:" cases/s"},
+  {k:"vitesse",     nom:"Vitesse de déplacement",       min:2,  max:8,   pas:.5, def:4,  unite:" cases/s"},
   {k:"rayonVision", nom:"Rayon de vision",              min:3,  max:8,   pas:1,  def:5,  unite:" cases"},
   {k:"cooldownKill",nom:"Délai entre deux attaques",    min:10, max:60,  pas:5,  def:25, unite:" s"},
   {k:"discussion",  nom:"Durée de la discussion",       min:15, max:120, pas:15, def:45, unite:" s"},
