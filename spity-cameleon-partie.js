@@ -285,7 +285,14 @@ function lancer(cfg){
     var t=performance.now(),dt=Math.min(.1,(t-t0)/1000);t0=t;
     mo.maj(dt);
     mo.prendreNotifs().forEach(function(n){O.envoyer(versPeer(n.id),{t:"mn:action",ok:true,message:n.message})});
-    if(votePanelH)ManoirVote.afficherHote(votePanelH,mo.etatHote());
+    if(votePanelH){
+      var eh=mo.etatHote();
+      eh.joueurs=Object.keys(mo.joueurs).map(function(id){
+        var j=mo.joueurs[id];
+        return {id:j.id,pseudo:j.pseudo,couleur:j.couleur,mort:!!j.mort};
+      });
+      ManoirVote.afficherHote(votePanelH,eh);
+    }
 
     /* Flash rouge du Médium (vivant) à chaque mort */
     if(mo.prendreMorts().length){
