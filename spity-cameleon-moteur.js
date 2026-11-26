@@ -407,13 +407,17 @@ const Moteur = (() => {
 
       const compte={};
       v.candidats.forEach(c=>compte[c.id]=0);
+      let passes=0;
 
       /* Vote double du garde du corps */
       Object.keys(v.votes).forEach(id=>{
         const cible=v.votes[id];
-        if(cible!==null && compte[cible]!==undefined){
-          const votant=e.joueurs[id];
-          compte[cible]+=(votant&&votant.voteDouble)?2:1;
+        const votant=e.joueurs[id];
+        const poids=(votant&&votant.voteDouble)?2:1;
+        if(cible===null){
+          passes+=poids;
+        }else if(compte[cible]!==undefined){
+          compte[cible]+=poids;
         }
       });
 
@@ -422,7 +426,7 @@ const Moteur = (() => {
 
       let elimine=null;
 
-      if(max>0 && premiers.length===1){
+      if(max>0 && max>passes && premiers.length===1){
         const j=e.joueurs[premiers[0]];
         if(j){
           const r=MM_ROLES.find(x=>x.id===j.role)||{};
