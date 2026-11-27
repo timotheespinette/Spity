@@ -250,54 +250,14 @@ const MANOIR_MAP = {
     ]
   ],
   "zonesCamera": [
-    [
-      70,
-      10,
-      95,
-      27
-    ],
-    [
-      70,
-      46,
-      95,
-      63
-    ],
-    [
-      34,
-      6,
-      59,
-      23
-    ],
-    [
-      40,
-      28,
-      65,
-      45
-    ],
-    [
-      30,
-      46,
-      55,
-      63
-    ],
-    [
-      2,
-      46,
-      27,
-      63
-    ],
-    [
-      2,
-      32,
-      27,
-      49
-    ],
-    [
-      2,
-      9,
-      27,
-      26
-    ]
+    [70, 10, 95, 27, "Le Temple du Jaguar"],
+    [70, 46, 95, 63, "Le Repaire des Tapirs"],
+    [34, 6, 59, 23, "Camp & Serre aux Orchidées"],
+    [40, 28, 65, 45, "La Grande Clairière"],
+    [30, 46, 55, 63, "Le Pont des Singes"],
+    [2, 46, 27, 63, "La Mare aux Crocodiles"],
+    [2, 32, 27, 49, "Le Nid des Perroquets"],
+    [2, 9, 27, 26, "Grotte & Cascade Cachée"]
   ],
   "pieces": [
     [
