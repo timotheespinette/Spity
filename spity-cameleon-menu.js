@@ -11,57 +11,57 @@ var MM_TITRE = "Caméléon";
 
 var MM_ROLES = [
   {
-    id:"cultiste", nom:"Le Cultiste", camp:"cultiste", fixe:true,
+    id:"cultiste", nom:"Le Cultiste", emoji:"🗡️", camp:"cultiste", fixe:true,
     desc:"Attaque au contact. Tous les cultistes peuvent utiliser les trappes.",
     detail:"Le Cultiste est un membre du camp adverse. Il peut éliminer les autres joueurs au contact et emprunter les trappes pour se déplacer discrètement."
   },
   {
-    id:"empoisonneur", nom:"L'Empoisonneur", camp:"cultiste",
+    id:"empoisonneur", nom:"L'Empoisonneur", emoji:"🧪", camp:"cultiste",
     desc:"Sa cible meurt 15 secondes plus tard, sans être prévenue.",
     detail:"L'Empoisonneur utilise un poison qui agit avec un délai. Sa victime ne reçoit aucune indication avant son élimination."
   },
   {
-    id:"metamorphe", nom:"Le Métamorphe", camp:"cultiste",
-    desc:"Copie la couleur et le pseudo d'un joueur proche pendant 10 secondes.",
+    id:"metamorphe", nom:"Le Métamorphe", emoji:"🎭", camp:"cultiste",
+    desc:"Copie la couleur et le pseudo d'un joueur proche pendant 15 secondes.",
     detail:"Le Métamorphe peut prendre temporairement l'apparence d'un autre joueur. Il peut ainsi semer la confusion parmi les innocents."
   },
   {
-    id:"innocent", nom:"L'Innocent", camp:"invite", fixe:true,
+    id:"innocent", nom:"L'Innocent", emoji:"🧭", camp:"invite", fixe:true,
     desc:"Fait ses missions, surveille les autres et signale les cadavres.",
     detail:"L'Innocent doit accomplir ses missions et rester attentif à ce qui se passe autour de lui. Il peut signaler les cadavres découverts."
   },
   {
-    id:"detective", nom:"Le Détective", camp:"invite", info:true,
+    id:"detective", nom:"Le Détective", emoji:"👣", camp:"invite", info:true,
     desc:"Vision infrarouge : voit les empreintes de pas récentes.",
     detail:"Le Détective possède une capacité de vision infrarouge lui permettant de repérer les empreintes de pas récentes."
   },
   {
-    id:"medium", nom:"Le Médium", camp:"invite", info:true,
+    id:"medium", nom:"Le Médium", emoji:"🔮", camp:"invite", info:true,
     desc:"Reçoit un flash rouge à l'instant exact de chaque mort.",
     detail:"Le Médium reçoit un signal visuel au moment précis où un joueur est éliminé."
   },
   {
-    id:"garde", nom:"Le Garde du corps", camp:"invite",
-    desc:"Protège un joueur avec un bouclier de 20 secondes.",
-    detail:"Le Garde du corps peut protéger un joueur grâce à un bouclier temporaire de 20 secondes."
+    id:"garde", nom:"Le Garde du corps", emoji:"🛡️", camp:"invite",
+    desc:"Protège un joueur avec un bouclier de 15 secondes.",
+    detail:"Le Garde du corps peut protéger un joueur grâce à un bouclier temporaire de 15 secondes."
   },
   {
-    id:"veilleur", nom:"Le Veilleur", camp:"invite", info:true,
+    id:"veilleur", nom:"Le Veilleur", emoji:"📹", camp:"invite", info:true,
     desc:"Il peut changer le point de vue des caméras sur l'écran de l'hôte.",
     detail:"Le Veilleur peut modifier le point de vue des caméras affichées sur l'écran principal de l'hôte."
   },
   {
-    id:"chasseur", nom:"Le Chasseur", camp:"invite",
-    desc:"S'il est éliminé au vote, il peut tuer un joueur en 5 secondes.",
-    detail:"Si le Chasseur est éliminé à l'issue d'un vote, il dispose de 5 secondes pour éliminer un autre joueur."
+    id:"chasseur", nom:"Le Chasseur", emoji:"🎯", camp:"invite",
+    desc:"S'il est éliminé au vote, il peut tuer un joueur en 15 secondes.",
+    detail:"Si le Chasseur est éliminé à l'issue d'un vote, il dispose de 15 secondes pour éliminer un autre joueur."
   },
   {
-    id:"cartographe", nom:"Le Cartographe", camp:"invite", info:true,
+    id:"cartographe", nom:"Le Cartographe", emoji:"🗺️", camp:"invite", info:true,
     desc:"Révèle la position de tous les joueurs pendant 5 secondes.",
     detail:"Le Cartographe peut révéler temporairement la position de tous les joueurs pendant 5 secondes."
   },
   {
-    id:"martyr", nom:"Le Martyr", camp:"invite",
+    id:"martyr", nom:"Le Martyr", emoji:"🚨", camp:"invite",
     desc:"S'il est assassiné, il déclenche l'alarme et une réunion.",
     detail:"La mort du Martyr provoque automatiquement le déclenchement de l'alarme et une réunion."
   }
@@ -948,7 +948,7 @@ var MM_OPTIONS = [
     b.appendChild(check);
 
     var art = h("div","mm-role-art");
-    art.appendChild(h("div","mm-role-symbol",r.nom.charAt(4) || r.nom.charAt(0)));
+    art.appendChild(h("div","mm-role-symbol",r.emoji));
     b.appendChild(art);
 
     var content = h("div","mm-role-content");
@@ -1004,7 +1004,7 @@ var MM_OPTIONS = [
       r.camp==="cultiste"?"Camp cultiste":"Camp des invités"
     ));
 
-    box.appendChild(h("div","mm-detail-symbol",r.nom.charAt(4) || r.nom.charAt(0)));
+    box.appendChild(h("div","mm-detail-symbol",r.emoji));
     box.appendChild(h("h3","",r.nom));
     box.appendChild(h("p","",r.detail || r.desc));
 
@@ -1220,30 +1220,18 @@ var MM_OPTIONS = [
   /* ======================= VALIDATION ======================= */
 
   function demarrer(){
-    var min = window.MN_MIN_JOUEURS || 4;
+  var min = window.MN_MIN_JOUEURS || 4;
 
-    if(nb>0 && nb<min){
-      return toast("Il faut au moins "+min+" joueurs pour commencer.");
-    }
-
-    if(nb>0){
-      var l = limites(nb);
-
-      if(nombreCultistes()>l.cult){
-        return toast("Trop de cultistes pour ce nombre de joueurs.");
-      }
-
-      if(nombreInfos()>l.info){
-        return toast("Trop de rôles d'information sélectionnés.");
-      }
-    }
-
-    if(opts.demarrer){
-      opts.demarrer(sortie());
-    }else{
-      toast("Le lancement sera disponible à l'étape suivante.");
-    }
+  if(nb > 0 && nb < min){
+    return toast("Il faut au moins "+min+" joueurs.");
   }
+
+  if(opts.demarrer){
+    opts.demarrer(sortie());
+  }else{
+    toast("Erreur : fonction de lancement introuvable.");
+  }
+}
 
   /* ========================= AFFICHAGE ========================= */
 
