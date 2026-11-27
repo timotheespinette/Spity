@@ -83,7 +83,7 @@ const ManoirMissions = (() => {
       imposteur: [T("🪶", "Plumes discrètes", "plumes", 6, "Pince les plumes sans réveiller le perroquet."),
                   T("🥚", "Échanger l’œuf", "gobelets", 3, "Suis l’œuf piégé sans te tromper de nid.")],
       mort: [T("🎸", "Concert fantôme", "guitar", 12, "Joue la mélodie des cris sur la bonne piste."),
-             T("🌪️", "Faire s’envoler le nid", "tourbillon", 8, "Fais des cercles pour lever un vent d’outre-tombe.")]
+             T("🌪️", "Faire s’envoler le nid", "tourbillon", 6, "Fais des cercles pour lever un vent d’outre-tombe.")]
     },
     /* 8 · La Mare aux Crocodiles */ {
       civil: [T("🥚", "Protéger les œufs", "oeufs", 15, "Écrase les serpents qui rôdent autour du nid."),
@@ -1309,30 +1309,38 @@ const JEUX_PERRO2 = {
     const info = el("div", "mnMiHint", "Fais des cercles avec le doigt autour du nid !");
     z.appendChild(sc); z.appendChild(info);
 
-    let g = 0, down = false, la = 0, spin = 0, time = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    let g = 0, down = false, la = 0, spin = 0, grace = 0, time = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     const pos = e => { const r = sc.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
     sc.addEventListener("pointerdown", e => {
-      e.preventDefault(); down = true; const [x, y] = pos(e); la = Math.atan2(y - CY, x - CX);
+      e.preventDefault();
+      if (sc.setPointerCapture) sc.setPointerCapture(e.pointerId);
+      down = true; const [x, y] = pos(e); la = Math.atan2(y - CY, x - CX);
       finger.style.display = "block"; finger.style.left = x + "px"; finger.style.top = y + "px";
     });
     const fin_ = () => { down = false; finger.style.display = "none"; };
-    sc.addEventListener("pointerup", fin_); sc.addEventListener("pointercancel", fin_); sc.addEventListener("pointerleave", fin_);
+    sc.addEventListener("pointerup", fin_); sc.addEventListener("pointercancel", fin_);
     sc.addEventListener("pointermove", e => {
       if (!down || fin) return;
       const [x, y] = pos(e); finger.style.left = x + "px"; finger.style.top = y + "px";
-      if (Math.hypot(x - CX, y - CY) < 24) return;
+      if (Math.hypot(x - CX, y - CY) < 18) return;
       const a = Math.atan2(y - CY, x - CX); let d = a - la;
       while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       la = a;
-      if (Math.abs(d) < 1.3) { g = Math.min(1, g + Math.abs(d) / (2 * Math.PI * m.p)); spin = Math.min(1, spin + Math.abs(d) * .4); }
+      if (Math.abs(d) < 2.6) {
+        g = Math.min(1, g + Math.abs(d) / (2 * Math.PI * m.p));
+        spin = Math.min(1, spin + Math.abs(d) * .45);
+        grace = .25;
+      }
     });
 
     (function tick(now) {
       if (!vivant) return;
       const dt = Math.min(.1, (now - last) / 1000); last = now; time += dt;
       if (!fin) {
-        g = Math.max(0, g - .10 * dt); spin = Math.max(0, spin - dt * 2.2);
+        grace = Math.max(0, grace - dt);
+        if (grace <= 0) g = Math.max(0, g - .045 * dt);
+        spin = Math.max(0, spin - dt * 2.2);
         if (g >= 1) { fin = .001; info.textContent = "Tout s’envole !"; }
       } else { fin += dt; }
       prog(g);
