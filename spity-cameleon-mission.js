@@ -1762,7 +1762,13 @@ const JEUX_SINGES = {
       e.preventDefault(); if (fin || lock > 0) return;
       push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
       lock = .5;
-      sc.addEventListener("pointerdown", e => {
+      if (Math.abs(Math.sin(phi)) < .4) {
+        A += 6; sgPop(sc, "✨", 46, 20);
+        hint.textContent = "Bien poussé !";
+      } else {
+        A = Math.max(4, A - 5); sgShake(sc); hint.textContent = "Mal calé ! Il freine…";
+      }
+    });
       e.preventDefault(); if (fin || lock > 0) return;
       push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
       lock = .5;
