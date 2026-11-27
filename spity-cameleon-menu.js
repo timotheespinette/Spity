@@ -227,7 +227,12 @@ var MM_OPTIONS = [
     st.textContent = `
     #mnMenu{
       padding:0;
+      height:100%;
+      min-height:0;
+      box-sizing:border-box;
       overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
       background:#142c24;
     }
 
@@ -251,7 +256,7 @@ var MM_OPTIONS = [
       flex-direction:column;
       align-items:center;
       gap:18px;
-      overflow:hidden;
+      overflow:visible;
 
       color:#fff9e9;
       font-family:inherit;
@@ -908,6 +913,7 @@ var MM_OPTIONS = [
 
   function dessinerOnglets(){
     var tabs = h("div","mm-tabs");
+    tabs.id = "mmTabs";
 
     [
       {id:"roles",nom:"Rôles"},
@@ -1239,6 +1245,13 @@ var MM_OPTIONS = [
     if(!root) return;
 
     var scroll = root.scrollTop;
+
+    // Actualiser les onglets et leur couleur active
+    var anciensOnglets = q("mmTabs");
+    if(anciensOnglets){
+      anciensOnglets.replaceWith(dessinerOnglets());
+    }
+
     var content = q("mmContent");
 
     content.innerHTML = "";
