@@ -68,12 +68,13 @@ const ManoirMissions = (() => {
              T("🌑", "Aspirer la lumière", "trou", 15, "Avale les lucioles avant la fin du temps.")]
     },
     /* 6 · La Cascade Cachée */ {
-      civil: [T("💧", "Détourner le courant", "curseur", 3, "Ouvre la vanne au bon moment."),
-              T("🪣", "Remplir les gourdes", "hold", 3, "Puise l’eau claire.")],
-      imposteur: [T("🪨", "Faire tomber un rocher", "tap", 25, "Ébranle le rocher."),
-                  T("🌊", "Troubler la source", "curseur", 4, "Souille l’eau au bon moment.")],
-      mort: [T("🌊", "Écouter l’écho de l’eau", "curseur", 3, "Calque ton souffle sur la chute."),
-             T("💦", "Éclabousser le vide", "tap", 16, "Fais jaillir des gouttes.")]
+      {
+      civil: [T("🔧", "Détourner le courant", "tuyaux", 2, "Fais pivoter les tuyaux pour relier la source au bassin."),
+              T("🫙", "Remplir les gourdes", "rampes", 20, "Trace des rampes pour guider l’eau jusqu’aux gourdes.")],
+      imposteur: [T("☠️", "Poison indétectable", "poison", 2, "Reproduis la couleur de l’eau pour que personne ne remarque rien."),
+                  T("🗝️", "Crocheter la vanne", "crochet", 3, "Trouve le bon réglage de chaque goupille.")],
+      mort: [T("🪨", "Ricochets fantômes", "ricochet", 6, "Fais rebondir la pierre en touchant à chaque impact."),
+             T("🌊", "Chute dans la cascade", "chute", 8, "Évite les rochers et attrape les gouttes lumineuses.")]
     },
     /* 7 · Le Nid des Perroquets */
     {
@@ -157,6 +158,12 @@ const ManoirMissions = (() => {
     t === "eteindre" ? p * .3 :
     t === "nuee" ? p * .5 :
     t === "trou" ? p * .4 :
+    t === "tuyaux" ? p * 3 :
+    t === "rampes" ? p * .35 :
+    t === "poison" ? p * 3 :
+    t === "crochet" ? p * 1.5 :
+    t === "ricochet" ? p * .8 :
+    t === "chute" ? p * .8 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -2422,6 +2429,549 @@ const JEUX_GROTTE = {
 };
 
 Object.keys(JEUX_GROTTE).forEach(k => { JEUX[k] = JEUX_GROTTE[k]; });
+
+
+const CASCADE_CSS = `
+.caCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 40px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.caScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#1d6f7a 0,#14505e 50%,#0b2f3d 100%);border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 50px rgba(0,0,0,.5);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.caScene.caHit{animation:mnShake .3s}
+.caHud{position:absolute;top:8px;left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;text-shadow:0 1px 3px #000;pointer-events:none}
+.caFioles{position:absolute;left:0;right:0;top:40px;display:flex;justify-content:space-around;align-items:flex-end}
+.caFWrap{display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:800;font-size:.85rem;text-shadow:0 1px 3px #000}
+.caFiole{position:relative;width:96px;height:128px}
+.caCol{position:absolute;left:50%;top:0;width:34px;height:34px;margin-left:-17px;border:3px solid rgba(255,255,255,.55);border-bottom:0;border-radius:8px 8px 0 0;background:rgba(255,255,255,.06)}
+.caCorps{position:absolute;left:0;bottom:0;width:96px;height:98px;border-radius:50%;border:3px solid rgba(255,255,255,.6);overflow:hidden;background:rgba(255,255,255,.08);box-shadow:0 8px 14px rgba(0,0,0,.4)}
+.caLiq{position:absolute;left:0;right:0;bottom:0;height:70%;background:var(--c,#b2e2f0);transition:background .25s}
+.caCorps::after{content:"";position:absolute;left:14px;top:14px;width:12px;height:32px;border-radius:50%;background:rgba(255,255,255,.4);transform:rotate(20deg)}
+.caBar{position:absolute;left:14px;right:14px;top:196px;height:14px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden;border:1px solid rgba(255,255,255,.25)}
+.caBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5468,#ffc43d,#4cd964);transition:width .2s}
+.caSeuil{position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;box-shadow:0 0 6px #fff}
+.caChips{position:absolute;left:0;right:0;top:214px;display:flex;justify-content:center;gap:8px;font-weight:800;font-size:.8rem}
+.caChip{padding:3px 9px;border-radius:99px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25)}
+.caPig{position:absolute;left:0;right:0;top:244px;display:flex;justify-content:center;gap:12px}
+.caPigB{width:58px;height:58px;border-radius:50%;border:3px solid rgba(255,255,255,.7);box-shadow:0 5px 0 rgba(0,0,0,.4);font-size:1.5rem;touch-action:manipulation;transition:transform .08s}
+.caPigB:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.caAct{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:10px}
+.caBtn{padding:10px 18px;border:0;border-radius:16px;font-weight:900;font-size:.95rem;background:#ffe9b0;color:#3b2410;box-shadow:0 4px 0 rgba(0,0,0,.4);touch-action:manipulation}
+.caBtn.vert{background:#7ee7a0;color:#0b3a1c}
+.caBtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+`;
+
+let caCssOk = false;
+function caCss() {
+  if (caCssOk) return; caCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = CASCADE_CSS;
+  document.head.appendChild(s);
+}
+const caRnd = (a, b) => a + Math.random() * (b - a);
+const caClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function caCanvas(z, W, H) {
+  caCss();
+  const dpr = Math.min(2, window.devicePixelRatio || 1), cv = el("canvas", "caCv");
+  cv.width = W * dpr; cv.height = H * dpr;
+  const c = cv.getContext("2d"); c.scale(dpr, dpr);
+  z.appendChild(cv);
+  return [cv, c];
+}
+const caPos = (cv, e, W, H) => {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+};
+function caHud(c, gauche, droite) {
+  c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+  c.textAlign = "left"; c.fillText(gauche, 12, 22);
+  c.textAlign = "right"; c.fillText(droite, 308, 22); c.shadowBlur = 0;
+}
+function caFondEau(c, W, H, time, sombre) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, sombre ? "#143c52" : "#2b8e96"); g.addColorStop(.6, sombre ? "#0d2a3e" : "#17606c"); g.addColorStop(1, sombre ? "#07182a" : "#0b3342");
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = "rgba(255,255,255,.05)";
+  for (let i = 0; i < 6; i++) { const x = ((i * 61 + time * 8) % (W + 40)) - 20; c.fillRect(x, 0, 14, H); }
+}
+
+const JEUX_CASCADE = {
+
+  /* CIVIL 1 — Détourner le courant (m.p = nb de grilles, ex. 2)
+     Touche les tuiles pour les faire pivoter et relier la source (en haut à
+     gauche) au bassin (en bas à droite). L'eau coule en direct dans les
+     tuyaux bien reliés. La 2e grille est plus grande. */
+  tuyaux(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = caCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Touche les tuiles pour relier la source au bassin"); z.appendChild(hint);
+    const GR = [{ n: 4, cs: 56 }, { n: 5, cs: 48 }];
+    let g = 0, n = 4, cs = 56, ox = 0, oy = 34, tl = [], wet = [], win = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const conns = t => {
+      const r = t.rot % 4;
+      if (t.type === "X") return [0, 1, 2, 3];
+      if (t.type === "I") return [r, (r + 2) % 4];
+      if (t.type === "L") return [r, (r + 1) % 4];
+      return [r, (r + 1) % 4, (r + 3) % 4];
+    };
+    const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+    function calcul() {
+      wet = Array.from({ length: n }, () => Array(n).fill(false));
+      if (!conns(tl[0][0]).includes(0)) return false;
+      const q = [[0, 0]]; wet[0][0] = true;
+      while (q.length) {
+        const [x, y] = q.shift();
+        conns(tl[y][x]).forEach(d => {
+          const nx = x + DX[d], ny = y + DY[d];
+          if (nx < 0 || ny < 0 || nx >= n || ny >= n || wet[ny][nx]) return;
+          if (conns(tl[ny][nx]).includes((d + 2) % 4)) { wet[ny][nx] = true; q.push([nx, ny]); }
+        });
+      }
+      return wet[n - 1][n - 1] && conns(tl[n - 1][n - 1]).includes(2);
+    }
+    function genere() {
+      const cfg = GR[Math.min(g, GR.length - 1)]; n = cfg.n; cs = cfg.cs; ox = (W - n * cs) / 2;
+      do {
+        tl = Array.from({ length: n }, () => Array.from({ length: n }, () => {
+          const r = Math.random(), type = r < .35 ? "I" : r < .75 ? "L" : r < .93 ? "T" : "X";
+          return { type, rot: Math.floor(Math.random() * 4), ang: 0 };
+        }));
+        let x = 0, y = 0, prev = 0; const path = [];
+        const dirs = [];
+        while (x < n - 1 || y < n - 1) {
+          let d; if (x === n - 1) d = 2; else if (y === n - 1) d = 1; else d = Math.random() < .5 ? 1 : 2;
+          dirs.push(d); path.push([x, y]); if (d === 1) x++; else y++;
+        }
+        path.push([x, y]); dirs.push(2);
+        path.forEach(([px, py], i) => {
+          const a = i === 0 ? 0 : (dirs[i - 1] + 2) % 4, b = dirs[i];
+          const t = { type: ((b - a + 4) % 4 === 2) ? "I" : "L", rot: Math.floor(Math.random() * 4), ang: 0 };
+          tl[py][px] = t;
+        });
+        tl.forEach(row => row.forEach(t => { t.ang = t.rot * Math.PI / 2; }));
+      } while (calcul());
+      win = 0; prog(g / m.p);
+    }
+    genere(); calcul();
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (win) return;
+      const [x, y] = caPos(cv, e, W, H), cx = Math.floor((x - ox) / cs), cy = Math.floor((y - oy) / cs);
+      if (cx < 0 || cy < 0 || cx >= n || cy >= n) return;
+      tl[cy][cx].rot++;
+      if (calcul()) { win = .001; hint.textContent = "L’eau coule jusqu’au bassin !"; }
+    });
+    function trace(type, h) {
+      c.beginPath();
+      if (type === "I") { c.moveTo(0, -h); c.lineTo(0, h); }
+      else if (type === "L") { c.moveTo(0, -h); c.lineTo(0, 0); c.lineTo(h, 0); }
+      else if (type === "T") { c.moveTo(0, -h); c.lineTo(0, 0); c.lineTo(h, 0); c.moveTo(-h, 0); c.lineTo(0, 0); }
+      else { c.moveTo(0, -h); c.lineTo(0, h); c.moveTo(-h, 0); c.lineTo(h, 0); }
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      if (win) { win += dt; if (win > .95) { g++; if (g >= m.p) { vivant = false; prog(1); ok(); return; } genere(); calcul(); hint.textContent = "Nouvelle grille : relie à nouveau la source au bassin"; } }
+      caFondEau(c, W, H, time, true);
+      /* source et bassin */
+      c.strokeStyle = "#8b94a6"; c.lineWidth = cs * .34; c.lineCap = "round";
+      c.beginPath(); c.moveTo(ox + cs / 2, 12); c.lineTo(ox + cs / 2, oy); c.stroke();
+      c.strokeStyle = "#5ad0ff"; c.lineWidth = cs * .2; c.beginPath(); c.moveTo(ox + cs / 2, 12); c.lineTo(ox + cs / 2, oy); c.stroke();
+      c.font = "22px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("💧", ox + cs / 2, 12);
+      const bx = ox + (n - 1) * cs + cs / 2, by = oy + n * cs;
+      c.fillStyle = win ? "#5ad0ff" : "#1b2d44"; c.beginPath(); c.ellipse(bx, by + 14, 30, 11, 0, 0, 7); c.fill();
+      c.strokeStyle = "#8b94a6"; c.lineWidth = 3; c.stroke();
+      c.fillText(win ? "💦" : "🏞️", bx + 40, by + 12);
+      /* tuiles */
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const t = tl[y][x], px = ox + x * cs, py = oy + y * cs, tg = t.rot * Math.PI / 2;
+        t.ang += (tg - t.ang) * Math.min(1, dt * 14);
+        c.fillStyle = "#162235"; c.fillRect(px + 2, py + 2, cs - 4, cs - 4);
+        c.strokeStyle = "rgba(255,255,255,.1)"; c.lineWidth = 1; c.strokeRect(px + 2, py + 2, cs - 4, cs - 4);
+        c.save(); c.translate(px + cs / 2, py + cs / 2); c.rotate(t.ang); c.lineCap = "round"; c.lineJoin = "round";
+        c.strokeStyle = "#8b94a6"; c.lineWidth = cs * .3; trace(t.type, cs / 2 - 1); c.stroke();
+        c.strokeStyle = wet[y][x] ? "#4cc2f5" : "#1b2433"; c.lineWidth = cs * .18; trace(t.type, cs / 2 - 1); c.stroke();
+        if (wet[y][x]) {
+          c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = cs * .06; c.setLineDash([5, 9]); c.lineDashOffset = -time * 40;
+          trace(t.type, cs / 2 - 1); c.stroke(); c.setLineDash([]);
+        }
+        c.restore();
+      }
+      caHud(c, "💧 Grille " + Math.min(g + 1, m.p) + "/" + m.p, "touche = pivoter");
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* CIVIL 2 — Remplir les gourdes (m.p = gouttes à recueillir, ex. 20)
+     Trace des rampes avec le doigt : les gouttes glissent dessus. L'eau
+     ronge les rampes (elles disparaissent après ~6 s). La source bouge.
+     Réserve limitée : 3 × m.p gouttes. */
+  rampes(z, m, prog, ok) {
+    const W = 320, H = 330, GY = H - 62, TOT = m.p * 3, [cv, c] = caCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Trace des rampes pour guider l’eau jusqu’aux gourdes"); z.appendChild(hint);
+    let drops, lines, cur = null, gourdes, rocks, collecte, restant, spawn, time = 0, pause = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    function init() {
+      collecte = 0; restant = TOT; drops = []; lines = []; spawn = 0; prog(0);
+      gourdes = [{ x: 40, n: 0 }, { x: W / 2, n: 0 }, { x: W - 40, n: 0 }];
+      rocks = [{ x: caRnd(70, 140), y: caRnd(120, 165), r: 20 }, { x: caRnd(180, 250), y: caRnd(175, 215), r: 20 }];
+    }
+    init();
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); const [x, y] = caPos(cv, e, W, H);
+      cur = { pts: [[x, y]], age: 0 }; lines.push(cur);
+    });
+    cv.addEventListener("pointermove", e => {
+      if (!cur) return; const [x, y] = caPos(cv, e, W, H), l = cur.pts[cur.pts.length - 1];
+      if (Math.hypot(x - l[0], y - l[1]) >= 7) cur.pts.push([x, y]);
+    });
+    const fini = () => { cur = null; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, fini));
+    function collide(d, ax, ay, bx, by, ep) {
+      const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby || 1;
+      const t = caClamp(((d.x - ax) * abx + (d.y - ay) * aby) / l2, 0, 1), qx = ax + abx * t, qy = ay + aby * t;
+      let dx = d.x - qx, dy = d.y - qy, dist = Math.hypot(dx, dy);
+      if (dist < 4 + ep) {
+        if (dist < .001) { dx = 0; dy = -1; dist = 1; }
+        const nx = dx / dist, ny = dy / dist;
+        d.x = qx + nx * (4 + ep); d.y = qy + ny * (4 + ep);
+        const vn = d.vx * nx + d.vy * ny;
+        if (vn < 0) { d.vx -= 1.15 * vn * nx; d.vy -= 1.15 * vn * ny; }
+      }
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.04, (now - last) / 1000); last = now; time += dt;
+      lines.forEach(l => { l.age += dt; }); lines = lines.filter(l => l.age < 6 || l === cur);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Trace des rampes pour guider l’eau jusqu’aux gourdes"; } }
+      else if (!fin) {
+        spawn -= dt;
+        if (spawn <= 0 && restant > 0) { spawn = .16; restant--; drops.push({ x: W / 2 + Math.sin(time * .8) * 110, y: 16, vx: caRnd(-16, 16), vy: 0 }); }
+        drops.forEach(d => {
+          d.vy = Math.min(430, d.vy + 520 * dt); d.x += d.vx * dt; d.y += d.vy * dt;
+          if (d.x < 6) { d.x = 6; d.vx = Math.abs(d.vx); } if (d.x > W - 6) { d.x = W - 6; d.vx = -Math.abs(d.vx); }
+          lines.forEach(l => { for (let i = 1; i < l.pts.length; i++) collide(d, l.pts[i - 1][0], l.pts[i - 1][1], l.pts[i][0], l.pts[i][1], 3); });
+          rocks.forEach(r => {
+            const dx = d.x - r.x, dy = d.y - r.y, dist = Math.hypot(dx, dy);
+            if (dist < r.r + 4) { const nx = dx / dist, ny = dy / dist; d.x = r.x + nx * (r.r + 4); d.y = r.y + ny * (r.r + 4); const vn = d.vx * nx + d.vy * ny; if (vn < 0) { d.vx -= 1.3 * vn * nx; d.vy -= 1.3 * vn * ny; } }
+          });
+          if (d.y > GY) {
+            d.dead = true;
+            const gg = gourdes.find(q => Math.abs(q.x - d.x) < 20);
+            if (gg) { gg.n++; collecte++; prog(collecte / m.p); }
+          }
+        });
+        drops = drops.filter(d => !d.dead && d.y < H + 10);
+        if (collecte >= m.p) { fin = .001; hint.textContent = "Les gourdes sont pleines !"; }
+        else if (collecte + restant + drops.length < m.p) { pause = 1.5; hint.textContent = "Plus assez d’eau ! On recommence…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      caFondEau(c, W, H, time, false);
+      c.fillStyle = "#12404a"; c.fillRect(0, 0, 8, H); c.fillRect(W - 8, 0, 8, H);
+      const sx = W / 2 + Math.sin(time * .8) * 110;
+      c.fillStyle = "#3a4a52"; c.beginPath(); c.roundRect ? c.roundRect(sx - 22, 0, 44, 12, 6) : c.rect(sx - 22, 0, 44, 12); c.fill();
+      rocks.forEach(r => { const g = c.createRadialGradient(r.x - 6, r.y - 6, 3, r.x, r.y, r.r); g.addColorStop(0, "#8a948f"); g.addColorStop(1, "#4a524e"); c.fillStyle = g; c.beginPath(); c.arc(r.x, r.y, r.r, 0, 7); c.fill(); });
+      lines.forEach(l => {
+        const a = l.age < 4.5 ? 1 : Math.max(0, 1 - (l.age - 4.5) / 1.5);
+        c.globalAlpha = a; c.lineCap = "round"; c.lineJoin = "round";
+        c.strokeStyle = "#7a5028"; c.lineWidth = 9; c.beginPath(); l.pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke();
+        c.strokeStyle = "#c79a5b"; c.lineWidth = 4; c.beginPath(); l.pts.forEach((p, i) => i ? c.lineTo(p[0], p[1] - 1.5) : c.moveTo(p[0], p[1] - 1.5)); c.stroke();
+        c.globalAlpha = 1;
+      });
+      c.fillStyle = "rgba(150,225,255,.95)"; drops.forEach(d => { c.beginPath(); c.arc(d.x, d.y, 4, 0, 7); c.fill(); });
+      c.fillStyle = "rgba(255,255,255,.7)"; drops.forEach(d => { c.beginPath(); c.arc(d.x - 1, d.y - 1.5, 1.4, 0, 7); c.fill(); });
+      c.fillStyle = "#0a2230"; c.fillRect(0, GY + 12, W, H - GY);
+      gourdes.forEach(q => {
+        const niv = Math.min(1, q.n / Math.max(1, m.p / 2.2));
+        c.fillStyle = "rgba(255,255,255,.12)"; c.beginPath(); c.roundRect ? c.roundRect(q.x - 22, GY + 6, 44, 56, [8, 8, 14, 14]) : c.rect(q.x - 22, GY + 6, 44, 56); c.fill();
+        c.fillStyle = "rgba(90,200,255,.85)"; c.fillRect(q.x - 20, GY + 60 - niv * 50, 40, niv * 50);
+        c.strokeStyle = "rgba(255,255,255,.8)"; c.lineWidth = 2.5; c.beginPath(); c.roundRect ? c.roundRect(q.x - 22, GY + 6, 44, 56, [8, 8, 14, 14]) : c.rect(q.x - 22, GY + 6, 44, 56); c.stroke();
+        c.fillStyle = "#8b5a2b"; c.fillRect(q.x - 10, GY - 2, 20, 8);
+      });
+      caHud(c, "💧 " + collecte + "/" + m.p, "réserve : " + restant);
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* IMPOSTEUR 1 — Poison indétectable (m.p = nb de flacons, ex. 2)
+     Reproduis la couleur de l'eau de la source avec des gouttes de pigment
+     (le mélange est visible en direct) puis verse. Écart trop grand = ça se verrait. */
+  poison(z, m, prog, ok) {
+    caCss();
+    const sc = el("div", "caScene"); sc.style.height = "340px"; z.appendChild(sc);
+    const hud = el("div", "caHud"), gau = el("span"), dro = el("span"); hud.appendChild(gau); hud.appendChild(dro); sc.appendChild(hud);
+    const fioles = el("div", "caFioles"); sc.appendChild(fioles);
+    const mk = (titre) => {
+      const w = el("div", "caFWrap"), f = el("div", "caFiole"), liq = el("div", "caLiq");
+      const corps = el("div", "caCorps"); corps.appendChild(liq); f.appendChild(el("div", "caCol")); f.appendChild(corps);
+      w.appendChild(f); w.appendChild(el("div", "", titre)); fioles.appendChild(w); return liq;
+    };
+    const liqT = mk("💧 Eau de la source"), liqM = mk("☠️ Ton flacon");
+    const bar = el("div", "caBar"), bi = el("i"), seuil = el("div", "caSeuil"); bar.appendChild(bi); bar.appendChild(seuil); sc.appendChild(bar);
+    const chips = el("div", "caChips"); sc.appendChild(chips);
+    const cR = el("span", "caChip"), cV = el("span", "caChip"), cB = el("span", "caChip"); [cR, cV, cB].forEach(x => chips.appendChild(x));
+    const pig = el("div", "caPig"); sc.appendChild(pig);
+    const EAU = [178, 226, 240], PIG = { r: [225, 60, 70], v: [70, 190, 95], b: [55, 105, 225], e: EAU }, A = .2, TOL = 24, DMAX = 160;
+    [["r", "🔴"], ["v", "🟢"], ["b", "🔵"], ["e", "💧"]].forEach(([k, e]) => {
+      const b = el("button", "caPigB", e); b.style.background = "rgb(" + PIG[k].join(",") + ")";
+      b.addEventListener("pointerdown", ev => { ev.preventDefault(); ajoute(k); }); pig.appendChild(b);
+    });
+    const act = el("div", "caAct"); sc.appendChild(act);
+    const bV = el("button", "caBtn", "Vider"), bP = el("button", "caBtn vert", "☠️ Verser"); act.appendChild(bV); act.appendChild(bP);
+    const hint = el("div", "mnMiHint", "Reproduis la couleur de l’eau avec les pigments"); z.appendChild(hint);
+
+    let flacon = 0, cible = EAU.slice(), mix = EAU.slice(), nb = 0, max = 9, bloque = false;
+    const rgb = a => "rgb(" + a.map(Math.round).join(",") + ")";
+    const dist = () => Math.hypot(cible[0] - mix[0], cible[1] - mix[1], cible[2] - mix[2]);
+    function ajoute(k) {
+      if (bloque) return;
+      for (let i = 0; i < 3; i++) mix[i] = mix[i] * (1 - A) + PIG[k][i] * A;
+      nb++;
+      if (nb > max) { hint.textContent = "Trop de pigment, on vide le flacon !"; vide(); return; }
+      maj();
+    }
+    function vide() { mix = EAU.slice(); nb = 0; maj(); }
+    function nouveau() {
+      const k = Math.floor(caRnd(4, 7)); cible = EAU.slice();
+      for (let i = 0; i < k; i++) { const p = PIG["rvb"[Math.floor(Math.random() * 3)]]; for (let j = 0; j < 3; j++) cible[j] = cible[j] * (1 - A) + p[j] * A; }
+      max = k + 5; mix = EAU.slice(); nb = 0; maj();
+    }
+    function maj() {
+      liqT.style.setProperty("--c", rgb(cible)); liqM.style.setProperty("--c", rgb(mix));
+      const d = dist(), pc = caClamp(1 - d / DMAX, 0, 1);
+      bi.style.width = (pc * 100) + "%"; seuil.style.left = ((1 - TOL / DMAX) * 100) + "%";
+      const ch = (nom, i, col) => { const df = cible[i] - mix[i]; return nom + (df > 12 ? " ▲" : df < -12 ? " ▼" : " ✓"); };
+      cR.textContent = ch("Rouge", 0); cV.textContent = ch("Vert", 1); cB.textContent = ch("Bleu", 2);
+      cR.style.color = "#ff8a98"; cV.style.color = "#8aff9c"; cB.style.color = "#8ac4ff";
+      gau.textContent = "☠️ Flacon " + Math.min(flacon + 1, m.p) + "/" + m.p; dro.textContent = "gouttes " + nb + "/" + max;
+    }
+    bV.addEventListener("pointerdown", e => { e.preventDefault(); if (!bloque) vide(); });
+    bP.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (bloque) return;
+      if (dist() < TOL) {
+        flacon++; prog(flacon / m.p); bloque = true; hint.textContent = "Indétectable ! Le poison est versé.";
+        setTimeout(() => { if (flacon >= m.p) ok(); else { bloque = false; nouveau(); hint.textContent = "Nouveau flacon : même exercice"; } }, 900);
+      } else {
+        hint.textContent = "Ça se verrait… la couleur est trop différente !";
+        sc.classList.remove("caHit"); void sc.offsetWidth; sc.classList.add("caHit");
+      }
+    });
+    nouveau();
+    return () => { bloque = true; };
+  },
+
+  /* IMPOSTEUR 2 — Crocheter la vanne (m.p = nb de goupilles, ex. 3 ; 32 s)
+     Glisse le doigt sur le rail : la jauge de tension et les tremblements
+     indiquent « chaud / froid ». Reste dans la fenêtre 0,6 s pour bloquer la
+     goupille. */
+  crochet(z, m, prog, ok) {
+    const W = 320, H = 300, TMAX = 32, RX = 34, RW = 252, [cv, c] = caCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Glisse le doigt sur le rail : plus c’est chaud, plus tu es près"); z.appendChild(hint);
+    let cibles, pin, pos = .5, hold = 0, tps = 0, pops = [], pause = 0, fin = 0, time = 0, down = false, last = performance.now(), raf = 0, vivant = true;
+    const fen = i => Math.max(.028, .046 - .006 * i);
+    function init() {
+      cibles = []; let p = -1;
+      for (let i = 0; i < m.p; i++) { let v, t = 0; do { v = caRnd(.1, .9); t++; } while (t < 30 && Math.abs(v - p) < .25); cibles.push(v); p = v; }
+      pin = 0; hold = 0; tps = 0; pos = .5; prog(0);
+    }
+    init();
+    const place = e => { const [x] = caPos(cv, e, W, H); pos = caClamp((x - RX) / RW, 0, 1); };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; place(e); });
+    cv.addEventListener("pointermove", e => { if (down) place(e); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.06, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 1.6; }); pops = pops.filter(p => p.a < 1);
+      let heat = 0;
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Glisse le doigt sur le rail : plus c’est chaud, plus tu es près"; } }
+      else if (!fin) {
+        tps += dt;
+        const d = Math.abs(pos - cibles[pin]); heat = Math.pow(caClamp(1 - d / .4, 0, 1), 1.6);
+        if (d < fen(pin)) hold += dt / .6; else hold = Math.max(0, hold - dt * 2);
+        if (hold >= 1) {
+          pin++; hold = 0; prog(pin / m.p); pops.push({ a: 0, t: "CLIC !", x: RX + cibles[pin - 1] * RW });
+          if (pin >= m.p) { fin = .001; hint.textContent = "La vanne est débloquée !"; }
+        }
+        if (!fin && tps >= TMAX) { pause = 1.4; hint.textContent = "Trop long ! Le mécanisme se réinitialise…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#26414a"); g.addColorStop(1, "#0f232b");
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      const tr = heat * 3.2, sx = (Math.random() - .5) * tr, sy = (Math.random() - .5) * tr;
+      /* volant de vanne */
+      c.save(); c.translate(W / 2 + sx, 90 + sy); c.rotate(pin * .5 + (fin ? fin * 3 : 0));
+      c.strokeStyle = "#b6772e"; c.lineWidth = 12; c.beginPath(); c.arc(0, 0, 54, 0, 7); c.stroke();
+      c.strokeStyle = "#e0a850"; c.lineWidth = 4; c.beginPath(); c.arc(0, 0, 54, 0, 7); c.stroke();
+      c.strokeStyle = "#b6772e"; c.lineWidth = 9;
+      for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(i * 1.5708) * 54, Math.sin(i * 1.5708) * 54); c.stroke(); }
+      c.fillStyle = "#e0a850"; c.beginPath(); c.arc(0, 0, 11, 0, 7); c.fill();
+      c.restore();
+      /* goupilles */
+      for (let i = 0; i < m.p; i++) {
+        const px = W / 2 + (i - (m.p - 1) / 2) * 70, set = i < pin, cur = i === pin;
+        const up = set ? 24 : 0;
+        c.fillStyle = "#1a2c33"; c.fillRect(px - 15, 168, 30, 46);
+        c.fillStyle = set ? "#f2c14e" : cur ? "#9fb6c0" : "#5b6f78";
+        c.fillRect(px - 11, 176 - up + (cur && !set ? sy : 0), 22, 36);
+        c.fillStyle = "rgba(255,255,255,.25)"; c.fillRect(px - 8, 178 - up, 4, 32);
+        if (cur && !fin) { c.fillStyle = "#fff"; c.font = "16px sans-serif"; c.textAlign = "center"; c.fillText("▼", px, 164); }
+      }
+      /* rail */
+      c.strokeStyle = "#101b20"; c.lineWidth = 14; c.lineCap = "round"; c.beginPath(); c.moveTo(RX, 262); c.lineTo(RX + RW, 262); c.stroke();
+      c.strokeStyle = "#3e5560"; c.lineWidth = 8; c.beginPath(); c.moveTo(RX, 262); c.lineTo(RX + RW, 262); c.stroke();
+      const mx = RX + pos * RW;
+      if (hold > 0) { c.strokeStyle = "#ffe27a"; c.lineWidth = 4; c.beginPath(); c.arc(mx, 262, 20, -1.57, -1.57 + hold * 6.28); c.stroke(); }
+      c.font = "28px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🔧", mx, 258);
+      /* tension */
+      c.textBaseline = "alphabetic";
+      c.fillStyle = "rgba(0,0,0,.4)"; c.fillRect(20, 32, W - 40, 12);
+      const hg = c.createLinearGradient(20, 0, W - 20, 0); hg.addColorStop(0, "#4aa3ff"); hg.addColorStop(.6, "#ffc43d"); hg.addColorStop(1, "#ff3b55");
+      c.fillStyle = hg; c.fillRect(20, 32, (W - 40) * heat, 12);
+      c.font = "700 11px sans-serif"; c.fillStyle = "#cfe"; c.textAlign = "left"; c.fillText("froid", 20, 58); c.textAlign = "right"; c.fillText("chaud", W - 20, 58);
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = "900 18px sans-serif"; c.fillStyle = "#ffe27a"; c.textAlign = "center"; c.fillText(p.t, p.x, 240 - p.a * 24); c.globalAlpha = 1; });
+      caHud(c, "🔧 " + pin + "/" + m.p, "⏱ " + Math.max(0, Math.ceil(TMAX - tps)) + " s");
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 1 — Ricochets fantômes (m.p = nb de ricochets, ex. 6)
+     Tire vers la gauche pour doser la puissance (plus fort = plus rapide),
+     relâche pour lancer. À chaque impact, touche quand le cercle se referme. */
+  ricochet(z, m, prog, ok) {
+    const W = 320, H = 280, WY = 190, SX = 100, [cv, c] = caCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Tire vers la gauche pour la puissance, relâche pour lancer"); z.appendChild(hint);
+    let etat = "pret", k = 0, t = 0, tau0 = 1, sm = 1, tapped = false, pw = .5, x0 = 0, drag = false, ripples = [], sink = 0, fin = 0, time = 0, off = 0, last = performance.now(), raf = 0, vivant = true;
+    const tauK = () => tau0 * Math.pow(.94, k), hK = () => 76 * Math.pow(.85, k);
+    function echec(msg) { etat = "plouf"; sink = 0; hint.textContent = msg; }
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); const [x] = caPos(cv, e, W, H);
+      if (etat === "pret") { drag = true; x0 = x; pw = .3; return; }
+      if (etat === "vol") {
+        const dl = tauK() - t;
+        if (Math.abs(dl) <= .14) { if (!tapped) { tapped = true; } }
+        else if (dl > .14) echec("Trop tôt ! La pierre coule…");
+      }
+    });
+    cv.addEventListener("pointermove", e => { if (drag) { const [x] = caPos(cv, e, W, H); pw = caClamp((x0 - x) / 100, .2, 1); } });
+    const lance = () => {
+      if (!drag) return; drag = false;
+      sm = .85 + .45 * pw; tau0 = .85 / sm; k = 0; t = 0; tapped = false; ripples = []; etat = "vol";
+      hint.textContent = "Touche quand le cercle se referme sur l’eau !";
+    };
+    cv.addEventListener("pointerup", lance); cv.addEventListener("pointercancel", () => { drag = false; });
+    const yStone = () => {
+      if (etat === "pret") return WY - 30;
+      if (etat === "plouf") return WY + sink * 40;
+      const s = caClamp(t / tauK(), 0, 1); return WY - hK() * 4 * s * (1 - s) - 4;
+    };
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      const vw = (etat === "vol" || etat === "fin") ? 170 * sm : 28; off += vw * dt;
+      ripples.forEach(r => { r.x -= vw * dt; r.a += dt * 1.4; }); ripples = ripples.filter(r => r.a < 1 && r.x > -60);
+      if (etat === "vol") {
+        t += dt;
+        if (t >= tauK() + .14 && !tapped) echec("Trop tard ! La pierre coule…");
+        else if (t >= tauK() && tapped) {
+          ripples.push({ x: SX, a: 0 }); k++; prog(k / m.p); t = 0; tapped = false;
+          if (k >= m.p) { etat = "fin"; fin = .001; hint.textContent = "Quel lancer ! La pierre file jusqu’à l’autre rive."; }
+        }
+      } else if (etat === "plouf") { sink += dt * 1.6; if (sink > 1.2) { etat = "pret"; k = 0; prog(0); hint.textContent = "Tire vers la gauche pour la puissance, relâche pour lancer"; } }
+      else if (etat === "fin") { fin += dt; if (fin > 1.1) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      const sky = c.createLinearGradient(0, 0, 0, WY); sky.addColorStop(0, "#4b3f8f"); sky.addColorStop(1, "#9a7fd0");
+      c.fillStyle = sky; c.fillRect(0, 0, W, WY);
+      c.fillStyle = "rgba(255,246,210,.9)"; c.beginPath(); c.arc(250, 50, 22, 0, 7); c.fill();
+      c.fillStyle = "#2b2260"; c.beginPath(); c.moveTo(0, WY - 40);
+      for (let x = 0; x <= W; x += 20) c.lineTo(x, WY - 40 - 18 * Math.abs(Math.sin((x + off * .1) * .03)) - 10);
+      c.lineTo(W, WY); c.lineTo(0, WY); c.fill();
+      const wg = c.createLinearGradient(0, WY, 0, H); wg.addColorStop(0, "#2a7e9a"); wg.addColorStop(1, "#0a2a40");
+      c.fillStyle = wg; c.fillRect(0, WY, W, H - WY);
+      c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 2;
+      for (let i = 0; i < 7; i++) { const y = WY + 10 + i * 12, x = ((i * 47 - off * (.6 + i * .08)) % (W + 60) + W + 60) % (W + 60) - 30; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 36, y); c.stroke(); }
+      ripples.forEach(r => { c.strokeStyle = "rgba(220,245,255," + (1 - r.a) + ")"; c.lineWidth = 2.5; c.beginPath(); c.ellipse(r.x, WY, 8 + r.a * 40, 3 + r.a * 10, 0, 0, 7); c.stroke(); });
+      if (etat === "vol") {
+        const s = t / tauK();
+        if (s > .5) {
+          const rr = 12 + 34 * (1 - caClamp((s - .5) / .5, 0, 1)), ok2 = Math.abs(tauK() - t) <= .14;
+          c.strokeStyle = ok2 ? "#7affb0" : "rgba(255,255,255,.85)"; c.lineWidth = ok2 ? 5 : 3;
+          c.beginPath(); c.ellipse(SX, WY, rr, rr * .32, 0, 0, 7); c.stroke();
+        }
+      }
+      if (etat === "pret" && drag) {
+        c.strokeStyle = "rgba(255,255,255,.8)"; c.lineWidth = 6; c.lineCap = "round"; c.beginPath(); c.moveTo(SX - 20, 250); c.lineTo(SX - 20 - pw * 80, 250); c.stroke();
+        c.font = "700 12px sans-serif"; c.fillStyle = "#fff"; c.textAlign = "left"; c.fillText("puissance " + Math.round(pw * 100) + " %", SX - 20, 268);
+      }
+      const ys = yStone();
+      c.save(); c.globalAlpha = etat === "plouf" ? Math.max(0, 1 - sink) : .95;
+      c.shadowColor = "#bfe6ff"; c.shadowBlur = 14; c.font = "30px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🪨", SX, ys); c.restore();
+      if (etat === "plouf") { c.font = "24px serif"; c.textAlign = "center"; c.fillText("💦", SX, WY - 10); }
+      caHud(c, "🪨 " + k + "/" + m.p, etat === "vol" ? "au bon moment !" : "");
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 2 — Chute libre dans la cascade (m.p = gouttes lumineuses, ex. 8)
+     Tu tombes, vue de haut en bas : glisse le doigt à gauche / droite pour
+     éviter rochers et troncs et attraper les gouttes. 3 vies. */
+  chute(z, m, prog, ok) {
+    const W = 320, H = 340, PY = 96, PR = 13, [cv, c] = caCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Glisse le doigt pour éviter les obstacles et attraper les gouttes"); z.appendChild(hint);
+    let px = W / 2, tx = px, obs, gouttes, vie, n, dist, inv, pause = 0, fin = 0, time = 0, pops = [], last = performance.now(), raf = 0, vivant = true;
+    function init() { px = W / 2; tx = px; obs = []; gouttes = []; vie = 3; n = 0; dist = 0; inv = 0; pops = []; prog(0); }
+    init();
+    const place = e => { const [x] = caPos(cv, e, W, H); tx = caClamp(x, 24, W - 24); };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); place(e); });
+    cv.addEventListener("pointermove", e => { if (e.buttons || e.pointerType === "touch") place(e); });
+    function ligne(y) {
+      const r = Math.random();
+      if (r < .4) { const g = caRnd(50, W - 50); obs.push({ t: "r", x: g - 78 - 10, y, r: 24 }, { t: "r", x: g + 78 + 10, y, r: 24 }); if (Math.random() < .55) gouttes.push({ x: g, y }); }
+      else if (r < .75) { const dr = Math.random() < .5, w = caRnd(170, 200); obs.push({ t: "l", x: dr ? 12 : W - 12 - w, y, w, h: 16 }); const gx = dr ? caRnd(w + 40, W - 30) : caRnd(30, W - w - 40); if (Math.random() < .55) gouttes.push({ x: gx, y }); }
+      else { const a = caRnd(60, W - 60); obs.push({ t: "r", x: a, y, r: 26 }); if (Math.random() < .5) gouttes.push({ x: a + (a < W / 2 ? 80 : -80), y }); }
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 1.7; }); pops = pops.filter(p => p.a < 1);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Glisse le doigt pour éviter les obstacles et attraper les gouttes"; } }
+      else if (!fin) {
+        const v = 150 + 10 * n; dist += v * dt; inv = Math.max(0, inv - dt);
+        px += (tx - px) * Math.min(1, dt * 12);
+        while (dist >= 105) { dist -= 105; ligne(H + 30 - dist); }
+        obs.forEach(o => { o.y -= v * dt; }); gouttes.forEach(g => { g.y -= v * dt; });
+        obs = obs.filter(o => o.y > -50); gouttes = gouttes.filter(g => g.y > -30 && !g.pris);
+        gouttes.forEach(g => { if (Math.hypot(g.x - px, g.y - PY) < PR + 12) { g.pris = true; n++; prog(n / m.p); pops.push({ x: g.x, y: g.y, a: 0, t: "💧" }); } });
+        if (inv <= 0) obs.forEach(o => {
+          let touche = false;
+          if (o.t === "r") touche = Math.hypot(o.x - px, o.y - PY) < o.r + PR - 3;
+          else { const cx = caClamp(px, o.x, o.x + o.w), cy = caClamp(PY, o.y - o.h / 2, o.y + o.h / 2); touche = Math.hypot(cx - px, cy - PY) < PR - 2; }
+          if (touche && inv <= 0) { vie--; inv = 1.2; pops.push({ x: px, y: PY, a: 0, t: "💥" }); }
+        });
+        if (n >= m.p) { fin = .001; hint.textContent = "Tu as atteint le bassin !"; }
+        else if (vie <= 0) { pause = 1.4; hint.textContent = "Tu t’écrases sur les rochers ! On recommence…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      const bg = c.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#6fd0e8"); bg.addColorStop(1, "#1d7f9a");
+      c.fillStyle = bg; c.fillRect(0, 0, W, H);
+      c.fillStyle = "rgba(255,255,255,.28)";
+      for (let i = 0; i < 14; i++) { const x = (i * 47 + 13) % W, y = (((i * 83 - time * 360 * (.8 + (i % 3) * .2)) % (H + 60)) + H + 60) % (H + 60) - 30; c.fillRect(x, y, 3, 34 + (i % 4) * 8); }
+      c.fillStyle = "#1c4a3a"; c.fillRect(0, 0, 10, H); c.fillRect(W - 10, 0, 10, H);
+      c.fillStyle = "#2f7a54"; for (let i = 0; i < 9; i++) { const y = (((i * 70 - time * 150) % (H + 70)) + H + 70) % (H + 70) - 30; c.beginPath(); c.arc(7, y, 9, 0, 7); c.arc(W - 7, y + 30, 9, 0, 7); c.fill(); }
+      obs.forEach(o => {
+        if (o.t === "r") { const g = c.createRadialGradient(o.x - 7, o.y - 7, 4, o.x, o.y, o.r); g.addColorStop(0, "#9aa39d"); g.addColorStop(1, "#4a524e"); c.fillStyle = g; c.beginPath(); c.arc(o.x, o.y, o.r, 0, 7); c.fill(); c.fillStyle = "rgba(255,255,255,.5)"; c.beginPath(); c.ellipse(o.x, o.y + o.r + 4, o.r * .8, 4, 0, 0, 7); c.fill(); }
+        else { c.fillStyle = "#6b4423"; c.beginPath(); c.roundRect ? c.roundRect(o.x, o.y - o.h / 2, o.w, o.h, 8) : c.rect(o.x, o.y - o.h / 2, o.w, o.h); c.fill(); c.fillStyle = "#9b6b3a"; c.fillRect(o.x + 6, o.y - o.h / 2 + 3, o.w - 12, 3); }
+      });
+      gouttes.forEach(g => { const rr = 18 + Math.sin(time * 6 + g.x) * 2; const gr = c.createRadialGradient(g.x, g.y, 2, g.x, g.y, rr); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.4, "rgba(255,240,150,.8)"); gr.addColorStop(1, "rgba(255,240,150,0)"); c.fillStyle = gr; c.beginPath(); c.arc(g.x, g.y, rr, 0, 7); c.fill(); c.font = "18px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("💧", g.x, g.y); });
+      if (inv <= 0 || Math.floor(time * 14) % 2) { c.font = "30px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.save(); c.translate(px, PY); c.rotate((tx - px) * .004); c.fillText("👻", 0, 0); c.restore(); }
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (24 + p.a * 22) + "px serif"; c.textAlign = "center"; c.fillText(p.t, p.x, p.y - p.a * 20); c.globalAlpha = 1; });
+      caHud(c, "💧 " + n + "/" + m.p, "❤️".repeat(Math.max(0, vie)) + "🖤".repeat(3 - Math.max(0, vie)));
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_CASCADE).forEach(k => { JEUX[k] = JEUX_CASCADE[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
