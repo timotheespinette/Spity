@@ -74,13 +74,14 @@ const ManoirMissions = (() => {
       mort: [T("🌊", "Écouter l’écho de l’eau", "curseur", 3, "Calque ton souffle sur la chute."),
              T("💦", "Éclabousser le vide", "tap", 16, "Fais jaillir des gouttes.")]
     },
-    /* 7 · Le Nid des Perroquets */ {
-      civil: [T("🦜", "Apprendre un mot au perroquet", "seq", 5, "Répète la mélodie."),
-              T("🌰", "Garnir la mangeoire", "hold", 3, "Verse les graines.")],
-      imposteur: [T("🪶", "Voler des plumes", "tap", 18, "Chipe-les vite."),
-                  T("🥚", "Échanger un œuf", "ordre", 6, "Substitue l’œuf discrètement.")],
-      mort: [T("🎶", "Répéter les cris", "ordre", 6, "Redonne la chanson dans l’ordre."),
-             T("💨", "Faire s’envoler le nid", "hold", 3, "Souffle fort.")]
+    // 7 · Le Nid des Perroquets
+    {
+      civil: [T("🦜", "Répéter le mot du perroquet", "parole", 3, "Écoute-le bien, puis répète-le syllabe par syllabe."),
+              T("🪽", "Faire voler le perroquet", "vol", 10, "Touche pour battre des ailes et passe entre les troncs.")],
+      imposteur: [T("🪶", "Plumes discrètes", "plumes", 6, "Pince les plumes sans réveiller le perroquet."),
+                  T("🥚", "Échanger l’œuf", "gobelets", 3, "Suis l’œuf piégé sans te tromper de nid.")],
+      mort: [T("🎸", "Concert fantôme", "guitar", 20, "Joue la mélodie des cris sur la bonne piste."),
+             T("🌪️", "Faire s’envoler le nid", "tourbillon", 8, "Fais des cercles pour lever un vent d’outre-tombe.")]
     },
     /* 8 · La Mare aux Crocodiles */ {
       civil: [T("🥚", "Protéger les œufs", "oeufs", 15, "Écrase les serpents qui rôdent autour du nid."),
@@ -136,6 +137,12 @@ const ManoirMissions = (() => {
     t === "oeufs" || t === "casser" || t === "panier" || t === "sauver" ? p * .9 :
     t === "nourrir" ? p * 2.2 :
     t === "avatars" ? p * .9 :
+    t === "parole" ? p * 3.5 :
+    t === "vol" ? p * .9 :
+    t === "plumes" ? p * 1.0 :
+    t === "gobelets" ? p * 5 :
+    t === "guitar" ? p * .5 :
+    t === "tourbillon" ? p * .5 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -761,6 +768,574 @@ const JEUX_CROCO = {
  
 /* Enregistre les nouveaux jeux dans JEUX */
 Object.keys(JEUX_CROCO).forEach(k => { JEUX[k] = JEUX_CROCO[k]; });
+
+const PERRO_CSS = `
+.pqScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:radial-gradient(ellipse at 50% 0,#2c9a73 0,#1a6a50 50%,#0d3a2c 100%);border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 50px rgba(0,0,0,.5);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pqScene::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,rgba(255,255,255,.05) 0 10px,transparent 10px 38px);pointer-events:none}
+.pqDeco{position:absolute;pointer-events:none;opacity:.85;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.pqPips{position:absolute;top:10px;left:14px;font-weight:900;letter-spacing:.2em;font-size:1rem;text-shadow:0 1px 3px #000;z-index:3}
+.pqPerro{position:absolute;left:50%;top:34px;margin-left:-78px;font-size:5.6rem;line-height:1;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5));z-index:2}
+.pqPerro.parle{animation:pqTalk .32s ease-in-out}
+.pqPerro.non{animation:mnShake .4s}
+.pqBulle{position:absolute;left:50%;top:26px;margin-left:30px;min-width:72px;padding:8px 14px;border-radius:18px 18px 18px 4px;background:#fff;color:#555;font-weight:900;font-size:1.9rem;text-align:center;box-shadow:0 6px 14px rgba(0,0,0,.4);z-index:3;transition:color .1s}
+.pqBranche{position:absolute;left:-6px;right:-6px;bottom:16px;height:18px;border-radius:9px;background:linear-gradient(#8a5a2b,#5a3a1a);box-shadow:0 4px 8px rgba(0,0,0,.5);z-index:1}
+.pqRow{position:absolute;left:14px;right:14px;bottom:30px;display:flex;gap:10px;z-index:2}
+.pqNote{flex:1;height:92px;border:0;border-radius:22px 22px 12px 12px;font-weight:900;font-size:1.35rem;color:rgba(0,0,0,.62);box-shadow:0 7px 0 rgba(0,0,0,.35);opacity:.78;transition:opacity .1s,transform .1s,filter .1s,box-shadow .1s;touch-action:manipulation}
+.pqNote.on{opacity:1;filter:brightness(1.45);transform:translateY(5px) scale(1.05);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.pqCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 40px rgba(0,0,0,.4);touch-action:none;user-select:none;-webkit-user-select:none}
+@keyframes pqTalk{30%{transform:translateY(-10px) rotate(-7deg) scale(1.08)}70%{transform:translateY(0) rotate(5deg)}}
+`;
+
+let pqCssOk = false;
+function pqCss() {
+  if (pqCssOk) return; pqCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = PERRO_CSS;
+  document.head.appendChild(s);
+}
+
+const pqRnd = (a, b) => a + Math.random() * (b - a);
+
+/* Petit son (WebAudio) : silencieux si le téléphone l’interdit */
+let pqAc = null;
+function pqSon(f) {
+  try {
+    pqAc = pqAc || new (window.AudioContext || window.webkitAudioContext)();
+    if (pqAc.state === "suspended") pqAc.resume();
+    const o = pqAc.createOscillator(), g = pqAc.createGain(), t = pqAc.currentTime;
+    o.type = "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(.25, t + .02);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .4);
+    o.connect(g); g.connect(pqAc.destination);
+    o.start(t); o.stop(t + .45);
+  } catch (e) { /* pas de son */ }
+}
+
+const JEUX_PERRO = {
+
+  /* CIVIL 1 — Répéter le mot du perroquet (m.p = nombre de manches, ex. 3)
+     Le perroquet « dit » un mot en syllabes (couleur + son + bulle).
+     Manche 1 = 3 syllabes, manche 2 = 4, manche 3 = 5… La suite se prolonge.
+     Une erreur : il redit la même suite (on ne perd pas tout). */
+  parole(z, m, prog, ok) {
+    pqCss();
+    const POOL = ["Ko", "Ra", "Pi", "Ti", "Zou", "Mba", "Lo", "Cri", "Ya", "Fou", "Jo", "Ké"];
+    const COL = ["#ff5468", "#ffc43d", "#4cd964", "#4aa3ff"], FREQ = [392, 494, 587, 740];
+    const syl = POOL.slice().sort(() => Math.random() - .5).slice(0, 4);
+    const rounds = m.p, L0 = 3, full = [];
+    for (let i = 0; i < L0 + rounds - 1; i++) {
+      let v; do { v = Math.floor(Math.random() * 4); } while (i && v === full[i - 1]);
+      full.push(v);
+    }
+    const sc = el("div", "pqScene"); sc.style.height = "320px";
+    [["🌿", 4, 52, 2.2], ["🍃", 86, 62, 1.8], ["🌺", 90, 14, 1.6], ["🌴", 2, 8, 2.4]].forEach(([e, x, y, s]) => {
+      const d = el("div", "pqDeco", e); d.style.left = x + "%"; d.style.top = y + "%"; d.style.fontSize = s + "rem"; sc.appendChild(d);
+    });
+    const pips = el("div", "pqPips"), perro = el("div", "pqPerro", "🦜"), bulle = el("div", "pqBulle", "…");
+    const row = el("div", "pqRow"), info = el("div", "mnMiHint", "Écoute le perroquet…");
+    sc.appendChild(pips); sc.appendChild(perro); sc.appendChild(bulle); sc.appendChild(el("div", "pqBranche")); sc.appendChild(row);
+    const btns = syl.map((s, i) => { const b = el("button", "pqNote", s); b.style.background = COL[i]; row.appendChild(b); return b; });
+    z.appendChild(sc); z.appendChild(info);
+
+    let r = 0, pos = 0, acc = false, seq = [];
+    const tm = [], later = (f, d) => { tm.push(setTimeout(f, d)); };
+    const majPips = () => { pips.textContent = "●".repeat(r) + "◉" + "○".repeat(Math.max(0, rounds - r - 1)); };
+    function dire(i, d) {
+      btns[i].classList.add("on"); bulle.textContent = syl[i]; bulle.style.color = COL[i];
+      perro.classList.remove("parle"); void perro.offsetWidth; perro.classList.add("parle");
+      pqSon(FREQ[i]); later(() => btns[i].classList.remove("on"), d || 380);
+    }
+    function lancer() {
+      acc = false; pos = 0; majPips();
+      seq = full.slice(0, L0 + r);
+      info.textContent = "Écoute le perroquet…"; bulle.textContent = "…"; bulle.style.color = "#555";
+      seq.forEach((s, k) => later(() => dire(s), 800 + k * 650));
+      later(() => { acc = true; bulle.textContent = "?"; info.textContent = "À toi ! Répète les " + seq.length + " syllabes"; }, 800 + seq.length * 650);
+    }
+    btns.forEach((b, i) => b.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (!acc) return;
+      dire(i, 220);
+      if (i === seq[pos]) {
+        pos++; prog((r + pos / seq.length) / rounds);
+        if (pos >= seq.length) {
+          acc = false; r++;
+          if (r >= rounds) { info.textContent = "Bravo, il a compris !"; later(ok, 600); }
+          else { info.textContent = "Bien joué ! Il en rajoute une…"; later(lancer, 1000); }
+        }
+      } else {
+        acc = false; info.textContent = "Squaaawk ! Il le redit…";
+        perro.classList.remove("non"); void perro.offsetWidth; perro.classList.add("non");
+        later(lancer, 1200);
+      }
+    }));
+    lancer();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* CIVIL 2 — Faire voler le perroquet, style Flappy Bird (m.p = durée du parcours en s, ex. 10)
+     Touche pour battre des ailes, passe entre les troncs. Crash = on repart du début. */
+  vol(z, m, prog, ok) {
+    pqCss();
+    const W = 320, H = 280, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cv = el("canvas", "pqCv"); cv.width = W * dpr; cv.height = H * dpr;
+    const c = cv.getContext("2d"); c.scale(dpr, dpr);
+    z.appendChild(cv);
+    const hint = el("div", "mnMiHint", "Touche pour battre des ailes"); z.appendChild(hint);
+
+    const PX = 72, R = 12, G = 1350, FL = -400, V = 150, GAP = 122, PW = 48, SP = 165, dur = m.p;
+    let st = "attente", y = H / 2, vy = 0, t = 0, dist = 0, spawnAt = 0, pipes = [], lastGap = H / 2;
+    let pause = 0, flash = 0, last = performance.now(), raf = 0, vivant = true;
+
+    function reset() {
+      y = H / 2; vy = 0; t = 0; dist = 0; spawnAt = 0; pipes = []; lastGap = H / 2; st = "attente";
+      prog(0); hint.textContent = "Touche pour battre des ailes";
+    }
+
+    function tronc(x, y0, h, haut) {
+      if (h <= 0) return;
+      const g = c.createLinearGradient(x, 0, x + PW, 0);
+      g.addColorStop(0, "#5a3b1e"); g.addColorStop(.35, "#8a5f35"); g.addColorStop(1, "#4a2f17");
+      c.fillStyle = g; c.fillRect(x, y0, PW, h);
+      c.fillStyle = "rgba(0,0,0,.18)";
+      for (let k = 10; k < h; k += 26) c.fillRect(x + 6, y0 + k, PW - 12, 3);
+      c.fillStyle = "#3f2813"; c.fillRect(x - 4, haut ? y0 + h - 14 : y0, PW + 8, 14);
+      c.fillStyle = "#2f9a52";
+      const cy = haut ? y0 + h - 16 : y0 + 16;
+      [0, 1, 2].forEach(i => { c.beginPath(); c.arc(x + 4 + i * 20, cy, 9, 0, 7); c.fill(); });
+    }
+
+    function dessiner(now) {
+      const gr = c.createLinearGradient(0, 0, 0, H);
+      gr.addColorStop(0, "#8ae6c6"); gr.addColorStop(.55, "#2f9c78"); gr.addColorStop(1, "#14513f");
+      c.fillStyle = gr; c.fillRect(0, 0, W, H);
+      c.fillStyle = "rgba(255,244,190,.85)"; c.beginPath(); c.arc(W - 50, 46, 22, 0, 7); c.fill();
+      /* arbres lointains (parallaxe) */
+      [[.2, 90, "#1c7a5c", "#17604a", 118], [.45, 130, "#14604a", "#0f4a39", 90]].forEach(([k, sp, cf, ct, h]) => {
+        const off = (dist * k) % sp;
+        for (let x = -sp - off; x < W + sp; x += sp) {
+          c.fillStyle = ct; c.fillRect(x + 90, H - h, 12, h);
+          c.fillStyle = cf; c.beginPath(); c.arc(x + 96, H - h, 32, 0, 7); c.fill();
+        }
+      });
+      pipes.forEach(p => { tronc(p.x, 0, p.g - GAP / 2, true); tronc(p.x, p.g + GAP / 2, H - 14 - (p.g + GAP / 2), false); });
+      c.fillStyle = "#2d6a3a"; c.fillRect(0, H - 14, W, 14);
+      c.fillStyle = "#3f8a4c"; c.fillRect(0, H - 14, W, 4);
+      /* perroquet */
+      const yy = st === "attente" ? H / 2 + Math.sin(now / 220) * 6 : y;
+      c.save(); c.translate(PX, yy);
+      c.rotate(Math.max(-.5, Math.min(.8, vy / 700)));
+      c.scale(-1, 1);                 /* ← enlève cette ligne si ton 🦜 regarde vers la gauche à l'envers */
+      c.font = "32px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText("🦜", 0, 0); c.restore();
+      /* HUD */
+      c.fillStyle = "#fff"; c.font = "800 16px sans-serif"; c.textAlign = "right"; c.textBaseline = "alphabetic";
+      c.shadowColor = "#000"; c.shadowBlur = 4;
+      c.fillText(Math.max(0, Math.ceil(dur - t)) + " s", W - 12, 24);
+      if (st === "attente") { c.textAlign = "center"; c.font = "900 24px sans-serif"; c.fillText("TOUCHE !", W / 2, H / 2 - 40); }
+      c.shadowBlur = 0;
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + (flash * .45) + ")"; c.fillRect(0, 0, W, H); }
+    }
+
+    function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (flash > 0) flash = Math.max(0, flash - dt * 2.5);
+      if (pause > 0) {
+        if (st === "crash") { vy += G * dt; y = Math.min(H - 14, y + vy * dt); }
+        pause -= dt; if (pause <= 0) reset();
+      } else if (st === "vol") {
+        t += dt; vy += G * dt; y += vy * dt; dist += V * dt;
+        if (dist >= spawnAt && t < dur - 2.3) {
+          const g = Math.max(GAP / 2 + 14, Math.min(H - 14 - GAP / 2 - 14, lastGap + pqRnd(-75, 75)));
+          lastGap = g; pipes.push({ x: W + 10, g }); spawnAt += SP;
+        }
+        pipes.forEach(p => { p.x -= V * dt; });
+        pipes = pipes.filter(p => p.x > -PW - 10);
+        let mort = y > H - 14 - R;
+        if (y < R) { y = R; vy = 0; }
+        pipes.forEach(p => {
+          if (PX + R - 3 > p.x && PX - R + 3 < p.x + PW && (y - R + 3 < p.g - GAP / 2 || y + R - 3 > p.g + GAP / 2)) mort = true;
+        });
+        prog(t / dur);
+        if (mort) { st = "crash"; pause = 1; flash = 1; hint.textContent = "Aïe ! On recommence…"; vy = -150; }
+        else if (t >= dur) { vivant = false; prog(1); dessiner(now); ok(); return; }
+      }
+      dessiner(now);
+      raf = requestAnimationFrame(tick);
+    }
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      if (st === "crash") return;
+      if (st === "attente") { st = "vol"; hint.textContent = "Franchis les troncs !"; }
+      vy = FL;
+    });
+    raf = requestAnimationFrame(tick);
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_PERRO).forEach(k => { JEUX[k] = JEUX_PERRO[k]; });
+
+const PERRO2_CSS = `
+.ppNuit{background:radial-gradient(ellipse at 50% 0,#4b3a8f 0,#2a1f5c 55%,#120c33 100%)}
+.ppPerro{position:absolute;left:50%;top:48%;width:120px;height:120px;margin:-60px 0 0 -60px;display:flex;align-items:center;justify-content:center;font-size:5.8rem;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5));z-index:1}
+.pqScene[data-ph=dort]{border-color:#4cd964}
+.pqScene[data-ph=alerte]{border-color:#ffc43d}
+.pqScene[data-ph=eveille]{border-color:#ff3b55;box-shadow:inset 0 0 60px rgba(255,59,85,.45)}
+.pqScene[data-ph=alerte] .ppPerro{animation:mnShake .3s infinite}
+.pqScene[data-ph=dort] .ppPerro{transform:rotate(-8deg)}
+.ppZz,.ppEyes,.ppAlerte{position:absolute;display:none;z-index:2;pointer-events:none}
+.ppZz{left:calc(50% + 36px);top:22%;font-size:2rem;animation:ppFloat 1.6s ease-in-out infinite}
+.ppEyes{left:50%;top:18%;transform:translateX(-50%);font-size:2.6rem}
+.ppAlerte{left:50%;top:18%;transform:translateX(-50%);font-size:2.4rem;animation:mnPop .3s infinite}
+.pqScene[data-ph=dort] .ppZz,.pqScene[data-ph=eveille] .ppEyes,.pqScene[data-ph=alerte] .ppAlerte{display:block}
+.ppPl{position:absolute;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.3rem;touch-action:none;cursor:pointer;background:conic-gradient(#ffc43d var(--p,0deg),rgba(255,255,255,.14) 0);animation:ppGlow 1s ease-in-out infinite alternate;z-index:3}
+.ppPl::before{content:"";position:absolute;inset:6px;border-radius:50%;background:rgba(10,30,24,.85)}
+.ppPl span{position:relative}
+.ppNid{position:absolute;width:84px;height:74px;margin:-37px 0 0 -42px;transition:left var(--t,.5s) ease-in-out,top var(--t,.5s) ease-in-out;touch-action:manipulation;cursor:pointer}
+.ppNid .oeuf{position:absolute;left:50%;bottom:6px;margin-left:-16px;font-size:2rem;line-height:1}
+.ppNid .coque{position:absolute;inset:0;border-radius:44px 44px 12px 12px;background:repeating-linear-gradient(35deg,rgba(0,0,0,.14) 0 3px,transparent 3px 9px),radial-gradient(ellipse at 50% 20%,#c99a5b,#7a5428);box-shadow:0 8px 12px rgba(0,0,0,.5);transition:transform .3s}
+.ppNid.haut .coque{transform:translateY(-50px) rotate(-8deg)}
+.ppNid.vrai .oeuf{filter:drop-shadow(0 0 8px #ffd54a)}
+.ppField{position:absolute;left:10px;right:10px;top:34px;height:236px;display:flex;gap:6px;z-index:1}
+.ppLane{flex:1;position:relative;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.1));overflow:hidden}
+.ppLane.hit{animation:ppFlash .22s}
+.ppLine{position:absolute;left:8px;right:8px;top:204px;height:4px;border-radius:2px;background:rgba(255,255,255,.7);box-shadow:0 0 12px #fff;z-index:2;pointer-events:none}
+.ppN{position:absolute;left:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;box-shadow:0 0 14px currentColor,inset 0 -4px 6px rgba(0,0,0,.25)}
+.ppBtns{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:6px;z-index:3}
+.ppB{flex:1;height:58px;border:0;border-radius:16px;font-size:1.5rem;color:rgba(0,0,0,.5);box-shadow:0 5px 0 rgba(0,0,0,.4);opacity:.85;touch-action:manipulation;transition:transform .08s,filter .08s}
+.ppB.on{transform:translateY(4px);filter:brightness(1.5);box-shadow:0 1px 0 rgba(0,0,0,.4);opacity:1}
+.ppTxt{position:absolute;left:50%;top:150px;transform:translateX(-50%);font-weight:900;font-size:1.1rem;color:#fff;text-shadow:0 2px 6px #000;pointer-events:none;z-index:4;animation:ppUp .6s forwards}
+.ppVent{position:absolute;left:50%;top:62%;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;background:conic-gradient(rgba(255,255,255,0),rgba(255,255,255,.4),rgba(255,255,255,0) 40%,rgba(255,255,255,.35) 62%,rgba(255,255,255,0));opacity:0;pointer-events:none}
+.ppGuide{position:absolute;left:50%;top:62%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;border:3px dashed rgba(255,255,255,.35);pointer-events:none}
+.ppFinger{position:absolute;width:28px;height:28px;margin:-14px;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:0 0 18px #fff;pointer-events:none;display:none;z-index:6}
+.ppObj{position:absolute;font-size:2rem;line-height:1;margin:-16px;pointer-events:none;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.ppNest{position:absolute;width:104px;height:60px;margin:-30px 0 0 -52px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#b0854a 0,#6b4a24 72%);box-shadow:0 6px 12px rgba(0,0,0,.55);pointer-events:none}
+.ppJauge{position:absolute;top:12px;left:14px;right:14px;height:12px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;z-index:5;pointer-events:none}
+.ppJauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#8cecff,#fff);border-radius:99px}
+@keyframes ppFloat{50%{transform:translateY(-10px)}}
+@keyframes ppGlow{to{box-shadow:0 0 22px rgba(255,225,110,.9)}}
+@keyframes ppFlash{50%{background:rgba(255,255,255,.35)}}
+@keyframes ppUp{to{transform:translate(-50%,-26px);opacity:0}}
+`;
+
+let ppCssOk = false;
+function ppCss() {
+  pqCss();
+  if (ppCssOk) return; ppCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = PERRO2_CSS;
+  document.head.appendChild(s);
+}
+
+const JEUX_PERRO2 = {
+
+  /* IMPOSTEUR 1 — Plumes discrètes (m.p = nb de plumes, ex. 6)
+     Maintiens le doigt sur une plume pour la pincer. Quand le perroquet
+     s'éveille (alerte orange 0,9 s), il faut LÂCHER l'écran, sinon on recommence. */
+  plumes(z, m, prog, ok) {
+    ppCss();
+    const sc = el("div", "pqScene"); sc.style.height = "330px"; sc.dataset.ph = "dort";
+    [["🌿", 4, 12, 2.2], ["🍃", 88, 80, 1.8], ["🌴", 90, 10, 2.4]].forEach(([e, x, y, s]) => {
+      const d = el("div", "pqDeco", e); d.style.left = x + "%"; d.style.top = y + "%"; d.style.fontSize = s + "rem"; sc.appendChild(d);
+    });
+    const pips = el("div", "pqPips"); sc.appendChild(pips);
+    sc.appendChild(el("div", "ppPerro", "🦜"));
+    sc.appendChild(el("div", "ppZz", "💤"));
+    sc.appendChild(el("div", "ppEyes", "👀"));
+    sc.appendChild(el("div", "ppAlerte", "❗"));
+    const info = el("div", "mnMiHint"); z.appendChild(sc); z.appendChild(info);
+
+    const SPOTS = [[16, 28], [84, 28], [15, 62], [85, 62], [32, 86], [68, 86]];
+    let n = 0, hold = null, ph = "dort", pt = 2.4, pause = 0, last = performance.now(), raf = 0, vivant = true;
+    const feathers = [];
+    const txt = { dort: "Chut… il dort · maintiens une plume pour la pincer", alerte: "Il se réveille ! LÂCHE TOUT !", eveille: "Il regarde… ne touche surtout pas l’écran !" };
+    const majPips = () => { pips.textContent = "🪶 " + n + "/" + m.p; };
+
+    function ajouter() {
+      const libres = SPOTS.map((_, i) => i).filter(i => !feathers.some(f => f.i === i));
+      if (!libres.length || feathers.length >= 3) return;
+      const i = libres[Math.floor(Math.random() * libres.length)];
+      const e = el("div", "ppPl"); e.appendChild(el("span", "", "🪶"));
+      e.style.left = SPOTS[i][0] + "%"; e.style.top = SPOTS[i][1] + "%";
+      const f = { el: e, i, p: 0 };
+      e.addEventListener("pointerdown", ev => { ev.preventDefault(); hold = f; });
+      sc.appendChild(e); feathers.push(f);
+    }
+    const relache = () => { hold = null; };
+    window.addEventListener("pointerup", relache);
+    window.addEventListener("pointercancel", relache);
+    function phase(p, d) { ph = p; pt = d; sc.dataset.ph = p; info.textContent = txt[p]; }
+    function reveille() {
+      feathers.forEach(f => f.el.remove()); feathers.length = 0;
+      n = 0; hold = null; prog(0); majPips();
+      info.textContent = "Il t’a vu ! On recommence…"; pause = 1.4; sc.dataset.ph = "eveille";
+      sc.classList.remove("crHit"); void sc.offsetWidth; sc.classList.add("crHit");
+    }
+    majPips(); phase("dort", 2.4); ajouter(); ajouter(); ajouter();
+
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (pause > 0) {
+        pause -= dt;
+        if (pause <= 0) { phase("dort", 2.2); ajouter(); ajouter(); ajouter(); }
+      } else {
+        pt -= dt;
+        if (ph === "dort" && pt <= 0) phase("alerte", .9);
+        else if (ph === "alerte" && pt <= 0) { phase("eveille", pqRnd(1.0, 1.6)); }
+        else if (ph === "eveille" && pt <= 0) phase("dort", pqRnd(2.0, 3.2));
+        if (ph === "eveille" && hold) { reveille(); }
+        else {
+          feathers.slice().forEach(f => {
+            if (hold === f && ph !== "eveille") f.p = Math.min(1, f.p + dt / .75);
+            else f.p = Math.max(0, f.p - dt * 2);
+            f.el.style.setProperty("--p", (f.p * 360) + "deg");
+            if (f.p >= 1) {
+              f.el.remove(); feathers.splice(feathers.indexOf(f), 1);
+              if (hold === f) hold = null;
+              n++; prog(n / m.p); majPips();
+              if (n >= m.p) { vivant = false; ok(); return; }
+              ajouter();
+            }
+          });
+        }
+      }
+      if (vivant) raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => {
+      vivant = false; cancelAnimationFrame(raf);
+      window.removeEventListener("pointerup", relache);
+      window.removeEventListener("pointercancel", relache);
+    };
+  },
+
+  /* IMPOSTEUR 2 — Jeu des gobelets (m.p = nb de tours, ex. 3)
+     L'œuf piégé est montré, les nids se mélangent (de plus en plus vite),
+     retrouve-le. Raté = même tour rejoué. */
+  gobelets(z, m, prog, ok) {
+    ppCss();
+    const sc = el("div", "pqScene"); sc.style.height = "300px";
+    [["🌿", 4, 14, 2.2], ["🍃", 88, 84, 1.8], ["🌺", 90, 12, 1.8]].forEach(([e, x, y, s]) => {
+      const d = el("div", "pqDeco", e); d.style.left = x + "%"; d.style.top = y + "%"; d.style.fontSize = s + "rem"; sc.appendChild(d);
+    });
+    const pips = el("div", "pqPips"); sc.appendChild(pips);
+    const info = el("div", "mnMiHint", "Observe l’œuf piégé…");
+    const X = [20, 50, 80], Y = 58, tm = [];
+    const later = (f, d) => { tm.push(setTimeout(f, d)); };
+    const nids = [0, 1, 2].map(i => {
+      const n = el("div", "ppNid"); n.appendChild(el("div", "oeuf", "🥚")); n.appendChild(el("div", "coque"));
+      n.style.left = X[i] + "%"; n.style.top = Y + "%"; sc.appendChild(n); return n;
+    });
+    z.appendChild(sc); z.appendChild(info);
+
+    let r = 0, slot = [0, 1, 2], oeuf = 0, acc = false;
+    const majPips = () => { pips.textContent = "Tour " + Math.min(r + 1, m.p) + "/" + m.p; };
+    function place() { nids.forEach((n, i) => { n.style.left = X[slot[i]] + "%"; n.style.top = Y + "%"; }); }
+    function manche() {
+      acc = false; majPips();
+      nids.forEach(n => { n.classList.remove("haut", "vrai"); n.querySelector(".oeuf").style.display = "none"; });
+      oeuf = Math.floor(Math.random() * 3);
+      nids[oeuf].querySelector(".oeuf").style.display = "block";
+      info.textContent = "Observe l’œuf piégé…";
+      later(() => nids[oeuf].classList.add("haut", "vrai"), 500);
+      later(() => nids[oeuf].classList.remove("haut"), 1900);
+      later(() => { info.textContent = "Suis-le bien !"; melanger(5 + 2 * r, Math.max(.3, .55 - .1 * r)); }, 2500);
+    }
+    function melanger(k, T) {
+      if (k <= 0) { acc = true; info.textContent = "Où est l’œuf ? Touche un nid"; return; }
+      let a = Math.floor(Math.random() * 3), b; do { b = Math.floor(Math.random() * 3); } while (b === a);
+      nids.forEach(n => n.style.setProperty("--t", T + "s"));
+      const sa = slot[a]; slot[a] = slot[b]; slot[b] = sa;
+      nids[a].style.left = X[slot[a]] + "%"; nids[b].style.left = X[slot[b]] + "%";
+      nids[a].style.top = (Y + 9) + "%"; nids[b].style.top = (Y - 9) + "%";
+      later(() => { nids[a].style.top = Y + "%"; nids[b].style.top = Y + "%"; }, T * 500);
+      later(() => melanger(k - 1, T), T * 1000 + 40);
+    }
+    nids.forEach((n, i) => n.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (!acc) return; acc = false;
+      n.classList.add("haut"); n.querySelector(".oeuf").style.display = "block";
+      if (i === oeuf) {
+        r++; prog(r / m.p); info.textContent = "Bien vu ! L’œuf est échangé.";
+        if (r >= m.p) later(ok, 700); else later(manche, 1300);
+      } else {
+        info.textContent = "Raté ! Regarde mieux…";
+        sc.classList.remove("crHit"); void sc.offsetWidth; sc.classList.add("crHit");
+        nids[oeuf].classList.add("haut", "vrai"); nids[oeuf].querySelector(".oeuf").style.display = "block";
+        later(() => { nids.forEach(x => x.classList.remove("haut", "vrai")); slot = [0, 1, 2]; place(); later(manche, 400); }, 1500);
+      }
+    }));
+    place(); manche();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* MORT 1 — Concert fantôme, type Guitar Hero (m.p = nb de notes, ex. 20)
+     4 pistes, touche la piste quand la note passe sur la ligne. 5 vies :
+     note ratée ou touche dans le vide = -1. 0 vie = on recommence. */
+  guitar(z, m, prog, ok) {
+    ppCss();
+    const COL = ["#ff5468", "#ffc43d", "#4cd964", "#4aa3ff"], FREQ = [330, 392, 440, 523], SYM = ["▲", "●", "■", "◆"];
+    const FH = 236, HIT = 206, FALL = 1.5, FEN = .22, NV = 5;
+    const sc = el("div", "pqScene ppNuit"); sc.style.height = "340px";
+    const pips = el("div", "pqPips"); sc.appendChild(pips);
+    const field = el("div", "ppField"), btns = el("div", "ppBtns");
+    const lanes = COL.map(() => { const l = el("div", "ppLane"); field.appendChild(l); return l; });
+    field.appendChild(el("div", "ppLine"));
+    sc.appendChild(field); sc.appendChild(btns);
+    const info = el("div", "mnMiHint", "Touche la piste quand la note passe sur la ligne");
+    z.appendChild(sc); z.appendChild(info);
+
+    let notes = [], ct = 0, vies = NV, fait = 0, pause = 0, last = performance.now(), raf = 0, vivant = true;
+    function composer() {
+      const rythme = [.6, .6, .3, .3, .6, .45, .45, .6, .3, .3, .3, .6], res = [];
+      let t = 1.0, prev = -1, pp = -1;
+      for (let i = 0; i < m.p; i++) {
+        let l; do { l = Math.floor(Math.random() * 4); } while (l === prev && l === pp);
+        res.push({ l, t, el: null, ok: null });
+        pp = prev; prev = l; t += rythme[i % rythme.length];
+      }
+      return res;
+    }
+    const majPips = () => { pips.textContent = "🎵".repeat(vies) + "🖤".repeat(NV - vies); };
+    function texte(s, c) {
+      const e = el("div", "ppTxt", s); e.style.color = c || "#fff"; sc.appendChild(e); setTimeout(() => e.remove(), 650);
+    }
+    function recommencer() {
+      notes.forEach(n => n.el && n.el.remove());
+      notes = composer(); ct = 0; vies = NV; fait = 0; prog(0); majPips();
+    }
+    function rate(n) {
+      n.ok = false; fait++; vies--; majPips(); texte("Raté…", "#ff8a98");
+      sc.classList.remove("crHit"); void sc.offsetWidth; sc.classList.add("crHit");
+      if (n.el) n.el.remove();
+      if (vies <= 0) { info.textContent = "Le concert s’effondre ! On recommence…"; pause = 1.4; }
+    }
+    function appui(i) {
+      if (pause > 0) return;
+      pqSon(FREQ[i]);
+      lanes[i].classList.remove("hit"); void lanes[i].offsetWidth; lanes[i].classList.add("hit");
+      let best = null, bd = 9;
+      notes.forEach(n => { if (n.l === i && n.ok === null) { const d = Math.abs(ct - n.t); if (d < bd) { bd = d; best = n; } } });
+      if (best && bd <= FEN) {
+        best.ok = true; fait++; prog(fait / m.p);
+        texte(bd < .09 ? "Parfait !" : "Bien", bd < .09 ? "#ffe27a" : "#fff");
+        if (best.el) best.el.remove();
+      } else {
+        vies--; majPips(); texte("Faux !", "#ff8a98");
+        sc.classList.remove("crHit"); void sc.offsetWidth; sc.classList.add("crHit");
+        if (vies <= 0) { info.textContent = "Le concert s’effondre ! On recommence…"; pause = 1.4; }
+      }
+    }
+    COL.forEach((c, i) => {
+      const b = el("button", "ppB", SYM[i]); b.style.background = c;
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.classList.add("on"); appui(i); });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(n => b.addEventListener(n, () => b.classList.remove("on")));
+      btns.appendChild(b);
+    });
+    notes = composer(); majPips();
+
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (pause > 0) {
+        pause -= dt;
+        if (pause <= 0) { recommencer(); info.textContent = "Touche la piste quand la note passe sur la ligne"; }
+      } else {
+        ct += dt;
+        notes.forEach(n => {
+          if (n.ok !== null) return;
+          const y = HIT - (n.t - ct) / FALL * HIT;
+          if (!n.el && y > -30) {
+            n.el = el("div", "ppN", SYM[n.l]); n.el.style.background = COL[n.l]; n.el.style.color = COL[n.l];
+            n.el.firstChild && (n.el.style.setProperty("color", COL[n.l]));
+            n.el.style.textShadow = "none"; n.el.style.webkitTextFillColor = "#fff";
+            lanes[n.l].appendChild(n.el);
+          }
+          if (n.el) n.el.style.top = y + "px";
+          if (ct - n.t > FEN && pause <= 0) rate(n);
+        });
+        if (pause <= 0 && notes.every(n => n.ok !== null)) {
+          if (vies > 0) { vivant = false; prog(1); ok(); return; }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 2 — Tourbillon (m.p = nb de tours de doigt nécessaires, ex. 8)
+     Fais des cercles autour du nid : le vent monte, soulève les plumes,
+     puis le nid, puis les œufs. La jauge baisse dès que tu t'arrêtes. */
+  tourbillon(z, m, prog, ok) {
+    ppCss();
+    const W = 320, H = 320, CX = W / 2, CY = H * .62;
+    const sc = el("div", "pqScene ppNuit"); sc.style.height = H + "px";
+    const vent = el("div", "ppVent"), guide = el("div", "ppGuide"), finger = el("div", "ppFinger");
+    const jauge = el("div", "ppJauge"), fill = el("i"); jauge.appendChild(fill);
+    sc.appendChild(vent); sc.appendChild(guide);
+    const nest = el("div", "ppNest"); nest.style.left = "50%"; nest.style.top = "62%";
+    const obj = [];
+    const add = (emoji, ox, oy, th, base) => {
+      const e = el("div", "ppObj", emoji); e.style.left = (CX + ox) + "px"; e.style.top = (CY + oy) + "px"; sc.appendChild(e);
+      obj.push({ e, ox, oy, th, a: Math.random() * 6.28, big: base || 0 });
+    };
+    obj.push({ e: nest, ox: 0, oy: 0, th: .42, a: 0, nest: true });
+    sc.appendChild(nest);
+    for (let i = 0; i < 3; i++) add("🥚", -22 + i * 22, -6, .6 + i * .08);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; add("🪶", Math.cos(a) * 62, Math.sin(a) * 26 + 6, .04 + i * .07); }
+    sc.appendChild(jauge); sc.appendChild(finger);
+    const info = el("div", "mnMiHint", "Fais des cercles avec le doigt autour du nid !");
+    z.appendChild(sc); z.appendChild(info);
+
+    let g = 0, down = false, la = 0, spin = 0, time = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const pos = e => { const r = sc.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    sc.addEventListener("pointerdown", e => {
+      e.preventDefault(); down = true; const [x, y] = pos(e); la = Math.atan2(y - CY, x - CX);
+      finger.style.display = "block"; finger.style.left = x + "px"; finger.style.top = y + "px";
+    });
+    const fin_ = () => { down = false; finger.style.display = "none"; };
+    sc.addEventListener("pointerup", fin_); sc.addEventListener("pointercancel", fin_); sc.addEventListener("pointerleave", fin_);
+    sc.addEventListener("pointermove", e => {
+      if (!down || fin) return;
+      const [x, y] = pos(e); finger.style.left = x + "px"; finger.style.top = y + "px";
+      if (Math.hypot(x - CX, y - CY) < 24) return;
+      const a = Math.atan2(y - CY, x - CX); let d = a - la;
+      while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      la = a;
+      if (Math.abs(d) < 1.3) { g = Math.min(1, g + Math.abs(d) / (2 * Math.PI * m.p)); spin = Math.min(1, spin + Math.abs(d) * .4); }
+    });
+
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now; time += dt;
+      if (!fin) {
+        g = Math.max(0, g - .10 * dt); spin = Math.max(0, spin - dt * 2.2);
+        if (g >= 1) { fin = .001; info.textContent = "Tout s’envole !"; }
+      } else { fin += dt; }
+      prog(g);
+      fill.style.width = (g * 100) + "%";
+      vent.style.opacity = clamp(g * 1.4 + spin * .3, 0, .9);
+      vent.style.transform = "rotate(" + (time * (160 + 700 * g)) + "deg) scale(" + (.8 + g * .5) + ")";
+      obj.forEach(o => {
+        const l = clamp((g - o.th) / .2, 0, 1);
+        const a = o.a + time * (2.5 + 5 * g);
+        const r = 20 + 70 * l;
+        let dx = Math.cos(a) * r * l, dy = -l * 150 + Math.sin(a) * r * .3 * l;
+        if (fin) dy -= fin * fin * 420;
+        if (o.nest) o.e.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (l * Math.sin(time * 6) * 14) + "deg)";
+        else o.e.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (l * a * 40) + "deg)";
+        o.e.style.opacity = fin ? clamp(1 - fin * .9, 0, 1) : 1;
+      });
+      if (fin > 1.2) { vivant = false; prog(1); ok(); return; }
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_PERRO2).forEach(k => { JEUX[k] = JEUX_PERRO2[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
