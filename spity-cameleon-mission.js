@@ -150,8 +150,8 @@ const ManoirMissions = (() => {
     t === "bananes" ? p * .9 :
     t === "scie" ? p * .9 :
     t === "huile" ? p * .07 :
-    t === "balancier" ? p * .17 :
-    t === "fronde" ? p * 1.4 :
+    t === "balancier" ? p * .13 :
+    t === "fronde" ? p * .8 :
     t === "torches" ? p * 1.5 :
     t === "sonar" ? p * 1.6 :
     t === "pierres" ? p * 1.2 :
@@ -160,7 +160,7 @@ const ManoirMissions = (() => {
     t === "trou" ? p * .4 :
     t === "tuyaux" ? p * 3 :
     t === "rampes" ? p * .35 :
-    t === "poison" ? p * 3 :
+    t === "poison" ? p * 2.2 :
     t === "crochet" ? p * 1.5 :
     t === "ricochet" ? p * .8 :
     t === "chute" ? p * .8 :
@@ -1759,16 +1759,6 @@ const JEUX_SINGES = {
     const OM = Math.PI * .95, MAXA = m.p;
     let A = 8, phi = 0, lock = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
     sc.addEventListener("pointerdown", e => {
-      e.preventDefault(); if (fin || lock > 0) return;
-      push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
-      lock = .5;
-      if (Math.abs(Math.sin(phi)) < .4) {
-        A += 6; sgPop(sc, "✨", 46, 20);
-        hint.textContent = "Bien poussé !";
-      } else {
-        A = Math.max(4, A - 5); sgShake(sc); hint.textContent = "Mal calé ! Il freine…";
-      }
-    });
       e.preventDefault(); if (fin || lock > 0) return;
       push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
       lock = .5;
