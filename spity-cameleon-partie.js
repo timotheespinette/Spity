@@ -219,7 +219,7 @@ function dessinerCadavre(cx,x,y,r,couleur,id,nom){
 function roleMsg(j){
   var r=MM_ROLES.filter(function(x){return x.id===j.role})[0]||{},
       m={t:"mn:role",role:j.role,nom:r.nom,emoji:r.emoji,desc:r.desc,camp:j.camp};
-  if(j.camp==="cultiste")m.complices=Object.keys(mo.joueurs).filter(function(i){return i!==j.id&&mo.joueurs[i].camp==="cultiste"}).map(function(i){return mo.joueurs[i].pseudo});
+  if(j.camp==="cultiste")m.complices=Object.keys(mo.joueurs).filter(function(i){return i!==j.id&&mo.joueurs[i].camp==="cultiste"}).map(function(i){return{pseudo:mo.joueurs[i].pseudo,couleur:mo.joueurs[i].couleur}});
   return m}
 
 /* Adapte la taille du canvas à l'écran (net sur les écrans Retina) et renvoie le facteur utilisé */
@@ -261,9 +261,9 @@ function lancer(cfg){
   });
   mo.distribuer(cfg.roles);
   l.forEach(function(p){
-    var j=mo.joueurs[p.id];
-    O.envoyer(versPeer(p.id),{t:"mn:start",id:p.id,pseudo:p.name,couleur:j.couleur,rayon:C.rayonVision});
-    O.envoyer(versPeer(p.id),roleMsg(j))});
+    var j=mo.joueurs[p.id],rm=roleMsg(j);
+    O.envoyer(versPeer(p.id),{t:"mn:start",id:p.id,pseudo:p.name,couleur:j.couleur,rayon:C.rayonVision,role:rm});
+    O.envoyer(versPeer(p.id),rm)});
   l.forEach(function(p,i){                              /* les photos, une par une pour ne pas surcharger */
     var s=avSrc(p.avatar);if(s)setTimeout(function(){O.tous({t:"mn:av",id:p.id,img:s})},250+i*100)});
 
@@ -430,9 +430,9 @@ function sync(uid,newId){
   origToPeer[origId]=newId;
   peerToOrig[newId]=origId;
   mo.dir(origId,0,0); // Stoppe le déplacement si l'écran s'est verrouillé en marchant
-  var j=mo.joueurs[origId];
-  O.envoyer(newId,{t:"mn:start",id:origId,pseudo:j.pseudo,couleur:j.couleur,rayon:C.rayonVision});
-  O.envoyer(newId,roleMsg(j));
+  var j=mo.joueurs[origId],rm=roleMsg(j);
+  O.envoyer(newId,{t:"mn:start",id:origId,pseudo:j.pseudo,couleur:j.couleur,rayon:C.rayonVision,role:rm});
+  O.envoyer(newId,rm);
   O.joueurs().forEach(function(p){
     var s=avSrc(p.avatar);
     if(s)O.envoyer(newId,{t:"mn:av",id:uidToOrig[p.uid||p.id]||p.id,img:s});
@@ -641,7 +641,7 @@ function telStart(m){
   T={
     id:m.id,
     pseudo:m.pseudo,
-    role:null,
+    role:m.role||null,
     cle:"",
     x:0,
     y:0,
@@ -1354,7 +1354,34 @@ function majOv(ph,reste){
     o.appendChild(h("div","mnov1",ro.nom||ro.role));
     o.appendChild(h("div","mnov2",ro.camp==="cultiste"?"Camp des Cultistes":"Camp des Invités"));
     o.appendChild(h("div","mnov3",ro.desc||""));
-    if(ro.complices&&ro.complices.length)o.appendChild(h("div","mnov3","Tes complices : "+ro.complices.join(", ")));
+    if(ro.camp==="cultiste"){
+      var box=h("div","");
+      box.style.cssText="margin-top:6px;padding:10px 16px;border-radius:14px;background:rgba(0,0,0,.35);border:1.5px solid rgba(255,110,120,.5);max-width:26em;";
+      if(ro.complices&&ro.complices.length){
+        var tit=h("div","","🤝 Cultistes avec toi :");
+        tit.style.cssText="font-weight:800;font-size:.95rem;color:#ff9aa2;margin-bottom:6px;";
+        box.appendChild(tit);
+        var liste=h("div","");
+        liste.style.cssText="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;";
+        ro.complices.forEach(function(c){
+          var nom=typeof c==="string"?c:c.pseudo;
+          var col=typeof c==="string"?"#ff6b78":(c.couleur||"#ff6b78");
+          var tag=h("span","");
+          tag.style.cssText="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-weight:800;font-size:.95rem;";
+          var dot=h("span","");
+          dot.style.cssText="width:10px;height:10px;border-radius:50%;background:"+col+";display:inline-block;";
+          tag.appendChild(dot);
+          tag.appendChild(document.createTextNode(nom));
+          liste.appendChild(tag);
+        });
+        box.appendChild(liste);
+      }else{
+        var solo=h("div","","Tu es le seul Cultiste dans cette partie.");
+        solo.style.cssText="font-weight:700;font-size:.95rem;opacity:.9;";
+        box.appendChild(solo);
+      }
+      o.appendChild(box);
+    }
     o.appendChild(h("div","mnov2","Cache ton écran ! ("+reste+" s)"))}
   else{
     o.style.background="#050a08";
