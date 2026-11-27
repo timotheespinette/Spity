@@ -77,10 +77,10 @@ const ManoirMissions = (() => {
     /* 7 · Le Nid des Perroquets */
     {
       civil: [T("🦜", "Répéter le mot du perroquet", "parole", 3, "Écoute-le bien, puis répète-le syllabe par syllabe."),
-              T("🪽", "Faire voler le perroquet", "vol", 10, "Touche pour battre des ailes et passe entre les troncs.")],
+              T("🪽", "Faire voler le perroquet", "vol", 7, "Touche pour battre des ailes et passe entre les troncs.")],
       imposteur: [T("🪶", "Plumes discrètes", "plumes", 6, "Pince les plumes sans réveiller le perroquet."),
                   T("🥚", "Échanger l’œuf", "gobelets", 3, "Suis l’œuf piégé sans te tromper de nid.")],
-      mort: [T("🎸", "Concert fantôme", "guitar", 20, "Joue la mélodie des cris sur la bonne piste."),
+      mort: [T("🎸", "Concert fantôme", "guitar", 12, "Joue la mélodie des cris sur la bonne piste."),
              T("🌪️", "Faire s’envoler le nid", "tourbillon", 8, "Fais des cercles pour lever un vent d’outre-tombe.")]
     },
     /* 8 · La Mare aux Crocodiles */ {
@@ -93,7 +93,7 @@ const ManoirMissions = (() => {
     },
     /* 9 · Le Pont des Singes */
     {
-      civil: [T("🪢", "Retendre les cordes", "cordes", 10, "Garde les deux cordes tendues, ni trop ni trop peu."),
+      civil: [T("🪢", "Retendre les cordes", "cordes", 5, "Garde les deux cordes tendues, ni trop ni trop peu."),
               T("🍌", "Trier les bananes", "bananes", 12, "Mûres à droite, pourries à gauche, vertes en haut.")],
       imposteur: [T("🪚", "Scier la planche", "scie", 6, "Scie à rythme régulier sans réveiller les singes."),
                   T("🛢️", "Huiler les planches", "huile", 90, "Étale l’huile partout, mais cache-toi du garde.")],
@@ -1748,8 +1748,12 @@ const JEUX_SINGES = {
       e.preventDefault(); if (fin || lock > 0) return;
       push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
       lock = .5;
+      sc.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin || lock > 0) return;
+      push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
+      lock = .5;
       if (Math.abs(Math.sin(phi)) < .4) {
-        A = Math.min(MAXA, A + 6); sgPop(sc, "✨", 46, 20);
+        A += 6; sgPop(sc, "✨", 46, 20);
         hint.textContent = "Bien poussé !";
       } else {
         A = Math.max(4, A - 5); sgShake(sc); hint.textContent = "Mal calé ! Il freine…";
@@ -1760,8 +1764,14 @@ const JEUX_SINGES = {
       const dt = Math.min(.1, (now - last) / 1000); last = now;
       lock = Math.max(0, lock - dt);
       if (!fin) {
-        phi += OM * dt; A = Math.max(4, A - 1.2 * dt);
-        if (A >= MAXA) { fin = .001; hint.textContent = "Le pont se balance à toute vitesse !"; }
+        phi += OM * dt;
+        if (A >= MAXA) {
+          A = MAXA;
+          fin = .001;
+          hint.textContent = "Le pont se balance à toute vitesse !";
+        } else {
+          A = Math.max(4, A - 1.2 * dt);
+        }
       } else { fin += dt; if (fin > 1.2) { vivant = false; prog(1); ok(); return; } }
       const th = A * Math.sin(phi);
       pend.style.transform = "rotate(" + th + "deg)";
