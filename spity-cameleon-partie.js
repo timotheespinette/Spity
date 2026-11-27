@@ -12,7 +12,7 @@ var MN_MAX_JOUEURS = 15;
 /* true = la partie s'arrête quand un camp gagne. Mets false pour tester seul. */
 var MN_VICTOIRE = true;
 /* true = bouton « Voir les joueurs (test) » sur l'écran hôte. Mets false pour jouer pour de vrai. */
-var MN_DEBUG = true;
+var MN_DEBUG = false;
 
 /* 2) Code (ne pas toucher) ---------------------------------------------- */
 (function(){
