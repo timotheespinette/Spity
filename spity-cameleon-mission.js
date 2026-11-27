@@ -58,13 +58,14 @@ const ManoirMissions = (() => {
       mort: [T("🥀", "Faire éclore une fleur fantôme", "curseur", 3, "Rythme la floraison."),
              T("🌸", "Disperser le pollen", "tap", 20, "Souffle les spores dans l’air.")]
     },
-    /* 5 · La Grotte aux Chauves-souris */ {
-      civil: [T("🦇", "Ramasser le guano", "tap", 22, "Remplis le seau… beurk."),
-              T("🔦", "Allumer les torches", "ordre", 6, "Rallume-les dans l’ordre.")],
-      imposteur: [T("🕯️", "Éteindre les torches", "ordre", 6, "Plonge la grotte dans le noir."),
-                  T("🪨", "Condamner un passage", "tap", 24, "Empile les pierres en silence.")],
-      mort: [T("👻", "Hurler avec les chauves-souris", "seq", 4, "Mène leur chœur."),
-             T("🌑", "Aspirer la lumière", "hold", 3, "Étouffe la dernière lueur.")]
+    /* 5 · La Grotte aux Chauves-souris */
+    {
+      civil: [T("🔥", "Torches dans le noir", "torches", 4, "Éclaire la grotte avec ta lampe et rallume chaque torche."),
+              T("🔊", "Écho de cristaux", "sonar", 3, "Envoie des échos pour trouver les cristaux cachés.")],
+      imposteur: [T("🪨", "Condamner le passage", "pierres", 6, "Empile les pierres pour bloquer la galerie."),
+                  T("🌬️", "Éteindre les torches", "eteindre", 6, "Souffle toutes les torches avant qu’elles ne se rallument.")],
+      mort: [T("🦇", "Mener les chauves-souris", "nuee", 5, "Guide la nuée jusqu’à la sortie sans toucher les stalactites."),
+             T("🌑", "Aspirer la lumière", "trou", 15, "Avale les lucioles avant la fin du temps.")]
     },
     /* 6 · La Cascade Cachée */ {
       civil: [T("💧", "Détourner le courant", "curseur", 3, "Ouvre la vanne au bon moment."),
@@ -150,6 +151,12 @@ const ManoirMissions = (() => {
     t === "huile" ? p * .07 :
     t === "balancier" ? p * .17 :
     t === "fronde" ? p * 1.4 :
+    t === "torches" ? p * 1.5 :
+    t === "sonar" ? p * 1.6 :
+    t === "pierres" ? p * 1.2 :
+    t === "eteindre" ? p * .3 :
+    t === "nuee" ? p * .5 :
+    t === "trou" ? p * .4 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -1897,6 +1904,524 @@ const JEUX_SINGES = {
 };
 
 Object.keys(JEUX_SINGES).forEach(k => { JEUX[k] = JEUX_SINGES[k]; });
+
+const GROTTE_CSS = `
+.grCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 40px rgba(0,0,0,.5);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.grScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,#39425f 0,#1c2238 55%,#0a0d1c 100%);border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 50px rgba(0,0,0,.6);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.grScene.grHit{animation:mnShake .28s}
+.grScene::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 20% 80%,rgba(255,255,255,.04) 0 4px,transparent 4px 22px);pointer-events:none}
+.grHud{position:absolute;top:8px;left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;text-shadow:0 1px 3px #000;z-index:8;pointer-events:none}
+.grStal{position:absolute;top:0;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:44px solid #151a2e;pointer-events:none;opacity:.9}
+.grBat{position:absolute;top:36px;font-size:1.7rem;pointer-events:none;animation:grFly 5.5s linear infinite;z-index:6}
+.grTorche{position:absolute;width:70px;height:96px;margin:-48px 0 0 -35px;z-index:5;touch-action:none}
+.grBaton{position:absolute;left:50%;bottom:0;width:12px;height:46px;margin-left:-6px;border-radius:4px;background:linear-gradient(90deg,#5a3a1a,#8a5a2b,#4a2f17)}
+.grVasque{position:absolute;left:50%;bottom:38px;width:30px;height:14px;margin-left:-15px;border-radius:4px 4px 14px 14px;background:linear-gradient(#6b6b78,#3b3b46)}
+.grFlamme{position:absolute;left:50%;bottom:44px;margin-left:-20px;width:40px;text-align:center;font-size:2.4rem;line-height:1;animation:grLueur .35s ease-in-out infinite alternate;transform-origin:50% 100%}
+.grGlow{position:absolute;left:50%;bottom:36px;width:130px;height:130px;margin-left:-65px;border-radius:50%;background:radial-gradient(circle,rgba(255,190,90,.55),rgba(255,150,50,0) 65%);pointer-events:none}
+.grTorche.off .grFlamme,.grTorche.off .grGlow{display:none}
+.grFumee{position:absolute;left:50%;bottom:48px;margin-left:-14px;font-size:1.6rem;display:none;animation:grFum 1s ease-out infinite}
+.grTorche.off .grFumee{display:block}
+.grBarre{position:absolute;left:50%;bottom:-6px;width:44px;height:6px;margin-left:-22px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden;display:none}
+.grBarre i{display:block;height:100%;width:100%;background:#ffc43d}
+.grTorche.off .grBarre{display:block}
+.grNoir{position:absolute;inset:0;background:#02030a;opacity:0;pointer-events:none;z-index:4;transition:opacity .3s}
+.grPop{position:absolute;z-index:9;font-size:1.8rem;pointer-events:none;animation:grUp .7s forwards}
+@keyframes grFly{from{left:-12%;transform:translateY(0)}50%{transform:translateY(26px)}to{left:112%;transform:translateY(0)}}
+@keyframes grLueur{from{transform:scale(1) rotate(-3deg)}to{transform:scale(1.12) rotate(3deg)}}
+@keyframes grFum{from{transform:translateY(0);opacity:.9}to{transform:translateY(-34px);opacity:0}}
+@keyframes grUp{to{transform:translateY(-34px);opacity:0}}
+`;
+
+let grCssOk = false;
+function grCss() {
+  if (grCssOk) return; grCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = GROTTE_CSS;
+  document.head.appendChild(s);
+}
+const grRnd = (a, b) => a + Math.random() * (b - a);
+const grClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const grDpr = () => Math.min(2, window.devicePixelRatio || 1);
+
+function grCanvas(z, W, H) {
+  grCss();
+  const dpr = grDpr(), cv = el("canvas", "grCv");
+  cv.width = W * dpr; cv.height = H * dpr;
+  const c = cv.getContext("2d"); c.scale(dpr, dpr);
+  z.appendChild(cv);
+  return [cv, c];
+}
+function grOff(W, H) {
+  const dpr = grDpr(), o = document.createElement("canvas");
+  o.width = W * dpr; o.height = H * dpr;
+  const c = o.getContext("2d"); c.scale(dpr, dpr);
+  return [o, c];
+}
+const grPos = (cv, e, W, H) => {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+};
+function grTri(c, x1, y1, x2, y2, x3, y3) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y3); c.closePath(); c.fill(); }
+
+/* Décor de grotte (dessiné une seule fois) : teinte 0 = gris-bleu, 1 = bleu profond, 2 = violet */
+function grFond(W, H, teinte) {
+  const [o, c] = grOff(W, H);
+  const T = [["#2f3956", "#1c2238", "#10142a"], ["#1d3a5c", "#122640", "#0a1428"], ["#3a2a6a", "#241a4a", "#120c2a"]][teinte || 0];
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, T[0]); g.addColorStop(.5, T[1]); g.addColorStop(1, T[2]);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  for (let i = 0; i < 140; i++) {
+    c.fillStyle = "rgba(255,255,255," + grRnd(.02, .07) + ")";
+    c.beginPath(); c.arc(grRnd(0, W), grRnd(0, H), grRnd(1, 3), 0, 7); c.fill();
+  }
+  for (let x = -10; x < W + 20; x += grRnd(22, 40)) {
+    const w = grRnd(16, 32), h = grRnd(18, 58);
+    c.fillStyle = "#121730"; grTri(c, x - w / 2, 0, x + w / 2, 0, x, h);
+    c.fillStyle = "rgba(255,255,255,.06)"; grTri(c, x - w / 2, 0, x - w / 6, 0, x - w / 8, h * .8);
+  }
+  for (let x = -10; x < W + 20; x += grRnd(26, 46)) {
+    const w = grRnd(16, 34), h = grRnd(14, 44);
+    c.fillStyle = "#0e1226"; grTri(c, x - w / 2, H, x + w / 2, H, x, H - h);
+  }
+  return o;
+}
+
+function grPopTxt(sc, txt, x, y) {
+  const p = el("div", "grPop", txt); p.style.left = x + "%"; p.style.top = y + "%"; sc.appendChild(p);
+  setTimeout(() => p.remove(), 720);
+}
+
+const JEUX_GROTTE = {
+
+  /* CIVIL 1 — Torches dans le noir (m.p = nb de torches, ex. 4)
+     L'écran est noir : ton doigt est la lampe. Trouve les torches cachées et
+     maintiens le doigt dessus pour les allumer. Chaque torche allumée éclaire
+     un peu plus la grotte. Les chauves-souris font vaciller ta lampe. */
+  torches(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = grCanvas(z, W, H);
+    const fond = grFond(W, H, 0), [dk, d] = grOff(W, H);
+    const hint = el("div", "mnMiHint", "Éclaire avec ton doigt · maintiens sur une torche pour l’allumer"); z.appendChild(hint);
+    const T = [];
+    for (let k = 0; k < m.p; k++) {
+      let x, y, t = 0;
+      do { x = grRnd(36, W - 36); y = grRnd(60, H - 50); t++; } while (t < 60 && T.some(o => Math.hypot(o.x - x, o.y - y) < 90));
+      T.push({ x, y, lit: false, h: 0 });
+    }
+    const bats = [0, 1, 2].map(() => ({ x: grRnd(0, W), y: grRnd(30, H - 30), a: grRnd(0, 6.28), s: grRnd(45, 75) }));
+    let fx = W / 2, fy = H - 30, down = false, flick = 0, n = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const flares = [];
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; [fx, fy] = grPos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => { if (down) [fx, fy] = grPos(cv, e, W, H); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    const lumiere = (x, y, r, a) => {
+      const g = d.createRadialGradient(x, y, r * .12, x, y, r);
+      g.addColorStop(0, "rgba(0,0,0," + a + ")"); g.addColorStop(1, "rgba(0,0,0,0)");
+      d.fillStyle = g; d.beginPath(); d.arc(x, y, r, 0, 7); d.fill();
+    };
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.06, (now - last) / 1000); last = now; time += dt;
+      flick = Math.max(0, flick - dt);
+      bats.forEach((b, i) => {
+        b.a += Math.sin(time * 2 + i * 2) * dt * 3.2; b.x += Math.cos(b.a) * b.s * dt; b.y += Math.sin(b.a) * b.s * dt;
+        if (b.x < -20) b.x = W + 20; if (b.x > W + 20) b.x = -20; b.y = grClamp(b.y, 20, H - 20);
+        if (down && flick <= 0 && Math.hypot(b.x - fx, b.y - fy) < 48) flick = .9;
+      });
+      if (!fin) {
+        T.forEach(t => {
+          if (t.lit) return;
+          if (down && Math.hypot(t.x - fx, t.y - fy) < 28) t.h += dt / .6; else t.h = Math.max(0, t.h - dt * 2);
+          if (t.h >= 1) {
+            t.lit = true; n++; prog(n / m.p); flares.push({ x: t.x, y: t.y, a: 0 });
+            if (n >= m.p) { fin = .001; hint.textContent = "La grotte est éclairée !"; }
+          }
+        });
+      } else { fin += dt; if (fin > 1.1) { vivant = false; prog(1); ok(); return; } }
+      flares.forEach(f => { f.a += dt * 1.6; });
+      /* scène */
+      c.drawImage(fond, 0, 0, W, H);
+      T.forEach(t => {
+        c.fillStyle = "#6b4a2a"; c.fillRect(t.x - 4, t.y, 8, 26);
+        c.fillStyle = "#4a4a58"; c.fillRect(t.x - 10, t.y - 4, 20, 8);
+        if (t.lit) { c.font = "30px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🔥", t.x, t.y - 14 + Math.sin(time * 14 + t.x) * 1.5); }
+      });
+      c.font = "26px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      bats.forEach(b => c.fillText("🦇", b.x, b.y + Math.sin(time * 12 + b.a) * 3));
+      /* obscurité */
+      d.globalCompositeOperation = "source-over"; d.clearRect(0, 0, W, H);
+      const ambiant = Math.max(.35, .955 - .07 * n) * (fin ? Math.max(0, 1 - fin * .9) : 1);
+      d.fillStyle = "rgba(2,4,12," + ambiant + ")"; d.fillRect(0, 0, W, H);
+      d.globalCompositeOperation = "destination-out";
+      T.forEach(t => { if (t.lit) lumiere(t.x, t.y - 10, 84 + Math.sin(time * 9 + t.x) * 3, 1); });
+      const R = down ? (flick > 0 ? 36 + Math.sin(time * 40) * 6 : 76) : 26;
+      lumiere(fx, fy, R, down ? 1 : .75);
+      c.drawImage(dk, 0, 0, W, H);
+      /* anneaux de maintien + halo de lampe */
+      T.forEach(t => {
+        if (t.lit || t.h <= 0) return;
+        c.strokeStyle = "#ffc43d"; c.lineWidth = 4; c.beginPath(); c.arc(t.x, t.y - 8, 22, -1.57, -1.57 + t.h * 6.28); c.stroke();
+      });
+      flares.forEach(f => { c.strokeStyle = "rgba(255,200,100," + Math.max(0, 1 - f.a) + ")"; c.lineWidth = 3; c.beginPath(); c.arc(f.x, f.y - 10, 10 + f.a * 60, 0, 7); c.stroke(); });
+      c.fillStyle = "rgba(255,230,160,.12)"; c.beginPath(); c.arc(fx, fy, R * .5, 0, 7); c.fill();
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textAlign = "left"; c.textBaseline = "alphabetic";
+      c.fillText("🔥 " + n + "/" + m.p, 12, 22); c.shadowBlur = 0;
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* CIVIL 2 — Écho de cristaux (m.p = nb de cristaux, ex. 3 ; échos = m.p + 5)
+     Touche pour envoyer un écho : l'onde s'étend, et chaque cristal qu'elle
+     traverse brille un instant. Touche-le vite pour le ramasser. */
+  sonar(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = grCanvas(z, W, H);
+    const fond = grFond(W, H, 1);
+    const hint = el("div", "mnMiHint", "Touche pour envoyer un écho · touche le cristal qui brille"); z.appendChild(hint);
+    let cr = [], rings = [], pings = 0, got = 0, pops = [], pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    function init() {
+      got = 0; pings = m.p + 5; rings = []; cr = []; pops = []; prog(0);
+      for (let k = 0; k < m.p; k++) {
+        let x, y, t = 0;
+        do { x = grRnd(34, W - 34); y = grRnd(50, H - 40); t++; } while (t < 60 && cr.some(o => Math.hypot(o.x - x, o.y - y) < 100));
+        cr.push({ x, y, vis: 0, got: false, echo: -1 });
+      }
+    }
+    init();
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (pause > 0 || fin) return;
+      const [x, y] = grPos(cv, e, W, H);
+      const cible = cr.find(k => !k.got && k.vis > 0 && Math.hypot(k.x - x, k.y - y) < 36);
+      if (cible) {
+        cible.got = true; got++; prog(got / m.p); pops.push({ x: cible.x, y: cible.y, a: 0, t: "✨" });
+        if (got >= m.p) { fin = .001; hint.textContent = "Tous les cristaux sont trouvés !"; }
+        return;
+      }
+      if (pings > 0) { pings--; rings.push({ x, y, r: 0, hit: new Set() }); }
+    });
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.06, (now - last) / 1000); last = now; time += dt;
+      if (fin) { fin += dt; if (fin > 1) { vivant = false; prog(1); ok(); return; } }
+      rings.forEach(r => {
+        r.r += 200 * dt;
+        cr.forEach(k => { if (!k.got && !r.hit.has(k) && r.r >= Math.hypot(k.x - r.x, k.y - r.y)) { r.hit.add(k); k.vis = 1.7; k.echo = 0; } });
+      });
+      rings = rings.filter(r => r.r < 360);
+      cr.forEach(k => { k.vis = Math.max(0, k.vis - dt); if (k.echo >= 0) { k.echo += dt * 120; if (k.echo > 60) k.echo = -1; } });
+      pops.forEach(p => { p.a += dt * 1.5; }); pops = pops.filter(p => p.a < 1);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Touche pour envoyer un écho · touche le cristal qui brille"; } }
+      else if (!fin && pings <= 0 && !rings.length && cr.every(k => k.got || k.vis <= 0)) { pause = 1.4; hint.textContent = "Plus d’échos ! La grotte se réorganise…"; }
+      /* dessin */
+      c.drawImage(fond, 0, 0, W, H);
+      c.fillStyle = "rgba(2,8,24,.62)"; c.fillRect(0, 0, W, H);
+      rings.forEach(r => {
+        const a = Math.max(0, 1 - r.r / 360);
+        c.strokeStyle = "rgba(120,225,255," + a + ")"; c.lineWidth = 3; c.beginPath(); c.arc(r.x, r.y, r.r, 0, 7); c.stroke();
+        c.strokeStyle = "rgba(120,225,255," + a * .4 + ")"; c.lineWidth = 8; c.beginPath(); c.arc(r.x, r.y, Math.max(0, r.r - 10), 0, 7); c.stroke();
+        c.fillStyle = "rgba(160,235,255," + a + ")"; c.beginPath(); c.arc(r.x, r.y, 4, 0, 7); c.fill();
+      });
+      cr.forEach(k => {
+        if (k.got) return;
+        if (k.echo >= 0) { c.strokeStyle = "rgba(190,150,255," + Math.max(0, 1 - k.echo / 60) + ")"; c.lineWidth = 2; c.beginPath(); c.arc(k.x, k.y, k.echo, 0, 7); c.stroke(); }
+        if (k.vis > 0) {
+          const a = Math.min(1, k.vis);
+          const g = c.createRadialGradient(k.x, k.y, 2, k.x, k.y, 44);
+          g.addColorStop(0, "rgba(190,150,255," + a * .8 + ")"); g.addColorStop(1, "rgba(190,150,255,0)");
+          c.fillStyle = g; c.beginPath(); c.arc(k.x, k.y, 44, 0, 7); c.fill();
+          c.globalAlpha = a; c.font = "34px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("💎", k.x, k.y); c.globalAlpha = 1;
+        }
+      });
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (28 + p.a * 30) + "px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(p.t, p.x, p.y - p.a * 20); c.globalAlpha = 1; });
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+      c.textAlign = "left"; c.fillText("🔊 " + pings, 12, 22);
+      c.textAlign = "right"; c.fillText("💎 " + got + "/" + m.p, W - 12, 22); c.shadowBlur = 0;
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* IMPOSTEUR 1 — Condamner le passage (m.p = nb de pierres, ex. 6)
+     Une pierre oscille en haut : touche pour la lâcher. Ce qui dépasse de la
+     pierre du dessous tombe. Aucun contact = éboulement, on recommence. */
+  pierres(z, m, prog, ok) {
+    const W = 320, H = 340, BH = 26, BASEY = H - 34, Y0 = 44, [cv, c] = grCanvas(z, W, H);
+    const fond = grFond(W, H, 0);
+    const hint = el("div", "mnMiHint", "Touche pour lâcher la pierre pile au-dessus de l’autre"); z.appendChild(hint);
+    let niv, blk, etat, t, vy, deb, pops, pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const cibleY = () => BASEY - (niv.length + 1) * BH;
+    function init() {
+      niv = [{ x: (W - 150) / 2, w: 150, s: Math.random() }];
+      blk = { x: 0, w: 150, y: Y0, s: Math.random() }; etat = "move"; t = 0; vy = 0; deb = []; pops = []; prog(0);
+    }
+    function pierre(x, y, w, s, a) {
+      const g = c.createLinearGradient(0, y, 0, y + BH);
+      g.addColorStop(0, "#9a917f"); g.addColorStop(1, "#5c5446");
+      c.globalAlpha = a == null ? 1 : a;
+      c.fillStyle = g; c.beginPath(); c.roundRect ? c.roundRect(x, y, w, BH - 2, 6) : c.rect(x, y, w, BH - 2); c.fill();
+      c.strokeStyle = "rgba(0,0,0,.28)"; c.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) { const cx = x + ((s * 97 + i * 53) % 100) / 100 * w; c.beginPath(); c.moveTo(cx, y + 3); c.lineTo(cx + 6, y + 12); c.lineTo(cx - 3, y + BH - 5); c.stroke(); }
+      c.fillStyle = "rgba(255,255,255,.14)"; c.fillRect(x + 4, y + 3, w - 8, 3);
+      c.globalAlpha = 1;
+    }
+    init();
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      if (etat !== "move" || pause > 0 || fin) return;
+      etat = "drop"; vy = 120;
+    });
+    function atterrir() {
+      const prev = niv[niv.length - 1], ox = Math.max(blk.x, prev.x), ex = Math.min(blk.x + blk.w, prev.x + prev.w), ov = ex - ox;
+      if (ov <= 3) {
+        deb.push({ x: blk.x, y: blk.y, w: blk.w, vy: 0, s: blk.s });
+        pause = 1.4; etat = "chute"; hint.textContent = "Éboulement ! On recommence…"; return;
+      }
+      if (Math.abs(blk.x - prev.x) < 6) {
+        blk.x = prev.x; blk.w = prev.w; pops.push({ x: W / 2, y: blk.y - 8, a: 0, t: "✨ Parfait !" });
+      } else {
+        if (blk.x < ox) deb.push({ x: blk.x, y: blk.y, w: ox - blk.x, vy: 0, s: blk.s });
+        if (blk.x + blk.w > ex) deb.push({ x: ex, y: blk.y, w: blk.x + blk.w - ex, vy: 0, s: blk.s });
+        blk.x = ox; blk.w = ov;
+      }
+      niv.push({ x: blk.x, w: blk.w, s: blk.s }); prog((niv.length - 1) / m.p);
+      if (niv.length - 1 >= m.p) { fin = .001; etat = "fin"; hint.textContent = "Le passage est condamné !"; return; }
+      blk = { x: 0, w: blk.w, y: Y0, s: Math.random() }; etat = "move"; t = 0;
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      if (etat === "move") { t += dt; const k = niv.length - 1; blk.x = (W - blk.w) / 2 + ((W - blk.w) / 2 - 8) * Math.sin(t * (2 + .3 * k)); }
+      else if (etat === "drop") { vy += 1500 * dt; blk.y += vy * dt; if (blk.y >= cibleY()) { blk.y = cibleY(); atterrir(); } }
+      else if (etat === "chute") { vy += 1500 * dt; blk.y += vy * dt; }
+      deb.forEach(p => { p.vy += 1100 * dt; p.y += p.vy * dt; }); deb = deb.filter(p => p.y < H + 40);
+      pops.forEach(p => { p.a += dt * 1.6; }); pops = pops.filter(p => p.a < 1);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Touche pour lâcher la pierre pile au-dessus de l’autre"; } }
+      if (fin) { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      c.drawImage(fond, 0, 0, W, H);
+      const lg = c.createLinearGradient(0, 40, 0, BASEY); lg.addColorStop(0, "rgba(255,190,110,.0)"); lg.addColorStop(1, "rgba(255,190,110,.12)");
+      c.fillStyle = lg; c.fillRect(34, 40, W - 68, BASEY - 40);
+      c.font = "28px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText("🔥", 18, 150 + Math.sin(time * 12) * 1.5); c.fillText("🔥", W - 18, 150 + Math.sin(time * 12 + 2) * 1.5);
+      const gy = BASEY - (m.p + 1) * BH;
+      c.strokeStyle = "rgba(255,90,90,.7)"; c.setLineDash([8, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(34, gy + BH); c.lineTo(W - 34, gy + BH); c.stroke(); c.setLineDash([]);
+      c.font = "700 12px sans-serif"; c.fillStyle = "rgba(255,150,150,.95)"; c.textAlign = "right"; c.textBaseline = "alphabetic"; c.fillText("🚧 bloquer ici", W - 38, gy + BH - 5);
+      c.fillStyle = "#14182c"; c.fillRect(0, BASEY, W, H - BASEY);
+      niv.forEach((l, i) => pierre(l.x, BASEY - (i + 1) * BH, l.w, l.s));
+      deb.forEach(p => pierre(p.x, p.y, p.w, p.s, .9));
+      if (etat !== "fin") pierre(blk.x, blk.y, blk.w, blk.s);
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = "800 16px sans-serif"; c.fillStyle = "#ffe27a"; c.textAlign = "center"; c.fillText(p.t, p.x, p.y - p.a * 26); c.globalAlpha = 1; });
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textAlign = "left";
+      c.fillText("🪨 " + (niv.length - 1) + "/" + m.p, 12, 22); c.shadowBlur = 0;
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* IMPOSTEUR 2 — Éteindre les torches (m.p = nb de torches, ex. 6)
+     Glisse le doigt sur les flammes pour les souffler. Elles se rallument
+     toutes seules au bout de ~2,3 s : il faut qu'elles soient TOUTES
+     éteintes en même temps. */
+  eteindre(z, m, prog, ok) {
+    grCss();
+    const W = 320, H = 300, RELUIT = 2.3;
+    const sc = el("div", "grScene"); sc.style.height = H + "px"; z.appendChild(sc);
+    for (let i = 0; i < 9; i++) { const s = el("div", "grStal"); s.style.left = (i * 12.5 - 3) + "%"; s.style.borderTopWidth = (24 + (i * 37) % 36) + "px"; sc.appendChild(s); }
+    sc.appendChild(el("div", "grBat", "🦇")); const b2 = el("div", "grBat", "🦇"); b2.style.animationDelay = "-2.7s"; b2.style.top = "70px"; sc.appendChild(b2);
+    const noir = el("div", "grNoir"); sc.appendChild(noir);
+    const hud = el("div", "grHud"), info = el("span"); hud.appendChild(info); sc.appendChild(hud);
+    const hint = el("div", "mnMiHint", "Glisse le doigt sur les flammes pour toutes les souffler"); z.appendChild(hint);
+    const POS = [[17, 36], [50, 28], [83, 38], [24, 72], [54, 76], [80, 68]];
+    const T = POS.slice(0, m.p).map(([x, y]) => {
+      const e = el("div", "grTorche");
+      e.style.left = x + "%"; e.style.top = y + "%";
+      const glow = el("div", "grGlow"), fl = el("div", "grFlamme", "🔥"), fu = el("div", "grFumee", "💨");
+      const bar = el("div", "grBarre"), bi = el("i"); bar.appendChild(bi);
+      [glow, el("div", "grBaton"), el("div", "grVasque"), fl, fu, bar].forEach(n => e.appendChild(n));
+      sc.appendChild(e);
+      return { e, x, y, off: false, t: 0, bi };
+    });
+    const tm = [];
+    let down = false, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    const pos = e => { const r = sc.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    function souffler(x, y) {
+      T.forEach(t => {
+        if (t.off) return;
+        if (Math.hypot(t.x / 100 * W - x, t.y / 100 * H - 12 - y) < 40) { t.off = true; t.t = RELUIT; t.e.classList.add("off"); }
+      });
+    }
+    sc.addEventListener("pointerdown", e => { e.preventDefault(); down = true; const [x, y] = pos(e); souffler(x, y); });
+    sc.addEventListener("pointermove", e => { if (!down) return; const [x, y] = pos(e); souffler(x, y); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => sc.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      let out = 0;
+      T.forEach(t => {
+        if (t.off) {
+          t.t -= dt; t.bi.style.width = Math.max(0, t.t / RELUIT * 100) + "%";
+          if (t.t <= 0 && !fin) { t.off = false; t.e.classList.remove("off"); grPopTxt(sc, "🔥", t.x, t.y - 8); }
+        }
+        if (t.off) out++;
+      });
+      noir.style.opacity = (.12 + .8 * out / m.p).toFixed(2);
+      prog(out / m.p); info.textContent = "🌬️ " + out + "/" + m.p + " éteintes";
+      if (!fin && out >= m.p) { fin = .001; hint.textContent = "Noir complet… personne ne verra rien !"; }
+      if (fin) { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); tm.forEach(clearTimeout); };
+  },
+
+  /* MORT 1 — Mener les chauves-souris (m.p = nb à sauver sur 7, ex. 5)
+     Ton doigt est une lanterne fantôme : la nuée la suit. Guide-la à droite
+     (la sortie) sans toucher les stalactites / stalagmites. */
+  nuee(z, m, prog, ok) {
+    const W = 320, H = 290, N = 7, [cv, c] = grCanvas(z, W, H);
+    const fond = grFond(W, H, 2);
+    const hint = el("div", "mnMiHint", "Guide la nuée avec ton doigt jusqu’à la sortie, à droite"); z.appendChild(hint);
+    let bats, sp, tx, ty, down = false, sauves = 0, pops = [], pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    function init() {
+      sauves = 0; pops = []; prog(0); tx = 40; ty = H / 2;
+      bats = Array.from({ length: N }, (_, i) => ({
+        x: 20 + grRnd(0, 18), y: H / 2 + (i - 3) * 14, vx: 0, vy: 0, k: grRnd(2.2, 3.8),
+        ox: grRnd(-14, 14), oy: grRnd(-14, 14), ph: grRnd(0, 6.28), alive: true, safe: false
+      }));
+      sp = [];
+      [96, 166, 236].forEach(x => sp.push({ x: x + grRnd(-8, 8), l: grRnd(62, 100), top: true }));
+      [131, 201, 271].forEach(x => sp.push({ x: x + grRnd(-8, 8), l: grRnd(56, 96), top: false }));
+    }
+    init();
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; [tx, ty] = grPos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => { if (down) [tx, ty] = grPos(cv, e, W, H); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    const dansPointe = (s, bx, by) => {
+      const yy = s.top ? by : H - by;
+      if (yy < -6 || yy > s.l + 8) return false;
+      const half = 17 * (1 - Math.min(Math.max(yy, 0), s.l) / s.l) + 7;
+      return Math.abs(bx - s.x) <= half;
+    };
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 1.8; }); pops = pops.filter(p => p.a < 1);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Guide la nuée avec ton doigt jusqu’à la sortie, à droite"; } }
+      else if (!fin) {
+        bats.forEach(b => {
+          if (!b.alive || b.safe) return;
+          b.vx += (tx + b.ox - b.x) * b.k * dt * 4; b.vy += (ty + b.oy - b.y) * b.k * dt * 4;
+          b.vx *= 1 - Math.min(.95, dt * 4); b.vy *= 1 - Math.min(.95, dt * 4);
+          const v = Math.hypot(b.vx, b.vy); if (v > 230) { b.vx *= 230 / v; b.vy *= 230 / v; }
+          b.x += b.vx * dt; b.y += b.vy * dt + Math.sin(time * 8 + b.ph) * 8 * dt;
+          b.x = Math.max(8, b.x); b.y = grClamp(b.y, 12, H - 12);
+          if (sp.some(s => dansPointe(s, b.x, b.y))) { b.alive = false; pops.push({ x: b.x, y: b.y, a: 0, t: "💥" }); }
+          else if (b.x >= W - 18) { b.safe = true; sauves++; prog(sauves / m.p); pops.push({ x: W - 20, y: b.y, a: 0, t: "✨" }); }
+        });
+        const vivantes = bats.filter(b => b.alive && !b.safe).length;
+        if (sauves >= m.p) { fin = .001; hint.textContent = "La nuée a retrouvé la sortie !"; }
+        else if (sauves + vivantes < m.p) { pause = 1.4; hint.textContent = "La nuée est décimée ! On recommence…"; }
+      } else { fin += dt; if (fin > .8) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      c.drawImage(fond, 0, 0, W, H);
+      const ex = c.createLinearGradient(W - 40, 0, W, 0); ex.addColorStop(0, "rgba(140,236,255,0)"); ex.addColorStop(1, "rgba(200,250,255,.75)");
+      c.fillStyle = ex; c.fillRect(W - 40, 0, 40, H);
+      c.font = "700 12px sans-serif"; c.fillStyle = "rgba(210,250,255,.9)"; c.textAlign = "center"; c.fillText("SORTIE", W - 20, H / 2 + 4);
+      sp.forEach(s => {
+        c.fillStyle = "#1a1f3a";
+        if (s.top) grTri(c, s.x - 17, 0, s.x + 17, 0, s.x, s.l); else grTri(c, s.x - 17, H, s.x + 17, H, s.x, H - s.l);
+        c.fillStyle = "rgba(255,255,255,.12)";
+        if (s.top) grTri(c, s.x - 17, 0, s.x - 5, 0, s.x - 2, s.l * .8); else grTri(c, s.x - 17, H, s.x - 5, H, s.x - 2, H - s.l * .8);
+      });
+      const g = c.createRadialGradient(tx, ty, 2, tx, ty, 46); g.addColorStop(0, down ? "rgba(160,240,255,.75)" : "rgba(160,240,255,.3)"); g.addColorStop(1, "rgba(160,240,255,0)");
+      c.fillStyle = g; c.beginPath(); c.arc(tx, ty, 46, 0, 7); c.fill();
+      c.font = "26px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      bats.forEach(b => { if (b.alive && !b.safe) { c.save(); c.translate(b.x, b.y); c.scale(1, .8 + .25 * Math.sin(time * 18 + b.ph)); c.fillText("🦇", 0, 0); c.restore(); } });
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (24 + p.a * 24) + "px serif"; c.fillText(p.t, p.x, p.y - p.a * 16); c.globalAlpha = 1; });
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textAlign = "left"; c.textBaseline = "alphabetic";
+      c.fillText("🦇 " + sauves + "/" + m.p, 12, 22);
+      c.textAlign = "right"; c.fillText("en vol : " + bats.filter(b => b.alive && !b.safe).length, W - 50, 22); c.shadowBlur = 0;
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 2 — Aspirer la lumière (m.p = lucioles à avaler, ex. 15 ; temps = 22 s)
+     Ton doigt est un trou noir qui grossit à chaque luciole avalée. Certaines
+     fuient (bleues), d'autres sont rapides (orange). */
+  trou(z, m, prog, ok) {
+    const W = 320, H = 300, TMAX = 22, [cv, c] = grCanvas(z, W, H);
+    const fond = grFond(W, H, 2);
+    const hint = el("div", "mnMiHint", "Promène ton ombre pour avaler les lucioles avant la fin du temps"); z.appendChild(hint);
+    let ox = W / 2, oy = H / 2, tx = ox, ty = oy, down = false, n = 0, tps = 0, L = [], parts = [], pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const rayon = () => 18 + n * 1.4;
+    function nouvelle() {
+      const r = Math.random(), type = r < .3 ? "f" : r < .55 ? "r" : "n";
+      let x, y, t = 0;
+      do { x = grRnd(14, W - 14); y = grRnd(40, H - 14); t++; } while (t < 20 && Math.hypot(x - ox, y - oy) < 110);
+      const a = grRnd(0, 6.28), s = type === "r" ? 85 : 28;
+      return { x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, type, s, ph: grRnd(0, 6.28) };
+    }
+    function init() { n = 0; tps = 0; prog(0); parts = []; L = Array.from({ length: 8 }, nouvelle); }
+    init();
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; [tx, ty] = grPos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => { if (down) [tx, ty] = grPos(cv, e, W, H); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.a += dt * 2.4; }); parts = parts.filter(p => p.a < 1);
+      if (pause > 0) { pause -= dt; if (pause <= 0) { init(); hint.textContent = "Promène ton ombre pour avaler les lucioles avant la fin du temps"; } }
+      else if (!fin) {
+        tps += dt;
+        ox += (tx - ox) * Math.min(1, dt * 9); oy += (ty - oy) * Math.min(1, dt * 9);
+        const R = rayon();
+        L.forEach((l, i) => {
+          const d = Math.hypot(ox - l.x, oy - l.y);
+          l.vx += Math.cos(time * 1.3 + l.ph) * 30 * dt; l.vy += Math.sin(time * 1.1 + l.ph * 2) * 30 * dt;
+          if (l.type === "f" && d < 120) { l.vx -= (ox - l.x) / (d || 1) * 220 * dt; l.vy -= (oy - l.y) / (d || 1) * 220 * dt; }
+          if (d < R * 2.4) { const f = (1 - d / (R * 2.4)) * 340; l.vx += (ox - l.x) / (d || 1) * f * dt; l.vy += (oy - l.y) / (d || 1) * f * dt; }
+          const v = Math.hypot(l.vx, l.vy), vm = l.type === "r" ? 120 : 70;
+          if (v > vm && d >= R * 2.4) { l.vx *= vm / v; l.vy *= vm / v; }
+          l.x += l.vx * dt; l.y += l.vy * dt;
+          if (l.x < 8) { l.x = 8; l.vx = Math.abs(l.vx); } if (l.x > W - 8) { l.x = W - 8; l.vx = -Math.abs(l.vx); }
+          if (l.y < 34) { l.y = 34; l.vy = Math.abs(l.vy); } if (l.y > H - 8) { l.y = H - 8; l.vy = -Math.abs(l.vy); }
+          if (d < R * .85) {
+            n++; prog(n / m.p);
+            for (let k = 0; k < 6; k++) { const a = grRnd(0, 6.28); parts.push({ x: l.x, y: l.y, vx: Math.cos(a) * 60, vy: Math.sin(a) * 60, a: 0 }); }
+            L[i] = nouvelle();
+          }
+        });
+        if (n >= m.p) { fin = .001; hint.textContent = "Plus une seule lueur dans la grotte…"; }
+        else if (tps >= TMAX) { pause = 1.4; hint.textContent = "Temps écoulé ! Les lucioles se dispersent…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      c.drawImage(fond, 0, 0, W, H);
+      L.forEach(l => {
+        const col = l.type === "f" ? "120,210,255" : l.type === "r" ? "255,170,70" : "255,235,120";
+        const g = c.createRadialGradient(l.x, l.y, 1, l.x, l.y, 20 + Math.sin(time * 5 + l.ph) * 3);
+        g.addColorStop(0, "rgba(" + col + ",1)"); g.addColorStop(.35, "rgba(" + col + ",.45)"); g.addColorStop(1, "rgba(" + col + ",0)");
+        c.fillStyle = g; c.beginPath(); c.arc(l.x, l.y, 24, 0, 7); c.fill();
+      });
+      parts.forEach(p => { c.fillStyle = "rgba(255,235,150," + (1 - p.a) + ")"; c.beginPath(); c.arc(p.x, p.y, 2.5, 0, 7); c.fill(); });
+      const R = rayon() * (fin ? 1 + fin * 2.5 : 1);
+      const og = c.createRadialGradient(ox, oy, R * .2, ox, oy, R * 1.5);
+      og.addColorStop(0, "rgba(0,0,0,1)"); og.addColorStop(.6, "rgba(10,0,30,.95)"); og.addColorStop(.8, "rgba(130,70,230,.55)"); og.addColorStop(1, "rgba(130,70,230,0)");
+      c.fillStyle = og; c.beginPath(); c.arc(ox, oy, R * 1.5, 0, 7); c.fill();
+      c.strokeStyle = "rgba(190,140,255,.7)"; c.lineWidth = 2.5;
+      for (let k = 0; k < 3; k++) { const a0 = time * 3 + k * 2.1; c.beginPath(); c.arc(ox, oy, R * 1.05, a0, a0 + 1.1); c.stroke(); }
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+      c.textAlign = "left"; c.fillText("✨ " + n + "/" + m.p, 12, 22);
+      c.textAlign = "right"; c.fillText("⏱ " + Math.max(0, Math.ceil(TMAX - tps)) + " s", W - 12, 22); c.shadowBlur = 0;
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_GROTTE).forEach(k => { JEUX[k] = JEUX_GROTTE[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
