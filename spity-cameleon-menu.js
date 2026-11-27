@@ -476,6 +476,10 @@ var MM_OPTIONS = [
       filter:grayscale(.55) brightness(.7);
       opacity:.75;
     }
+    .mm-role.focused{
+      outline:3px solid #fff3b0;
+      outline-offset:2px;
+    }
 
     .mm-role-art{
       position:relative;
@@ -805,17 +809,44 @@ var MM_OPTIONS = [
       background:linear-gradient(120deg,#573321aa,#321f1a99);
     }
 
+    .mm-rule-head{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .mm-rule-ico{
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      flex:none;
+      border-radius:10px;
+      background:#ffffff1a;
+      border:1.5px solid #e0b072;
+      font-size:1.15rem;
+    }
+
     .mm-rule-card h3{
-      margin:0 0 9px;
+      margin:0;
       color:#ffdc91;
       font-size:1.1rem;
     }
 
-    .mm-rule-card p{
+    .mm-rule-list{
       margin:0;
+      padding-left:18px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
       color:#fff0dd;
-      font-size:.9rem;
-      line-height:1.65;
+      font-size:.88rem;
+      line-height:1.5;
+    }
+
+    .mm-rule-list strong{
+      color:#ffdf91;
     }
 
     .mm-rule-columns{
@@ -1133,59 +1164,73 @@ var MM_OPTIONS = [
 
   /* ========================== RÈGLES ========================== */
 
-  function regle(titre,texte){
-    var card = h("article","mm-rule-card");
-    card.appendChild(h("h3","",titre));
-    card.appendChild(h("p","",texte));
+  function regle(icone, titre, points){
+    var card = h("article", "mm-rule-card");
+
+    var head = h("div", "mm-rule-head");
+    head.appendChild(h("span", "mm-rule-ico", icone));
+    head.appendChild(h("h3", "", titre));
+    card.appendChild(head);
+
+    var ul = h("ul", "mm-rule-list");
+    points.forEach(function(pt){
+      var li = h("li", "");
+      if(pt.gras){
+        li.appendChild(h("strong", "", pt.gras + " : "));
+      }
+      li.appendChild(document.createTextNode(pt.texte));
+      ul.appendChild(li);
+    });
+
+    card.appendChild(ul);
     return card;
   }
 
   function panneauRegles(){
-    var box = h("div","mm-rules");
+    var box = h("div", "mm-rules");
 
-    box.appendChild(h("h2","mm-section-title","Guide de l'aventurier"));
-    box.appendChild(h("p","mm-hint",
-      "Retrouvez ici les informations essentielles pour comprendre les mécaniques de Caméléon."
+    box.appendChild(h("h2", "mm-section-title", "Guide de l'aventurier"));
+    box.appendChild(h("p", "mm-hint",
+      "Tout ce qu'il faut savoir sur votre téléphone et sur l'écran principal avant d'entrer dans la jungle."
     ));
 
-    box.appendChild(regle(
-      "01 — Le principe du jeu",
-      "Deux camps s'affrontent : les cultistes et les invités. Les invités accomplissent leurs missions, surveillent les autres joueurs et signalent les cadavres. Les cultistes cherchent à éliminer les autres joueurs tout en utilisant les possibilités de déplacement offertes par les trappes."
-    ));
+    box.appendChild(regle("🏆", "01 — Objectif et victoire", [
+      {gras:"Victoire des Invités", texte:"démasquer et éliminer tous les cultistes lors des votes (ou via le tir du Chasseur)."},
+      {gras:"Victoire des Cultistes", texte:"être aussi nombreux que les invités vivants, ou laisser expirer une Alerte de 30 secondes."},
+      {gras:"Rôles spéciaux", texte:"chaque personnage possède une capacité propre détaillée dans l'onglet Rôles."}
+    ]));
 
-    var cols = h("div","mm-rule-columns");
+    var cols = h("div", "mm-rule-columns");
 
-    cols.appendChild(regle(
-      "02 — Le camp des cultistes",
-      "Les cultistes peuvent attaquer au contact et utiliser les trappes. Certains rôles possèdent des capacités supplémentaires : poison ou transformation."
-    ));
+    cols.appendChild(regle("🗡️", "02 — Camp des Cultistes", [
+      {gras:"Élimination", texte:"attaquent au contact (délai de " + cfg.params.cooldownKill + " s entre deux attaques)."},
+      {gras:"Trappes secrètes", texte:"permettent de se téléporter d'un bout à l'autre de la carte et de se cacher."},
+      {gras:"Sabotage (mort)", texte:"un cultiste éliminé peut lancer une Alerte globale à désamorcer d'urgence."}
+    ]));
 
-    cols.appendChild(regle(
-      "03 — Le camp des invités",
-      "Les invités doivent rester vigilants. Certains rôles peuvent détecter des traces, protéger un joueur, surveiller les caméras ou révéler temporairement les positions."
-    ));
+    cols.appendChild(regle("🧭", "03 — Camp des Invités", [
+      {gras:"Enquête", texte:"observent les déplacements, surveillent les écrans et signalent les cadavres découverts."},
+      {gras:"Cloche d'urgence", texte:cfg.params.cloche > 0
+        ? "chaque joueur dispose de " + cfg.params.cloche + " cloche(s) pour convoquer une réunion."
+        : "désactivée pour cette partie (réunions uniquement sur signalement)."},
+      {gras:"Fantômes", texte:"les joueurs éliminés traversent les murs et peuvent aider ou gêner les vivants proches."}
+    ]));
 
     box.appendChild(cols);
 
-    box.appendChild(regle(
-      "04 — Les réunions et les votes",
-      "Une réunion permet aux joueurs de discuter d'une situation et de voter. La durée de discussion et la durée du vote sont réglables dans l'onglet Paramètres. Le Martyr peut également déclencher une réunion lorsqu'il est assassiné."
-    ));
+    box.appendChild(regle("⭐", "04 — Missions, étoiles et pouvoirs", [
+      {gras:"Gagner des ★", texte:"accomplissez les missions indiquées sur votre téléphone pour obtenir +1 ★ à chaque réussite."},
+      {gras:"Boutique de pouvoirs", texte:"dépensez vos ★ à tout moment (bouclier, vitesse, invisibilité, pièges, vision…)."},
+      {gras:"Attention à la mort", texte:"mourir remet vos ★ et vos bonus actifs à zéro."}
+    ]));
 
-    box.appendChild(regle(
-      "05 — Les rôles spéciaux",
-      "Chaque personnage dispose d'une capacité particulière lorsqu'elle est indiquée dans sa description. Consultez l'onglet Rôles pour connaître précisément les effets, les durées et les conditions propres à chaque personnage."
-    ));
-
-    box.appendChild(regle(
-      "06 — Les paramètres de partie",
-      "L'hôte peut personnaliser la vitesse de déplacement, le rayon de vision, le délai entre deux attaques, les durées de discussion et de vote, les cloches d'urgence ainsi que la révélation du camp d'un joueur éliminé."
-    ));
-
-    box.appendChild(regle(
-      "À savoir",
-      "Ce guide décrit les mécaniques présentes dans la configuration du jeu. Les conditions exactes de victoire, les détails des missions et les règles complémentaires doivent être définis dans les règles officielles de la partie."
-    ));
+    box.appendChild(regle("📹", "05 — Caméras, réunions et votes", [
+      {gras:"Écran principal", texte:"affiche 2 zones de caméras qui tournent automatiquement (un point orange puis rouge s'affiche sur votre téléphone quand vous êtes filmé)."},
+      {gras:"Discussion et vote", texte:cfg.params.discussion + " s de débat puis " + cfg.params.vote + " s pour voter. Sans vote à temps, un choix aléatoire est enregistré."},
+      {gras:"Élimination", texte:cfg.options.reveler
+        ? "le camp du joueur éliminé (Cultiste ou Invité) est révélé après le vote."
+        : "le camp du joueur éliminé reste secret après le vote."}
+    ]));
 
     return box;
   }
