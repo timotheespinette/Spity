@@ -9,7 +9,7 @@
 */
 const ManoirMissions = (() => {
   const M = MANOIR_MAP;
-  const NB = 2;                     // missions visibles en même temps par joueur
+  const NB = 6;                     // missions visibles en même temps par joueur
 
   const T = (emoji, nom, type, p, desc) => ({ emoji, nom, type, p, desc });
 
@@ -67,7 +67,7 @@ const ManoirMissions = (() => {
       mort: [T("🦇", "Mener les chauves-souris", "nuee", 5, "Guide la nuée jusqu’à la sortie sans toucher les stalactites."),
              T("🌑", "Aspirer la lumière", "trou", 15, "Avale les lucioles avant la fin du temps.")]
     },
-    /* 6 · La Cascade Cachée */ {
+    /* 6 · La Cascade Cachée */ 
       {
       civil: [T("🔧", "Détourner le courant", "tuyaux", 2, "Fais pivoter les tuyaux pour relier la source au bassin."),
               T("🫙", "Remplir les gourdes", "rampes", 20, "Trace des rampes pour guider l’eau jusqu’aux gourdes.")],
