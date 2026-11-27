@@ -588,17 +588,14 @@ function dessinerMissionsH(cx,ox,oy,cs){
         X=ox+m.x*cs+(n-(tot[m.id]-1)/2)*cs*1.5,Y=oy+m.y*cs,
         p=.5+.5*Math.sin(t*3+k),r=cs*.6;
     cx.save();
-    cx.globalAlpha=(j.mort?.25:.5)*(1-p*.6);
+    cx.globalAlpha=.5*(1-p*.6);
     cx.strokeStyle=j.couleur;cx.lineWidth=Math.max(2,cs*.1);
     cx.beginPath();cx.arc(X,Y,r*(1.25+.35*p),0,7);cx.stroke();
     cx.restore();
     cx.save();
-    if(j.mort)cx.globalAlpha=.55;
     cx.fillStyle="rgba(5,10,8,.88)";cx.beginPath();cx.arc(X,Y,r*1.12,0,7);cx.fill();
-    if(j.mort)cx.setLineDash([cs*.15,cs*.12]);
     cx.strokeStyle=j.couleur;cx.lineWidth=Math.max(2,cs*.1);
     cx.beginPath();cx.arc(X,Y,r*1.12,0,7);cx.stroke();
-    cx.setLineDash([]);
     pion(cx,X,Y,r*.95,j.couleur,j.id,j.pseudo);
     cx.fillStyle="#ffd45c";cx.font="800 "+Math.round(cs*.55)+"px system-ui";
     cx.textAlign="center";cx.textBaseline="middle";
