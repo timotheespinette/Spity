@@ -344,7 +344,7 @@ function recevoir(id,m){
 
   if(m.t==="mn:kill"){
     var resultat=mo.attaquer(id,m.cible);
-    O.envoyer(id,{
+    O.envoyer(versPeer(id),{
       t:"mn:action",
       ok:resultat.ok,
       message:resultat.message
@@ -354,7 +354,7 @@ function recevoir(id,m){
 
   if(m.t==="mn:report"){
     var signalement=mo.signaler(id,m.cible);
-    O.envoyer(id,{
+    O.envoyer(versPeer(id),{
       t:"mn:action",
       ok:signalement.ok,
       message:signalement.message
@@ -412,7 +412,7 @@ function recevoir(id,m){
 
   if(m.t==="mn:vote"){
     var resultat=mo.voter(id,m.cible===undefined?null:m.cible);
-    O.envoyer(id,{
+    O.envoyer(versPeer(id),{
       t:"mn:action",
       ok:resultat.ok,
       message:resultat.message
