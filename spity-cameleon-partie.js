@@ -305,6 +305,15 @@ function lancer(cfg){
     if(mo.phase==="fin"){
       if(!finEnvoyee){
         finEnvoyee=true;
+
+        /* Ajoute 1 point (+ 1 pièce via spity-scores.js) au camp gagnant */
+        if(window.Scores && mo.fin){
+          var gagnants = Object.keys(mo.joueurs).filter(function(id){
+            return mo.joueurs[id].camp === mo.fin.gagnant;
+          });
+          if(gagnants.length) Scores.ajouter(gagnants, 1);
+        }
+
         if(votePanelH) ManoirVote.afficherHote(votePanelH, mo.etatHote());
         for(var id in mo.joueurs){
           var vue=mo.vue(id);
