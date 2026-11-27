@@ -3111,11 +3111,26 @@ const JEUX_SERRE = {
     let items = [], debris = [], trail = [], pops = [], n = 0, vie = 3, down = false, lx = 0, ly = 0, pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
     function remplir() {
       const cible = Math.min(12, 8 + Math.floor(n / 3));
+      const minMortes = Math.min(3, m.p - n);
+      let nbMortes = items.filter(o => o.type === "morte").length;
+
+      while (items.length >= cible && nbMortes < minMortes) {
+        const idx = items.findIndex(o => o.type !== "morte");
+        if (idx === -1) break;
+        items.splice(idx, 1);
+      }
+
       while (items.length < cible) {
         let x, y, t = 0;
-        do { x = seRnd(40, W - 40); y = seRnd(50, H - 90); t++; } while (t < 50 && items.some(o => Math.hypot(o.x - x, o.y - y) < 56));
+        do { x = seRnd(40, W - 40); y = seRnd(50, H - 90); t++; }
+        while (t < 50 && items.some(o => Math.hypot(o.x - x, o.y - y) < 56));
+
+        const forceMorte = nbMortes < minMortes;
         const r = Math.random();
-        items.push({ x, y, type: r < .45 ? "morte" : r < .85 ? "vive" : "fleur", g: 0, a: Math.atan2(y - BY, x - BX) });
+        const type = forceMorte ? "morte" : (r < .45 ? "morte" : r < .85 ? "vive" : "fleur");
+        if (type === "morte") nbMortes++;
+
+        items.push({ x, y, type, g: 0, a: Math.atan2(y - BY, x - BX) });
       }
     }
     function init() { items = []; debris = []; pops = []; n = 0; vie = 3; prog(0); remplir(); }
@@ -3152,7 +3167,7 @@ const JEUX_SERRE = {
     }
     (function tick(now) {
       if (!vivant) return;
-      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      const dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now; time += dt;
       items.forEach(o => { o.g = Math.min(1, o.g + dt * 2.5); });
       debris.forEach(d => { d.vy += 500 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.rot += dt * 6; d.t += dt; }); debris = debris.filter(d => d.t < 1);
       trail.forEach(t => { t.a += dt * 3.2; }); trail = trail.filter(t => t.a < 1);
