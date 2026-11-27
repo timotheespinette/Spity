@@ -74,7 +74,7 @@ const ManoirMissions = (() => {
       mort: [T("🌊", "Écouter l’écho de l’eau", "curseur", 3, "Calque ton souffle sur la chute."),
              T("💦", "Éclabousser le vide", "tap", 16, "Fais jaillir des gouttes.")]
     },
-    // 7 · Le Nid des Perroquets
+    /* 7 · Le Nid des Perroquets */
     {
       civil: [T("🦜", "Répéter le mot du perroquet", "parole", 3, "Écoute-le bien, puis répète-le syllabe par syllabe."),
               T("🪽", "Faire voler le perroquet", "vol", 10, "Touche pour battre des ailes et passe entre les troncs.")],
@@ -91,13 +91,14 @@ const ManoirMissions = (() => {
       mort: [T("🧺", "Sauver les œufs", "panier", 15, "Rattrape les œufs qui tombent du ciel."),
              T("🛟", "Sauver le joueur", "sauver", 15, "Repousse les crocodiles avant qu’ils ne l’attrapent.")]
     },
-    /* 9 · Le Pont des Singes */ {
-      civil: [T("🐒", "Retendre les cordes", "tap", 20, "Serre les haubans."),
-              T("🍌", "Ranger les bananes", "ordre", 6, "Classe les régimes.")],
-      imposteur: [T("🪢", "Desserrer les cordes", "curseur", 4, "Relâche-les sans bruit."),
-                  T("🪚", "Scier une planche", "hold", 4, "Entame le bois à la discrète.")],
-      mort: [T("🍌", "Faire tomber les bananes", "ordre", 6, "Fais rouler les fruits."),
-             T("🌬️", "Balancer le pont", "curseur", 3, "Souffle en rythme.")]
+    /* 9 · Le Pont des Singes */
+    {
+      civil: [T("🪢", "Retendre les cordes", "cordes", 10, "Garde les deux cordes tendues, ni trop ni trop peu."),
+              T("🍌", "Trier les bananes", "bananes", 12, "Mûres à droite, pourries à gauche, vertes en haut.")],
+      imposteur: [T("🪚", "Scier la planche", "scie", 6, "Scie à rythme régulier sans réveiller les singes."),
+                  T("🛢️", "Huiler les planches", "huile", 90, "Étale l’huile partout, mais cache-toi du garde.")],
+      mort: [T("🌉", "Balancer le pont", "balancier", 36, "Pousse le pont au bon moment pour le faire osciller."),
+             T("🏹", "Fronde fantôme", "fronde", 5, "Lance des bananes sur les singes moqueurs.")]
     },
     /* 10 · La Grande Clairière */ {
       civil: [T("🔥", "Allumer le feu de camp", "hold", 3, "Souffle sur les braises."),
@@ -143,6 +144,12 @@ const ManoirMissions = (() => {
     t === "gobelets" ? p * 5 :
     t === "guitar" ? p * .5 :
     t === "tourbillon" ? p * .5 :
+    t === "cordes" ? p * .9 :
+    t === "bananes" ? p * .9 :
+    t === "scie" ? p * .9 :
+    t === "huile" ? p * .07 :
+    t === "balancier" ? p * .17 :
+    t === "fronde" ? p * 1.4 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -1336,6 +1343,550 @@ const JEUX_PERRO2 = {
 };
 
 Object.keys(JEUX_PERRO2).forEach(k => { JEUX[k] = JEUX_PERRO2[k]; });
+
+const SINGE_CSS = `
+.sgScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#a8e6b4 0,#3aa66f 45%,#1b6a4a 100%);border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 50px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sgNuit{background:radial-gradient(ellipse at 70% 0,#5b4aa8 0,#2a1f5c 55%,#120c33 100%)}
+.sgScene.sgHit{animation:mnShake .28s}
+.sgScene[data-ph=libre]{border-color:#4cd964}
+.sgScene[data-ph=alerte]{border-color:#ffc43d}
+.sgScene[data-ph=garde]{border-color:#ff3b55;box-shadow:inset 0 0 60px rgba(255,59,85,.4)}
+.sgDeco{position:absolute;pointer-events:none;opacity:.9;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.sgHud{position:absolute;top:8px;left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;text-shadow:0 1px 3px #000;z-index:6;pointer-events:none}
+.sgCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 40px rgba(0,0,0,.4);touch-action:none;user-select:none;-webkit-user-select:none}
+.sgPop{position:absolute;z-index:7;font-size:2rem;pointer-events:none;animation:sgUp .7s forwards}
+.sgTube{position:absolute;top:40px;bottom:100px;width:34px;border-radius:17px;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.3);overflow:hidden;z-index:2}
+.sgTube.g{left:14px}.sgTube.d{right:14px}
+.sgZone{position:absolute;left:0;right:0;bottom:30%;height:45%;background:rgba(76,217,100,.35);border-top:2px dashed #4cd964;border-bottom:2px dashed #4cd964}
+.sgFill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(0deg,#ffc43d,#fff3b8);height:50%;border-radius:0 0 15px 15px}
+.sgFill.mal{background:linear-gradient(0deg,#ff3b55,#ff9aa6)}
+.sgPont{position:absolute;left:18%;right:18%;top:44%;height:34px;display:flex;transition:none}
+.sgPont::before{content:"";position:absolute;left:-8%;right:-8%;top:-26px;height:6px;border-radius:3px;background:#d9b66a;box-shadow:0 3px 4px rgba(0,0,0,.4)}
+.sgPlanche{flex:1;margin:0 2px;border-radius:4px;background:linear-gradient(#b07a3f,#7a4f24);box-shadow:0 4px 5px rgba(0,0,0,.45)}
+.sgSinge{position:absolute;left:50%;top:-46px;margin-left:-20px;font-size:2.4rem;line-height:1}
+.sgPad{position:absolute;bottom:12px;width:calc(50% - 20px);height:72px;border:0;border-radius:22px;font-weight:900;font-size:1.1rem;background:linear-gradient(#f0cd8a,#b07a3f);color:#3b2410;box-shadow:0 6px 0 rgba(0,0,0,.4);touch-action:none;transition:transform .08s,filter .08s}
+.sgPad.g{left:12px}.sgPad.d{right:12px}
+.sgPad.on{transform:translateY(5px);filter:brightness(1.2);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.sgZ{position:absolute;display:flex;flex-direction:column;align-items:center;font-size:2.6rem;line-height:1;font-weight:800;z-index:1;transition:transform .12s,filter .12s;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.6)}
+.sgZ small{font-size:.7rem;letter-spacing:.06em;margin-top:2px}
+.sgZ.on{transform:scale(1.28);filter:brightness(1.35) drop-shadow(0 0 10px #fff)}
+.sgZ.d{right:12px;top:56%}.sgZ.g{left:12px;top:56%}.sgZ.h{left:50%;top:34px;margin-left:-30px;width:60px}
+.sgBan{position:absolute;left:50%;top:62%;width:120px;height:120px;margin:-60px 0 0 -60px;display:flex;align-items:center;justify-content:center;font-size:5rem;touch-action:none;cursor:grab;z-index:3;transition:transform .2s}
+.sgBan span{position:relative;display:block;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5))}
+.sgBan .sgFly{position:absolute;right:-8px;top:-6px;font-size:1.6rem;animation:sgBuzz .3s infinite alternate}
+.sgTime{position:absolute;left:50%;top:calc(62% + 70px);width:120px;margin-left:-60px;height:8px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden;z-index:2}
+.sgTime i{display:block;height:100%;width:100%;background:#ffc43d}
+.sgPoutre{position:absolute;left:8%;right:8%;top:46%;height:48px;border-radius:8px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.1) 0 2px,transparent 2px 24px),linear-gradient(#b47a42,#7a4f24);box-shadow:0 8px 12px rgba(0,0,0,.5)}
+.sgPoutre .g1,.sgPoutre .g2{position:absolute;top:0;bottom:0;width:50%;background:inherit;transition:transform .6s ease-in}
+.sgPoutre .g1{left:0;border-radius:8px 0 0 8px}.sgPoutre .g2{right:0;border-radius:0 8px 8px 0}
+.sgPoutre.casse .g1{transform:translate(-14px,60px) rotate(-18deg)}.sgPoutre.casse .g2{transform:translate(14px,60px) rotate(18deg)}
+.sgFente{position:absolute;left:50%;top:0;width:7px;margin-left:-3px;height:0;background:#1a0f06;z-index:2;clip-path:polygon(0 0,100% 0,60% 100%,40% 100%)}
+.sgScie{position:absolute;top:calc(46% - 46px);left:50%;font-size:3.1rem;line-height:1;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 6px 6px rgba(0,0,0,.5))}
+.sgVit{position:absolute;left:12%;right:12%;top:74%;height:16px;border-radius:99px;background:linear-gradient(90deg,#4aa3ff 0 25%,#4cd964 25% 75%,#ff5468 75%);box-shadow:0 3px 6px rgba(0,0,0,.4)}
+.sgVit i{position:absolute;top:-6px;width:8px;height:28px;margin-left:-4px;border-radius:4px;background:#fff;box-shadow:0 0 8px #000;left:0}
+.sgVitT{position:absolute;left:0;right:0;top:calc(74% + 26px);text-align:center;font-weight:800;font-size:.9rem;text-shadow:0 1px 3px #000}
+.sgSingeH{position:absolute;left:0;right:0;top:44px;text-align:center;font-size:2.2rem;letter-spacing:.3em}
+.sgBruit{position:absolute;left:14px;right:14px;top:30px;height:10px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden;z-index:5}
+.sgBruit i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffc43d,#ff3b55)}
+.sgPontH{position:absolute;left:10px;right:10px;top:46px;height:200px}
+.sgPontH canvas{position:absolute;left:0;top:0;width:100%;height:100%;border-radius:10px;touch-action:none}
+.sgGarde{position:absolute;top:130px;font-size:3.2rem;line-height:1;transform:translateX(-50%);z-index:6;pointer-events:none;display:none;filter:drop-shadow(0 6px 6px rgba(0,0,0,.5))}
+.sgPend{position:absolute;left:50%;top:26px;width:280px;height:230px;margin-left:-140px;transform-origin:50% 0;z-index:2}
+.sgBarre{position:absolute;left:6%;right:6%;top:18px;height:12px;border-radius:6px;background:linear-gradient(#8a5a2b,#5a3a1a);box-shadow:0 4px 8px rgba(0,0,0,.5);z-index:3}
+.sgCentre{position:absolute;left:50%;top:150px;width:60px;height:116px;margin-left:-30px;border-radius:14px;background:rgba(140,236,255,.1);border:2px dashed rgba(140,236,255,.5);transition:background .08s}
+.sgCentre.ok{background:rgba(140,236,255,.5);border-style:solid}
+.sgPush{position:absolute;bottom:10px;left:50%;width:170px;height:58px;margin-left:-85px;border:0;border-radius:30px;background:linear-gradient(#c8f6ff,#6fd0e8);font-weight:900;font-size:1.05rem;color:#0b3040;box-shadow:0 6px 0 rgba(0,0,0,.4);z-index:4;touch-action:none}
+.sgJauge{position:absolute;top:30px;left:14px;right:14px;height:10px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;z-index:5;pointer-events:none}
+.sgJauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#8cecff,#fff);border-radius:99px}
+@keyframes sgUp{to{transform:translateY(-34px);opacity:0}}
+@keyframes sgBuzz{to{transform:translate(4px,-3px)}}
+`;
+
+let sgCssOk = false;
+function sgCss() {
+  if (sgCssOk) return; sgCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = SINGE_CSS;
+  document.head.appendChild(s);
+}
+const sgRnd = (a, b) => a + Math.random() * (b - a);
+const sgClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function sgScene(z, h, cls, deco) {
+  sgCss();
+  const s = el("div", "sgScene" + (cls ? " " + cls : "")); s.style.height = h + "px";
+  (deco === false ? [] : [["🌴", 1, 10, 2.4], ["🌿", 91, 14, 2], ["🍃", 88, 88, 1.6]]).forEach(([e, x, y, sz]) => {
+    const d = el("div", "sgDeco", e); d.style.left = x + "%"; d.style.top = y + "%"; d.style.fontSize = sz + "rem"; s.appendChild(d);
+  });
+  z.appendChild(s);
+  return s;
+}
+function sgShake(sc) { sc.classList.remove("sgHit"); void sc.offsetWidth; sc.classList.add("sgHit"); }
+function sgPop(sc, emoji, x, y) {
+  const p = el("div", "sgPop", emoji); p.style.left = x + "%"; p.style.top = y + "%"; sc.appendChild(p);
+  setTimeout(() => p.remove(), 720);
+}
+
+const JEUX_SINGES = {
+
+  /* CIVIL 1 — Retendre les cordes (m.p = secondes à tenir, ex. 10)
+     Maintiens GAUCHE / DROITE pour retendre chaque corde. Elles se détendent
+     toutes seules, à des rythmes différents (+ rafales de vent).
+     Les 2 jauges doivent rester dans la zone verte ; le temps ne compte que
+     quand les deux y sont. Corde à 0 ou à 100 % = elle craque, on recommence. */
+  cordes(z, m, prog, ok) {
+    const sc = sgScene(z, 330);
+    const hud = el("div", "sgHud"), info = el("span"), alerte = el("span");
+    hud.appendChild(info); hud.appendChild(alerte); sc.appendChild(hud);
+    const fills = ["g", "d"].map(c => {
+      const t = el("div", "sgTube " + c), f = el("div", "sgFill");
+      t.appendChild(el("div", "sgZone")); t.appendChild(f); sc.appendChild(t); return f;
+    });
+    const pont = el("div", "sgPont");
+    for (let i = 0; i < 7; i++) pont.appendChild(el("div", "sgPlanche"));
+    pont.appendChild(el("div", "sgSinge", "🐒")); sc.appendChild(pont);
+    const press = [false, false];
+    ["g", "d"].forEach((c, i) => {
+      const b = el("button", "sgPad " + c, i ? "Droite ✊" : "✊ Gauche");
+      b.addEventListener("pointerdown", e => { e.preventDefault(); press[i] = true; b.classList.add("on"); });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(n => b.addEventListener(n, () => { press[i] = false; b.classList.remove("on"); }));
+      sc.appendChild(b);
+    });
+    const hint = el("div", "mnMiHint", "Garde les deux jauges dans le vert"); z.appendChild(hint);
+
+    const Z0 = .3, Z1 = .75;
+    let T = [.55, .55], time = 0, gagne = 0, danger = 0, pause = 0, gust = 3, last = performance.now(), raf = 0, vivant = true;
+    function echec(msg) {
+      hint.textContent = msg + " On recommence…"; pause = 1.3; sgShake(sc);
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (pause > 0) {
+        pause -= dt;
+        if (pause <= 0) { T = [.55, .55]; gagne = 0; danger = 0; time = 0; gust = 3; prog(0); hint.textContent = "Garde les deux jauges dans le vert"; }
+      } else {
+        time += dt; gust -= dt;
+        if (gust <= 0) {
+          gust = sgRnd(3, 5); const s = Math.random() < .5 ? 0 : 1;
+          T[s] = Math.max(.04, T[s] - .2); sgPop(sc, "💨", s ? 82 : 8, 40);
+        }
+        for (let s = 0; s < 2; s++) {
+          const rate = Math.max(.03, .2 + .14 * Math.sin(time * .9 + s * 2.1) + .06 * Math.sin(time * 2.3 + s));
+          T[s] += (press[s] ? .55 : -rate) * dt;
+        }
+        const hors = T.some(v => v < Z0 || v > Z1);
+        if (T[0] <= 0 || T[1] <= 0) echec("Une corde s’est détendue !");
+        else if (T[0] >= 1 || T[1] >= 1) echec("Une corde a craqué !");
+        else if (hors) { danger += dt; if (danger > 2) echec("Le pont s’affaisse !"); }
+        else { danger = Math.max(0, danger - dt * .5); gagne += dt; prog(gagne / m.p); }
+        if (hors && danger <= 2 && pause <= 0) hint.textContent = "Attention aux cordes !";
+        else if (pause <= 0) hint.textContent = "Garde les deux jauges dans le vert";
+        if (gagne >= m.p) { vivant = false; prog(1); ok(); return; }
+      }
+      const tt = pause > 0 ? [.55, .55] : T;
+      fills.forEach((f, i) => { f.style.height = (sgClamp(tt[i], 0, 1) * 100) + "%"; f.classList.toggle("mal", tt[i] < Z0 || tt[i] > Z1); });
+      pont.style.transform = "translateY(" + ((.6 - (tt[0] + tt[1]) / 2) * 60) + "px) rotate(" + ((tt[0] - tt[1]) * 30) + "deg)";
+      info.textContent = "⏱ " + Math.max(0, Math.ceil(m.p - gagne)) + " s";
+      alerte.textContent = pause <= 0 && danger > .1 ? "⚠️" : "";
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* CIVIL 2 — Trier les bananes (m.p = nb de bananes, ex. 12)
+     Glisse la banane : mûre → droite (panier), pourrie → gauche (poubelle),
+     verte → en haut (retour à l'arbre). Temps limité par banane, 3 vies. */
+  bananes(z, m, prog, ok) {
+    const sc = sgScene(z, 340);
+    const hud = el("div", "sgHud"), cpt = el("span"), vies = el("span");
+    hud.appendChild(cpt); hud.appendChild(vies); sc.appendChild(hud);
+    const zone = (e, t, c) => { const d = el("div", "sgZ " + c, e); d.appendChild(el("small", "", t)); sc.appendChild(d); return d; };
+    const Z = { d: zone("🧺", "MÛRE", "d"), g: zone("🗑️", "POURRIE", "g"), h: zone("🌿", "VERTE", "h") };
+    const ban = el("div", "sgBan"), emoji = el("span", "", "🍌"), tbar = el("div", "sgTime"), ti = el("i");
+    ban.appendChild(emoji); tbar.appendChild(ti); sc.appendChild(ban); sc.appendChild(tbar);
+    const hint = el("div", "mnMiHint", "Glisse chaque banane dans la bonne zone"); z.appendChild(hint);
+
+    const ATT = { mure: "d", pourrie: "g", verte: "h" };
+    const FILT = { mure: "", pourrie: "sepia(1) saturate(1.6) brightness(.45) hue-rotate(-18deg)", verte: "hue-rotate(78deg) saturate(1.5)" };
+    const tm = [];
+    let n = 0, vie = 3, type = "mure", T = 3.8, tl = 3.8, busy = true, drag = false, last = performance.now(), raf = 0, vivant = true;
+    const maj = () => { cpt.textContent = "🍌 " + n + "/" + m.p; vies.textContent = "❤️".repeat(vie) + "🖤".repeat(3 - vie); };
+    function nouvelle() {
+      const r = Math.random();
+      type = (n >= 3 && r < .22) ? "verte" : (r < .6 ? "mure" : "pourrie");
+      T = Math.max(2.2, 3.8 - .12 * n); tl = T;
+      emoji.style.filter = FILT[type];
+      const f = ban.querySelector(".sgFly"); if (f) f.remove();
+      if (type === "pourrie") ban.appendChild(el("div", "sgFly", "🪰"));
+      ban.style.transition = "none"; ban.style.transform = "scale(.3)"; ban.style.opacity = "0";
+      void ban.offsetWidth;
+      ban.style.transition = "transform .2s,opacity .2s"; ban.style.transform = ""; ban.style.opacity = "1";
+      busy = false; maj();
+    }
+    function perdre(msg) {
+      vie--; sgShake(sc); hint.textContent = msg; maj();
+      if (vie <= 0) {
+        hint.textContent = "Les singes râlent ! On recommence…"; n = 0; vie = 3; prog(0);
+        tm.push(setTimeout(() => { hint.textContent = "Glisse chaque banane dans la bonne zone"; maj(); nouvelle(); }, 1100));
+      } else tm.push(setTimeout(nouvelle, 400));
+    }
+    function dirDe(dx, dy, s) {
+      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > s) return dx > 0 ? "d" : "g";
+      if (dy < -s) return "h";
+      return null;
+    }
+    function resoudre(dir, dx, dy) {
+      busy = true; drag = false;
+      Object.values(Z).forEach(e => e.classList.remove("on"));
+      if (dir === ATT[type]) {
+        n++; prog(n / m.p); maj(); hint.textContent = "Bien trié !";
+        const fx = dir === "d" ? 220 : dir === "g" ? -220 : 0, fy = dir === "h" ? -220 : 0;
+        ban.style.transition = "transform .25s,opacity .25s";
+        ban.style.transform = "translate(" + fx + "px," + fy + "px) scale(.4)"; ban.style.opacity = "0";
+        if (n >= m.p) tm.push(setTimeout(ok, 350)); else tm.push(setTimeout(nouvelle, 300));
+      } else {
+        ban.style.transition = "transform .25s,opacity .25s"; ban.style.opacity = "0";
+        perdre(type === "verte" ? "Elle n’est pas mûre !" : type === "pourrie" ? "Beurk, c’est pourri !" : "Elle était bonne !");
+      }
+    }
+    ban.addEventListener("pointerdown", e => {
+      if (busy) return; e.preventDefault(); drag = true;
+      const x0 = e.clientX, y0 = e.clientY; ban.style.transition = "none";
+      const mv = ev => {
+        const dx = ev.clientX - x0, dy = ev.clientY - y0;
+        ban.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (dx * .1) + "deg)";
+        const d = dirDe(dx, dy, 30);
+        Object.keys(Z).forEach(k => Z[k].classList.toggle("on", k === d));
+      };
+      const up = ev => {
+        window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+        if (busy) return;
+        const dx = ev.clientX - x0, dy = ev.clientY - y0, d = dirDe(dx, dy, 55);
+        if (d) resoudre(d, dx, dy);
+        else { drag = false; ban.style.transition = "transform .2s"; ban.style.transform = ""; Object.values(Z).forEach(q => q.classList.remove("on")); }
+      };
+      window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+    });
+    maj(); nouvelle();
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (!busy) {
+        tl -= dt; ti.style.width = Math.max(0, tl / T * 100) + "%";
+        ti.style.background = tl / T < .3 ? "#ff5468" : "#ffc43d";
+        if (tl <= 0) { busy = true; drag = false; ban.style.transition = "opacity .25s"; ban.style.opacity = "0"; ban.style.transform = ""; Object.values(Z).forEach(q => q.classList.remove("on")); perdre("Trop lent !"); }
+      }
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); tm.forEach(clearTimeout); };
+  },
+
+  /* IMPOSTEUR 1 — Scier la planche (m.p = secondes de sciage régulier, ex. 6)
+     Fais des allers-retours avec le doigt. Vitesse dans la zone verte = la
+     planche se fend. Trop vite = le bruit monte et les singes se réveillent. */
+  scie(z, m, prog, ok) {
+    const W = 320, CXs = W / 2;
+    const sc = sgScene(z, 320);
+    const hud = el("div", "sgHud"), info = el("span"), sing = el("span");
+    hud.appendChild(info); hud.appendChild(sing); sc.appendChild(hud);
+    const bruitB = el("div", "sgBruit"), bruitI = el("i"); bruitB.appendChild(bruitI); sc.appendChild(bruitB);
+    const poutre = el("div", "sgPoutre"), g1 = el("div", "g1"), g2 = el("div", "g2"), fente = el("div", "sgFente");
+    poutre.appendChild(g1); poutre.appendChild(g2); poutre.appendChild(fente); sc.appendChild(poutre);
+    const scie = el("div", "sgScie", "🪚"); sc.appendChild(scie);
+    const vit = el("div", "sgVit"), mk = el("i"); vit.appendChild(mk); sc.appendChild(vit);
+    const vitT = el("div", "sgVitT"); sc.appendChild(vitT);
+    const hint = el("div", "mnMiHint", "Fais des allers-retours avec le doigt, à rythme régulier"); z.appendChild(hint);
+
+    const VMAX = 560, VLO = 140, VHI = 420;
+    let down = false, lx = 0, moved = 0, v = 0, cut = 0, noise = 0, pause = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    const px = e => { const r = sc.getBoundingClientRect(); return (e.clientX - r.left) / r.width * W; };
+    sc.addEventListener("pointerdown", e => { e.preventDefault(); down = true; lx = px(e); });
+    const lache = () => { down = false; };
+    sc.addEventListener("pointerup", lache); sc.addEventListener("pointercancel", lache); sc.addEventListener("pointerleave", lache);
+    sc.addEventListener("pointermove", e => {
+      if (!down) return;
+      const x = px(e); moved += Math.abs(x - lx); lx = x;
+      scie.style.left = "calc(50% + " + sgClamp((x - CXs) * .35, -60, 60) + "px)";
+    });
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (pause > 0) {
+        pause -= dt;
+        if (pause <= 0) { cut = 0; noise = 0; v = 0; hint.textContent = "Fais des allers-retours avec le doigt, à rythme régulier"; }
+      } else if (!fin) {
+        const inst = moved / Math.max(dt, .001); moved = 0;
+        v += (inst - v) * Math.min(1, dt * 10);
+        if (!down) v *= .85;
+        let etat = "lent";
+        if (v > VHI) etat = "vite"; else if (v >= VLO) etat = "bien";
+        if (etat === "bien") cut += dt;
+        if (etat === "vite") noise += dt * .55; else noise = Math.max(0, noise - dt * .4);
+        if (noise >= 1) { pause = 1.4; sgShake(sc); hint.textContent = "Les singes se réveillent ! On recommence…"; }
+        else if (cut >= m.p) { fin = .001; poutre.classList.add("casse"); hint.textContent = "CRAAAC ! La planche est coupée."; }
+        else if (down) hint.textContent = etat === "bien" ? "Bon rythme, continue !" : etat === "vite" ? "Trop vite, ils vont t’entendre !" : "Plus vite, la lame ne mord pas…";
+        mk.style.left = sgClamp(v / VMAX, 0, 1) * 100 + "%";
+        vitT.textContent = etat === "bien" ? "🪚 Rythme parfait" : etat === "vite" ? "🔊 Trop vite !" : "🐢 Trop lent";
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      prog(cut / m.p);
+      fente.style.height = sgClamp(cut / m.p, 0, 1) * 100 + "%";
+      bruitI.style.width = sgClamp(noise, 0, 1) * 100 + "%";
+      sing.textContent = noise < .4 ? "🐒💤" : noise < .75 ? "🐒👀" : "🙊🚨";
+      info.textContent = "🪚 " + Math.round(sgClamp(cut / m.p, 0, 1) * 100) + " %";
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* IMPOSTEUR 2 — Huiler les planches (m.p = % à couvrir, ex. 90)
+     Frotte avec le doigt pour étaler l'huile. Quand un singe garde traverse
+     le pont (alerte orange puis rouge), LÂCHE l'écran, sinon il nettoie tout. */
+  huile(z, m, prog, ok) {
+    const W = 320, H = 200, GX = 16, GY = 8, cw = W / GX, ch = H / GY, R = 20;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const sc = sgScene(z, 300); sc.dataset.ph = "libre";
+    const hud = el("div", "sgHud"), pct = el("span"), etat = el("span");
+    hud.appendChild(pct); hud.appendChild(etat); sc.appendChild(hud);
+    const box = el("div", "sgPontH"); sc.appendChild(box);
+    const mk = () => { const c = document.createElement("canvas"); c.width = W * dpr; c.height = H * dpr; box.appendChild(c); const x = c.getContext("2d"); x.scale(dpr, dpr); return [c, x]; };
+    const [, bx] = mk(), [oc, ox] = mk();
+    /* fond : planches + cordes */
+    bx.fillStyle = "#2f2212"; bx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 8; i++) {
+      const g = bx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#b47a42"); g.addColorStop(1, "#7a4f24");
+      bx.fillStyle = g; bx.fillRect(i * 40 + 2, 12, 36, H - 24);
+      bx.strokeStyle = "rgba(0,0,0,.18)"; bx.lineWidth = 1;
+      for (let k = 30; k < H - 20; k += 34) { bx.beginPath(); bx.moveTo(i * 40 + 6, k); bx.lineTo(i * 40 + 34, k + 4); bx.stroke(); }
+    }
+    bx.fillStyle = "#d9b66a"; bx.fillRect(0, 0, W, 12); bx.fillRect(0, H - 12, W, 12);
+    const garde = el("div", "sgGarde", "🐒"); sc.appendChild(garde);
+    const info = el("div", "mnMiHint"); z.appendChild(info);
+
+    let grille = new Uint8Array(GX * GY), rempli = 0, down = false, lx = 0, ly = 0;
+    let ph = "libre", pt = 3, dPh = 3, pause = 0, last = performance.now(), raf = 0, vivant = true;
+    const txt = { libre: "Frotte les planches pour les huiler", alerte: "Le garde arrive ! LÂCHE L’ÉCRAN !", garde: "Il passe… ne touche à rien !" };
+    const pos = e => { const r = oc.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    function marque(x, y) {
+      for (let gx = Math.max(0, Math.floor((x - R) / cw)); gx <= Math.min(GX - 1, Math.floor((x + R) / cw)); gx++)
+        for (let gy = Math.max(0, Math.floor((y - R) / ch)); gy <= Math.min(GY - 1, Math.floor((y + R) / ch)); gy++) {
+          const i = gy * GX + gx;
+          if (!grille[i] && Math.hypot((gx + .5) * cw - x, (gy + .5) * ch - y) <= R + 4) { grille[i] = 1; rempli++; }
+        }
+    }
+    function trait(x0, y0, x1, y1) {
+      ox.lineCap = "round"; ox.lineJoin = "round";
+      ox.strokeStyle = "rgba(255,200,60,.55)"; ox.lineWidth = R * 2; ox.beginPath(); ox.moveTo(x0, y0); ox.lineTo(x1, y1); ox.stroke();
+      ox.strokeStyle = "rgba(255,255,255,.28)"; ox.lineWidth = 7; ox.beginPath(); ox.moveTo(x0 - 4, y0 - 4); ox.lineTo(x1 - 4, y1 - 4); ox.stroke();
+      const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 6));
+      for (let i = 0; i <= n; i++) marque(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n);
+    }
+    oc.addEventListener("pointerdown", e => {
+      e.preventDefault(); down = true; [lx, ly] = pos(e);
+      if (pause <= 0) trait(lx, ly, lx, ly);
+    });
+    oc.addEventListener("pointermove", e => {
+      if (!down || pause > 0) return;
+      const [x, y] = pos(e); trait(lx, ly, x, y); lx = x; ly = y;
+    });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(n => oc.addEventListener(n, lache));
+    function phase(p, d) { ph = p; pt = d; dPh = d; sc.dataset.ph = p; info.textContent = txt[p]; garde.style.display = p === "libre" ? "none" : "block"; }
+    function nettoye() {
+      ox.clearRect(0, 0, W, H); grille = new Uint8Array(GX * GY); rempli = 0; prog(0);
+      pause = 1.5; down = false; sgShake(sc); info.textContent = "Le garde a tout nettoyé ! On recommence…";
+    }
+    phase("libre", 3);
+
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (pause > 0) {
+        pause -= dt;
+        if (pause <= 0) phase("libre", sgRnd(3, 4.5));
+      } else {
+        pt -= dt;
+        if (ph === "libre" && pt <= 0) phase("alerte", .9);
+        else if (ph === "alerte" && pt <= 0) phase("garde", 1.4);
+        else if (ph === "garde" && pt <= 0) phase("libre", sgRnd(3, 4.5));
+        if (ph === "alerte") garde.style.left = (-10 + (1 - pt / dPh) * 30) + "%";
+        if (ph === "garde") garde.style.left = (20 + (1 - pt / dPh) * 92) + "%";
+        if (ph === "garde" && down) nettoye();
+        const c = rempli / (GX * GY) * 100;
+        prog(Math.min(1, c / m.p));
+        if (c >= m.p) { vivant = false; prog(1); ok(); return; }
+      }
+      pct.textContent = "🛢️ " + Math.round(rempli / (GX * GY) * 100) + " % / " + m.p + " %";
+      etat.textContent = ph === "alerte" ? "❗" : ph === "garde" ? "👀" : "";
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 1 — Balancer le pont (m.p = amplitude cible en degrés, ex. 36)
+     Le pont oscille. Touche (n'importe où) quand il repasse par la zone du
+     centre pour le pousser : +amplitude. Trop tôt / trop tard = il freine. */
+  balancier(z, m, prog, ok) {
+    const sc = sgScene(z, 320, "sgNuit", false);
+    const hud = el("div", "sgHud"), info = el("span"), etat = el("span");
+    hud.appendChild(info); hud.appendChild(etat); sc.appendChild(hud);
+    const jb = el("div", "sgJauge"), ji = el("i"); jb.appendChild(ji); sc.appendChild(jb);
+    sc.appendChild(el("div", "sgBarre"));
+    const centre = el("div", "sgCentre"); sc.appendChild(centre);
+    const pend = el("div", "sgPend");
+    let planks = "";
+    for (let i = 0; i < 8; i++) planks += '<rect x="' + (12 + i * 32) + '" y="168" width="28" height="16" rx="3" fill="#b07a3f" stroke="#5a3a1a"/>';
+    pend.innerHTML = '<svg viewBox="0 0 280 230" width="280" height="230"><path d="M140 0L16 168M140 0L264 168" stroke="#d9b66a" stroke-width="4" fill="none"/>' + planks +
+      '<text x="56" y="164" font-size="30">🐒</text><text x="124" y="164" font-size="30">🐵</text><text x="192" y="164" font-size="30">🙈</text></svg>';
+    sc.appendChild(pend);
+    const push = el("button", "sgPush", "👻 POUSSER"); sc.appendChild(push);
+    const hint = el("div", "mnMiHint", "Touche quand le pont passe par le centre"); z.appendChild(hint);
+
+    const OM = Math.PI * .95, MAXA = m.p;
+    let A = 8, phi = 0, lock = 0, fin = 0, last = performance.now(), raf = 0, vivant = true;
+    sc.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin || lock > 0) return;
+      push.style.transform = "translateY(4px)"; setTimeout(() => { push.style.transform = ""; }, 120);
+      lock = .5;
+      if (Math.abs(Math.sin(phi)) < .4) {
+        A = Math.min(MAXA, A + 6); sgPop(sc, "✨", 46, 20);
+        hint.textContent = "Bien poussé !";
+      } else {
+        A = Math.max(4, A - 5); sgShake(sc); hint.textContent = "Mal calé ! Il freine…";
+      }
+    });
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      lock = Math.max(0, lock - dt);
+      if (!fin) {
+        phi += OM * dt; A = Math.max(4, A - 1.2 * dt);
+        if (A >= MAXA) { fin = .001; hint.textContent = "Le pont se balance à toute vitesse !"; }
+      } else { fin += dt; if (fin > 1.2) { vivant = false; prog(1); ok(); return; } }
+      const th = A * Math.sin(phi);
+      pend.style.transform = "rotate(" + th + "deg)";
+      centre.classList.toggle("ok", Math.abs(Math.sin(phi)) < .4 && !fin);
+      prog(A / MAXA); ji.style.width = (A / MAXA * 100) + "%";
+      info.textContent = "Amplitude " + Math.round(A) + "° / " + MAXA + "°";
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 2 — Fronde fantôme (m.p = cibles à toucher, ex. 5 ; tirs = m.p + 3)
+     Étire l'élastique en tirant vers l'arrière, relâche pour lancer la banane. */
+  fronde(z, m, prog, ok) {
+    sgCss();
+    const W = 320, H = 280, AX = 56, AY = 212, MAXP = 70, K = 7, G = 600;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cv = el("canvas", "sgCv"); cv.width = W * dpr; cv.height = H * dpr;
+    const c = cv.getContext("2d"); c.scale(dpr, dpr);
+    z.appendChild(cv);
+    const hint = el("div", "mnMiHint", "Tire en arrière puis relâche pour viser"); z.appendChild(hint);
+
+    let shots = m.p + 3, hits = 0, pull = null, proj = null, pops = [], pause = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    let cibles = [];
+    function placer(t, autres) {
+      for (let k = 0; k < 20; k++) {
+        const x = sgRnd(150, 288), y = sgRnd(50, 190);
+        if (autres.every(o => !o.alive || Math.hypot(o.x - x, o.y0 - y) > 62)) { t.x = x; t.y0 = y; return; }
+      }
+      t.x = sgRnd(150, 288); t.y0 = sgRnd(50, 190);
+    }
+    function init() {
+      shots = m.p + 3; hits = 0; proj = null; pull = null; pops = []; prog(0);
+      cibles = [0, 1, 2].map(i => ({ x: 0, y0: 0, ph: i * 2, alive: true, re: 0, e: ["🐒", "🐵", "🙈"][i] }));
+      cibles.forEach(t => placer(t, cibles.filter(o => o !== t)));
+    }
+    init();
+    const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    function borne(x, y) {
+      let dx = x - AX, dy = y - AY; const d = Math.hypot(dx, dy);
+      if (d > MAXP) { dx = dx / d * MAXP; dy = dy / d * MAXP; }
+      return { x: AX + dx, y: AY + dy };
+    }
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (proj || pause > 0) return;
+      const [x, y] = pos(e); pull = borne(x, y);
+    });
+    cv.addEventListener("pointermove", e => { if (!pull) return; const [x, y] = pos(e); pull = borne(x, y); });
+    function relache() {
+      if (!pull) return;
+      const vx = (AX - pull.x) * K, vy = (AY - pull.y) * K;
+      if (Math.hypot(AX - pull.x, AY - pull.y) < 14) { pull = null; return; }
+      proj = { x: pull.x, y: pull.y, vx, vy }; shots--; pull = null;
+    }
+    cv.addEventListener("pointerup", relache); cv.addEventListener("pointercancel", () => { pull = null; });
+
+    const ty = t => t.y0 + Math.sin(time * 1.4 + t.ph) * 12;
+    function dessiner() {
+      const gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#5b4aa8"); gr.addColorStop(.6, "#2a1f5c"); gr.addColorStop(1, "#120c33");
+      c.fillStyle = gr; c.fillRect(0, 0, W, H);
+      c.fillStyle = "rgba(255,246,200,.9)"; c.beginPath(); c.arc(W - 56, 48, 24, 0, 7); c.fill();
+      [[110, 150, 90], [196, 130, 110], [268, 160, 80]].forEach(([x, h, r]) => {
+        c.fillStyle = "#1a1245"; c.fillRect(x, H - 30 - h, 12, h);
+        c.fillStyle = "#231a5a"; c.beginPath(); c.arc(x + 6, H - 30 - h, r * .38, 0, 7); c.fill();
+      });
+      c.fillStyle = "#1c1550"; c.fillRect(0, H - 30, W, 30);
+      c.fillStyle = "#2a2070"; c.fillRect(0, H - 30, W, 4);
+      /* cibles */
+      c.font = "34px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      cibles.forEach(t => { if (t.alive) { c.globalAlpha = .92; c.fillText(t.e, t.x, ty(t)); c.globalAlpha = 1; } });
+      /* fronde */
+      c.lineCap = "round";
+      c.strokeStyle = "#7a4f24"; c.lineWidth = 8;
+      c.beginPath(); c.moveTo(AX, H - 30); c.lineTo(AX, AY + 12); c.stroke();
+      c.beginPath(); c.moveTo(AX - 14, AY - 10); c.lineTo(AX, AY + 12); c.lineTo(AX + 14, AY - 10); c.stroke();
+      const bx = pull ? pull.x : AX, by = pull ? pull.y : AY;
+      c.strokeStyle = "#e8c07a"; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(AX - 14, AY - 10); c.lineTo(bx, by); c.lineTo(AX + 14, AY - 10); c.stroke();
+      if (pull) {
+        const vx = (AX - pull.x) * K, vy = (AY - pull.y) * K;
+        for (let i = 1; i <= 9; i++) {
+          const t = i * .075;
+          c.fillStyle = "rgba(255,255,255," + (.7 - i * .06) + ")";
+          c.beginPath(); c.arc(pull.x + vx * t, pull.y + vy * t + .5 * G * t * t, 3.5, 0, 7); c.fill();
+        }
+        c.fillText("🍌", pull.x, pull.y);
+      } else if (!proj && shots > 0) c.fillText("🍌", AX, AY);
+      if (proj) c.fillText("🍌", proj.x, proj.y);
+      pops.forEach(p => { c.globalAlpha = Math.max(0, 1 - p.a * 2); c.font = (30 + p.a * 40) + "px serif"; c.fillText("💥", p.x, p.y); c.globalAlpha = 1; });
+      /* HUD */
+      c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+      c.textAlign = "left"; c.fillText("🍌 " + shots, 12, 22);
+      c.textAlign = "right"; c.fillText("🎯 " + hits + "/" + m.p, W - 12, 22);
+      c.shadowBlur = 0;
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 2.2; }); pops = pops.filter(p => p.a < .5);
+      cibles.forEach(t => { if (!t.alive) { t.re -= dt; if (t.re <= 0) { placer(t, cibles); t.alive = true; } } });
+      if (pause > 0) {
+        pause -= dt; if (pause <= 0) { init(); hint.textContent = "Tire en arrière puis relâche pour viser"; }
+      } else if (proj) {
+        proj.vy += G * dt; proj.x += proj.vx * dt; proj.y += proj.vy * dt;
+        let fini = false;
+        for (const t of cibles) {
+          if (t.alive && Math.hypot(proj.x - t.x, proj.y - ty(t)) < 28) {
+            t.alive = false; t.re = .7; hits++; prog(hits / m.p); pops.push({ x: t.x, y: ty(t), a: 0 }); fini = true; break;
+          }
+        }
+        if (!fini && (proj.x > W + 30 || proj.x < -30 || proj.y > H - 26)) fini = true;
+        if (fini) {
+          proj = null;
+          if (hits >= m.p) { vivant = false; prog(1); dessiner(); ok(); return; }
+          if (shots <= 0) { pause = 1.4; hint.textContent = "Plus de bananes ! On recommence…"; }
+        }
+      }
+      dessiner();
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_SINGES).forEach(k => { JEUX[k] = JEUX_SINGES[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
