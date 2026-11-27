@@ -51,12 +51,12 @@ const ManoirMissions = (() => {
              T("🔦", "Faire clignoter la lampe", "seq", 4, "Envoie un signal depuis l’au-delà.")]
     },
     /* 4 · La Serre aux Orchidées */ {
-      civil: [T("🌺", "Arroser les orchidées", "hold", 4, "Verse l’eau avec patience."),
-              T("🌱", "Rempoter un plant", "tap", 18, "Tasse la terre fraîche.")],
-      imposteur: [T("☠️", "Empoisonner le nectar", "seq", 5, "Dose le venin dans le bon ordre."),
-                  T("🥀", "Faner une fleur rare", "curseur", 4, "Flétris-la au bon moment.")],
-      mort: [T("🥀", "Faire éclore une fleur fantôme", "curseur", 3, "Rythme la floraison."),
-             T("🌸", "Disperser le pollen", "tap", 20, "Souffle les spores dans l’air.")]
+      civil: [T("✂️", "Tailler les feuilles mortes", "tailler", 12, "Coupe les feuilles mortes sans abîmer le reste."),
+              T("🪴", "Rempoter en couches", "rempoter", 3, "Mémorise la recette et monte le pot dans l’ordre.")],
+      imposteur: [T("☠️", "Main sûre", "tige", 2, "Guide la goutte de poison jusqu’au nectar sans trembler."),
+                  T("🦠", "Contaminer le jardin", "contamination", 5, "Contamine toutes les plantes avant que le jardinier ne nettoie.")],
+      mort: [T("🌙", "Éclosion à la lueur de lune", "eclosion", 12, "Garde le rayon de lune sur le bourgeon fantôme."),
+             T("🌸", "Disperser le pollen", "pollen", 4, "Souffle le pollen vers les fleurs fermées.")]
     },
     /* 5 · La Grotte aux Chauves-souris */
     {
@@ -164,6 +164,12 @@ const ManoirMissions = (() => {
     t === "crochet" ? p * 1.5 :
     t === "ricochet" ? p * .8 :
     t === "chute" ? p * .8 :
+    t === "tailler" ? p * .45 :
+    t === "rempoter" ? p * 4 :
+    t === "tige" ? p * 2 :
+    t === "contamination" ? p * .8 :
+    t === "eclosion" ? p * .9 :
+    t === "pollen" ? p * 1.5 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -2976,6 +2982,530 @@ const JEUX_CASCADE = {
 };
 
 Object.keys(JEUX_CASCADE).forEach(k => { JEUX[k] = JEUX_CASCADE[k]; });
+
+const SERRE_CSS = `
+.seCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.3);box-shadow:inset 0 0 40px rgba(0,0,0,.35);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.seScene{position:relative;width:100%;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#d4efc9 0,#7fc08a 60%,#3f8a58 100%);border:2px solid rgba(255,255,255,.4);box-shadow:inset 0 0 50px rgba(0,60,20,.35);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.seScene::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 3px,transparent 3px 64px),repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 3px,transparent 3px 64px);pointer-events:none}
+.seScene.seHit{animation:mnShake .3s}
+.seHud{position:absolute;top:8px;left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;color:#0b3a1c;text-shadow:0 1px 2px rgba(255,255,255,.7);pointer-events:none;z-index:5}
+.seRecette{position:absolute;top:40px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:2}
+.seSlot{position:relative;width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.6);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#3b2410;font-weight:900;box-shadow:0 3px 6px rgba(0,0,0,.2)}
+.seSlot b{position:absolute;top:-8px;left:-6px;width:18px;height:18px;border-radius:50%;background:#3b2410;color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center}
+.seSlot.ok{background:#b9f0c4}
+.seTimer{position:absolute;top:96px;left:60px;right:60px;height:8px;border-radius:99px;background:rgba(0,0,0,.2);overflow:hidden;z-index:2}
+.seTimer i{display:block;height:100%;width:100%;background:#ffc43d}
+.sePot{position:absolute;left:50%;top:114px;width:150px;height:150px;margin-left:-75px;z-index:2}
+.sePotRim{position:absolute;left:-6px;right:-6px;top:0;height:16px;border-radius:8px;background:linear-gradient(#d0763a,#9a4e22);box-shadow:0 3px 5px rgba(0,0,0,.3);z-index:2}
+.sePotCorps{position:absolute;left:0;right:0;top:14px;height:136px;clip-path:polygon(0 0,100% 0,88% 100%,12% 100%);background:rgba(255,255,255,.4);display:flex;flex-direction:column-reverse;overflow:hidden}
+.seCouche{height:26px;flex:none;display:flex;align-items:center;justify-content:center;font-size:1.3rem;animation:seDrop .25s ease-out}
+.seSources{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:12px;z-index:3}
+.seSrc{width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.8rem;background:radial-gradient(circle at 35% 30%,#fff,#cfe9d4);box-shadow:0 6px 12px rgba(0,0,0,.35);touch-action:none;cursor:grab;line-height:1}
+.seSrc small{font-size:.56rem;font-weight:800;color:#2b4a35;margin-top:2px}
+.seGhost{position:absolute;z-index:30;font-size:3rem;margin:-30px 0 0 -30px;pointer-events:none;transform:scale(1.15);filter:drop-shadow(0 8px 8px rgba(0,0,0,.4))}
+.sePop{position:absolute;z-index:8;font-size:2rem;pointer-events:none;animation:seUp .8s forwards}
+@keyframes seDrop{from{transform:translateY(-30px);opacity:0}}
+@keyframes seUp{to{transform:translateY(-36px);opacity:0}}
+`;
+
+let seCssOk = false;
+function seCss() {
+  if (seCssOk) return; seCssOk = true;
+  const s = document.createElement("style");
+  s.textContent = SERRE_CSS;
+  document.head.appendChild(s);
+}
+const seRnd = (a, b) => a + Math.random() * (b - a);
+const seClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function seCanvas(z, W, H) {
+  seCss();
+  const dpr = Math.min(2, window.devicePixelRatio || 1), cv = el("canvas", "seCv");
+  cv.width = W * dpr; cv.height = H * dpr;
+  const c = cv.getContext("2d"); c.scale(dpr, dpr);
+  z.appendChild(cv);
+  return [cv, c];
+}
+const sePos = (cv, e, W, H) => {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+};
+function seHud(c, gauche, droite, clair) {
+  c.font = "800 15px sans-serif"; c.fillStyle = clair ? "#fff" : "#0b3a1c"; c.shadowColor = clair ? "#000" : "rgba(255,255,255,.7)"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+  c.textAlign = "left"; c.fillText(gauche, 12, 22);
+  c.textAlign = "right"; c.fillText(droite, 308, 22); c.shadowBlur = 0;
+}
+function seFond(c, W, H, time, nuit) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  if (nuit) { g.addColorStop(0, "#2d2a62"); g.addColorStop(.6, "#1c1a48"); g.addColorStop(1, "#0f0e2c"); }
+  else { g.addColorStop(0, "#d4efc9"); g.addColorStop(.6, "#86c593"); g.addColorStop(1, "#3f8a58"); }
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = nuit ? "rgba(190,200,255,.05)" : "rgba(255,255,255,.2)";
+  for (let i = 0; i < 3; i++) { const x = 40 + i * 110 + Math.sin(time * .4 + i) * 10; c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 50, 0); c.lineTo(x + 10, H); c.lineTo(x - 50, H); c.fill(); }
+  c.strokeStyle = nuit ? "rgba(200,210,255,.14)" : "rgba(255,255,255,.4)"; c.lineWidth = 3;
+  for (let x = 0; x <= W; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+  for (let y = 0; y <= H; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+}
+/* fleur d'orchidée : open 0 = bouton fermé, 1 = grande ouverte */
+function seFleur(c, x, y, r, open, col) {
+  c.save(); c.translate(x, y);
+  for (let i = 0; i < 5; i++) {
+    c.save(); c.rotate(i * 1.2566);
+    const cy = -r * (.28 + .3 * open), rx = r * (.2 + .2 * open), ry = r * .52;
+    const g = c.createRadialGradient(0, cy, 1, 0, cy, ry);
+    g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, cy, rx, ry, 0, 0, 7); c.fill();
+    c.restore();
+  }
+  c.fillStyle = open > .3 ? "#ffd54a" : col[1]; c.beginPath(); c.arc(0, 0, r * .2, 0, 7); c.fill();
+  c.restore();
+}
+function sePopTxt(sc, txt, x, y) {
+  const p = el("div", "sePop", txt); p.style.left = x + "%"; p.style.top = y + "%"; sc.appendChild(p);
+  setTimeout(() => p.remove(), 820);
+}
+function seDistSeg(px, py, ax, ay, bx, by) {
+  const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby || 1;
+  const t = seClamp(((px - ax) * abx + (py - ay) * aby) / l2, 0, 1);
+  return Math.hypot(px - (ax + abx * t), py - (ay + aby * t));
+}
+
+const JEUX_SERRE = {
+
+  /* CIVIL 1 — Tailler les feuilles mortes (m.p = feuilles à couper, ex. 12 ; 3 vies)
+     Glisse le doigt sur les feuilles jaunes/brunes pour les couper.
+     Les feuilles vertes et les fleurs sont à épargner. */
+  tailler(z, m, prog, ok) {
+    const W = 320, H = 330, BX = W / 2, BY = H - 34, [cv, c] = seCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Coupe les feuilles mortes en glissant le doigt, épargne le reste"); z.appendChild(hint);
+    let items = [], debris = [], trail = [], pops = [], n = 0, vie = 3, down = false, lx = 0, ly = 0, pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    function remplir() {
+      const cible = Math.min(12, 8 + Math.floor(n / 3));
+      while (items.length < cible) {
+        let x, y, t = 0;
+        do { x = seRnd(40, W - 40); y = seRnd(50, H - 90); t++; } while (t < 50 && items.some(o => Math.hypot(o.x - x, o.y - y) < 56));
+        const r = Math.random();
+        items.push({ x, y, type: r < .45 ? "morte" : r < .85 ? "vive" : "fleur", g: 0, a: Math.atan2(y - BY, x - BX) });
+      }
+    }
+    function init() { items = []; debris = []; pops = []; n = 0; vie = 3; prog(0); remplir(); }
+    init();
+    function couper(x, y) {
+      [...items].forEach(o => {
+        if (o.g < .8) return;
+        if (seDistSeg(o.x, o.y, lx, ly, x, y) < (o.type === "fleur" ? 24 : 22)) {
+          items.splice(items.indexOf(o), 1);
+          debris.push({ x: o.x, y: o.y, a: o.a, type: o.type, vx: seRnd(-50, 50), vy: -70, rot: 0, t: 0 });
+          if (o.type === "morte") { n++; prog(n / m.p); pops.push({ x: o.x, y: o.y, a: 0, t: "✂️" }); }
+          else { vie--; pops.push({ x: o.x, y: o.y, a: 0, t: "💔" }); hint.textContent = o.type === "fleur" ? "Pas la fleur !" : "Cette feuille était saine !"; }
+        }
+      });
+      if (vie <= 0 && !pause) { pause = 1.4; hint.textContent = "Tu as massacré la plante ! On recommence…"; down = false; }
+      else if (n >= m.p && !fin) { fin = .001; hint.textContent = "La plante respire enfin !"; }
+      remplir();
+    }
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); if (pause || fin) return; down = true; [lx, ly] = sePos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => {
+      if (!down || pause || fin) return; const [x, y] = sePos(cv, e, W, H);
+      couper(x, y); trail.push({ x, y, a: 0 }); lx = x; ly = y;
+    });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    function feuille(x, y, ang, s, type) {
+      c.save(); c.translate(x, y); c.rotate(ang); c.scale(s, s);
+      const g = c.createLinearGradient(-28, 0, 28, 0);
+      if (type === "morte") { g.addColorStop(0, "#e0c055"); g.addColorStop(1, "#8a5a1e"); } else { g.addColorStop(0, "#47b862"); g.addColorStop(1, "#1f7a3f"); }
+      c.fillStyle = g; c.beginPath(); c.moveTo(-28, 0); c.quadraticCurveTo(0, -18, 28, 0); c.quadraticCurveTo(0, 18, -28, 0); c.fill();
+      c.strokeStyle = type === "morte" ? "rgba(90,50,10,.6)" : "rgba(10,70,30,.5)"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-26, 0); c.lineTo(26, 0); c.stroke();
+      if (type === "morte") { c.fillStyle = "rgba(90,50,10,.55)"; [[-8, -4], [6, 4], [14, -3]].forEach(([px, py]) => { c.beginPath(); c.arc(px, py, 2.5, 0, 7); c.fill(); }); }
+      c.restore();
+    }
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      items.forEach(o => { o.g = Math.min(1, o.g + dt * 2.5); });
+      debris.forEach(d => { d.vy += 500 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.rot += dt * 6; d.t += dt; }); debris = debris.filter(d => d.t < 1);
+      trail.forEach(t => { t.a += dt * 3.2; }); trail = trail.filter(t => t.a < 1);
+      pops.forEach(p => { p.a += dt * 1.7; }); pops = pops.filter(p => p.a < 1);
+      if (pause) { pause -= dt; if (pause <= 0) { pause = 0; init(); hint.textContent = "Coupe les feuilles mortes en glissant le doigt, épargne le reste"; } }
+      if (fin) { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      seFond(c, W, H, time, false);
+      /* pot + tiges */
+      c.fillStyle = "#b9622e"; c.beginPath(); c.moveTo(BX - 40, BY + 10); c.lineTo(BX + 40, BY + 10); c.lineTo(BX + 32, H); c.lineTo(BX - 32, H); c.fill();
+      c.fillStyle = "#d0763a"; c.fillRect(BX - 46, BY + 6, 92, 12);
+      c.strokeStyle = "#2f7a45"; c.lineWidth = 4; c.lineCap = "round";
+      items.forEach(o => { c.globalAlpha = o.g; c.beginPath(); c.moveTo(BX, BY + 8); c.quadraticCurveTo((BX + o.x) / 2, o.y + 50, o.x, o.y); c.stroke(); });
+      c.globalAlpha = 1;
+      items.forEach(o => { const s = o.g; if (o.type === "fleur") seFleur(c, o.x, o.y, 22 * s, 1, ["#ff9ad5", "#c0338f"]); else feuille(o.x, o.y, o.a, s, o.type); });
+      debris.forEach(d => { c.save(); c.globalAlpha = 1 - d.t; c.translate(d.x, d.y); c.rotate(d.rot); if (d.type === "fleur") seFleur(c, 0, 0, 22, 1, ["#ff9ad5", "#c0338f"]); else feuille(0, 0, 0, 1, d.type); c.restore(); });
+      /* lame */
+      c.lineCap = "round";
+      for (let i = 1; i < trail.length; i++) { c.strokeStyle = "rgba(255,255,255," + (1 - trail[i].a) + ")"; c.lineWidth = 5 * (1 - trail[i].a); c.beginPath(); c.moveTo(trail[i - 1].x, trail[i - 1].y); c.lineTo(trail[i].x, trail[i].y); c.stroke(); }
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (26 + p.a * 20) + "px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(p.t, p.x, p.y - p.a * 20); c.globalAlpha = 1; });
+      seHud(c, "✂️ " + n + "/" + m.p, "❤️".repeat(Math.max(0, vie)) + "🖤".repeat(3 - Math.max(0, vie)));
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* CIVIL 2 — Rempoter en couches (m.p = nb de pots, ex. 3)
+     La recette s'affiche quelques secondes, puis disparaît : glisse les
+     éléments dans le pot dans le bon ordre. La recette s'allonge à chaque pot.
+     Une erreur = la recette réapparaît 2 s ; 3 erreurs = le pot est vidé. */
+  rempoter(z, m, prog, ok) {
+    seCss();
+    const TYPES = [{ e: "🪨", n: "cailloux", c: "#9a9fa5" }, { e: "🟫", n: "terreau", c: "#5b3a22" }, { e: "🌱", n: "plante", c: "#4aa35f" }, { e: "🍂", n: "paillis", c: "#c77a2e" }];
+    const REC = [[0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 1, 3]];
+    const sc = el("div", "seScene"); sc.style.height = "350px"; z.appendChild(sc);
+    const hud = el("div", "seHud"), gau = el("span"), dro = el("span"); hud.appendChild(gau); hud.appendChild(dro); sc.appendChild(hud);
+    const rec = el("div", "seRecette"); sc.appendChild(rec);
+    const timer = el("div", "seTimer"), ti = el("i"); timer.appendChild(ti); sc.appendChild(timer);
+    const pot = el("div", "sePot"), corps = el("div", "sePotCorps"); pot.appendChild(el("div", "sePotRim")); pot.appendChild(corps); sc.appendChild(pot);
+    const src = el("div", "seSources"); sc.appendChild(src);
+    const hint = el("div", "mnMiHint"); z.appendChild(hint);
+    const tm = [];
+    const later = (f, d) => { tm.push(setTimeout(f, d)); };
+    let p = 0, recette = [], pos = 0, err = 0, phase = "memo", busy = true;
+    const srcEls = TYPES.map((t, i) => {
+      const s = el("div", "seSrc", t.e); s.appendChild(el("small", "", t.n.toUpperCase()));
+      s.addEventListener("pointerdown", e => {
+        e.preventDefault(); if (phase !== "jeu" || busy) return;
+        const g = el("div", "seGhost", t.e); sc.appendChild(g);
+        const r = sc.getBoundingClientRect();
+        const mv = ev => { g.style.left = (ev.clientX - r.left) + "px"; g.style.top = (ev.clientY - r.top) + "px"; };
+        mv(e); s.style.opacity = ".35";
+        const up = ev => {
+          window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+          g.remove(); s.style.opacity = "1";
+          const b = pot.getBoundingClientRect();
+          if (ev.clientX >= b.left - 14 && ev.clientX <= b.right + 14 && ev.clientY >= b.top - 14 && ev.clientY <= b.bottom + 14) pose(i);
+        };
+        window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+      });
+      src.appendChild(s); return s;
+    });
+    function majHud() { gau.textContent = "🪴 Pot " + Math.min(p + 1, m.p) + "/" + m.p; dro.textContent = "erreurs " + err + "/3"; }
+    function montrerRecette(reveal) {
+      rec.innerHTML = "";
+      recette.forEach((t, k) => {
+        const s = el("div", "seSlot" + (k < pos ? " ok" : ""), reveal || k < pos ? TYPES[t].e : "?");
+        s.appendChild(el("b", "", String(k + 1))); rec.appendChild(s);
+      });
+    }
+    function melange() { srcEls.slice().sort(() => Math.random() - .5).forEach(s => src.appendChild(s)); }
+    function memo(duree, apres) {
+      phase = "memo"; busy = true; montrerRecette(true);
+      ti.style.transition = "none"; ti.style.width = "100%"; void ti.offsetWidth;
+      ti.style.transition = "width " + duree + "s linear"; ti.style.width = "0%";
+      hint.textContent = "Mémorise la recette !";
+      later(() => { phase = "jeu"; busy = false; montrerRecette(false); melange(); hint.textContent = "Glisse les éléments dans le pot, dans l’ordre"; if (apres) apres(); }, duree * 1000);
+    }
+    function nouveauPot() {
+      recette = REC[Math.min(p, REC.length - 1)]; pos = 0; err = 0; corps.innerHTML = ""; majHud();
+      memo(3 + .8 * (recette.length - 3));
+    }
+    function pose(i) {
+      if (busy || phase !== "jeu") return;
+      if (i === recette[pos]) {
+        const l = el("div", "seCouche", i === 2 ? "🌱" : ""); l.style.background = TYPES[i].c; corps.appendChild(l);
+        pos++; montrerRecette(false); melange();
+        if (pos >= recette.length) {
+          busy = true; p++; prog(p / m.p); hint.textContent = "Beau rempotage !"; sePopTxt(sc, "🌸", 50, 38);
+          later(() => { if (p >= m.p) ok(); else nouveauPot(); }, 1000);
+        }
+      } else {
+        err++; majHud(); sc.classList.remove("seHit"); void sc.offsetWidth; sc.classList.add("seHit");
+        if (err >= 3) { busy = true; hint.textContent = "Trop d’erreurs ! On vide le pot…"; later(nouveauPot, 1100); }
+        else { busy = true; phase = "reveal"; hint.textContent = "Mauvaise couche ! Regarde la recette…"; montrerRecette(true); later(() => { busy = false; phase = "jeu"; montrerRecette(false); hint.textContent = "Glisse les éléments dans le pot, dans l’ordre"; }, 2000); }
+      }
+    }
+    nouveauPot();
+    return () => { tm.forEach(clearTimeout); busy = true; };
+  },
+
+  /* IMPOSTEUR 1 — Main sûre (m.p = nb de fleurs, ex. 2)
+     Pose le doigt sur la fiole, puis guide la goutte de poison le long de la
+     tige jusqu'au nectar sans toucher les bords (épines et feuilles).
+     Lâcher ou sortir du couloir = on repart du début. */
+  tige(z, m, prog, ok) {
+    const W = 320, H = 340, SY = H - 46, EY = 84, [cv, c] = seCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Pose le doigt sur la fiole et guide la goutte jusqu’à la fleur"); z.appendChild(hint);
+    let fl = 0, suivante = false, ph1 = 0, ph2 = 0, base = 29, obst = [], maxP = 0, actif = false, px = 0, py = SY, lx = 0, ly = SY, pops = [], pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const cx = y => 160 + 52 * Math.sin(y * .032 + ph1) + 24 * Math.sin(y * .071 + ph2) + 3 * Math.sin(time * 1.6 + y * .02);
+    const hw = y => { let h = base; obst.forEach(yb => { h -= base * .32 * Math.max(0, 1 - Math.abs(y - yb) / 24); }); return h; };
+    function genere() {
+      ph1 = seRnd(0, 6.28); ph2 = seRnd(0, 6.28); base = fl === 0 ? 29 : 22;
+      obst = [seRnd(110, 150), seRnd(170, 210), seRnd(230, 265)]; maxP = 0; actif = false; px = cx(SY); py = SY;
+    }
+    genere();
+    function echec() {
+      pops.push({ x: px, y: py, a: 0, t: "💥" }); actif = false; maxP = 0; pause = .9;
+      hint.textContent = "Ta main a tremblé ! Reprends depuis la fiole.";
+    }
+    function verifie(x, y) {
+      const dx = x - lx, dy = y - ly, n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 5));
+      for (let i = 1; i <= n; i++) {
+        const sx = lx + dx * i / n, sy = seClamp(ly + dy * i / n, EY, SY);
+        if (Math.abs(sx - cx(sy)) > hw(sy)) return false;
+        maxP = Math.max(maxP, Math.min((SY - sy) / (SY - EY), maxP + .15));
+      }
+      return true;
+    }
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (pause || fin) return;
+      const [x, y] = sePos(cv, e, W, H);
+      if (Math.hypot(x - cx(SY), y - SY) < 36) { actif = true; px = x; py = y; lx = cx(SY); ly = SY; maxP = 0; hint.textContent = "Doucement…"; }
+    });
+    cv.addEventListener("pointermove", e => {
+      if (!actif || pause || fin) return;
+      const [x, y] = sePos(cv, e, W, H);
+      if (!verifie(x, y)) { px = x; py = y; echec(); return; }
+      px = x; py = y; lx = x; ly = y;
+      if (maxP >= .985) {
+        actif = false; fl++; prog(fl / m.p); pops.push({ x: cx(EY), y: EY, a: 0, t: "☠️" });
+        if (fl >= m.p) { fin = .001; hint.textContent = "Le nectar est empoisonné…"; } else { pause = 1.1; suivante = true; hint.textContent = "Une de faite ! Fleur suivante, couloir plus étroit."; }
+      }
+    });
+    const lache = () => { if (actif && !fin) { actif = false; maxP = 0; hint.textContent = "Pose le doigt sur la fiole et guide la goutte jusqu’à la fleur"; } };
+    ["pointerup", "pointercancel"].forEach(k => cv.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 1.6; }); pops = pops.filter(p => p.a < 1);
+      if (pause) {
+        pause -= dt;
+        if (pause <= 0) { pause = 0; if (suivante) { suivante = false; genere(); } hint.textContent = "Pose le doigt sur la fiole et guide la goutte jusqu’à la fleur"; }
+      }
+      if (fin) { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      seFond(c, W, H, time, false);
+      /* tige */
+      const ys = []; for (let y = EY; y <= SY; y += 4) ys.push(y);
+      c.fillStyle = "#1f6a3a"; c.beginPath(); ys.forEach((y, i) => { const x = cx(y) - hw(y) - 9; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+      for (let i = ys.length - 1; i >= 0; i--) c.lineTo(cx(ys[i]) + hw(ys[i]) + 9, ys[i]);
+      c.fill();
+      c.fillStyle = "#a6e3a8"; c.beginPath(); ys.forEach((y, i) => { const x = cx(y) - hw(y); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+      for (let i = ys.length - 1; i >= 0; i--) c.lineTo(cx(ys[i]) + hw(ys[i]), ys[i]);
+      c.fill();
+      obst.forEach(yb => {
+        c.fillStyle = "#14502c";
+        const x1 = cx(yb) - hw(yb), x2 = cx(yb) + hw(yb);
+        c.beginPath(); c.moveTo(x1 - 12, yb - 12); c.lineTo(x1 + 4, yb); c.lineTo(x1 - 12, yb + 12); c.fill();
+        c.beginPath(); c.moveTo(x2 + 12, yb - 12); c.lineTo(x2 - 4, yb); c.lineTo(x2 + 12, yb + 12); c.fill();
+      });
+      /* trace de poison */
+      if (maxP > 0) { c.strokeStyle = "rgba(150,60,200,.75)"; c.lineWidth = 7; c.lineCap = "round"; c.beginPath(); c.moveTo(cx(SY), SY); for (let y = SY; y >= SY - maxP * (SY - EY); y -= 4) c.lineTo(cx(y), y); c.stroke(); }
+      /* fleur et fiole */
+      const gl = c.createRadialGradient(cx(EY), EY - 10, 4, cx(EY), EY - 10, 46); gl.addColorStop(0, "rgba(255,230,120,.8)"); gl.addColorStop(1, "rgba(255,230,120,0)");
+      c.fillStyle = gl; c.beginPath(); c.arc(cx(EY), EY - 10, 46, 0, 7); c.fill();
+      seFleur(c, cx(EY), EY - 12, 34, 1, ["#ff9ad5", "#c0338f"]);
+      c.font = "32px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🧪", cx(SY), SY + 6);
+      /* goutte */
+      const gx = actif ? px : cx(SY), gy = actif ? py : SY - 28;
+      c.fillStyle = "#8a2fc8"; c.beginPath(); c.arc(gx, gy, 9, 0, 7); c.fill();
+      c.fillStyle = "rgba(255,255,255,.6)"; c.beginPath(); c.arc(gx - 3, gy - 3, 3, 0, 7); c.fill();
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (26 + p.a * 22) + "px serif"; c.textAlign = "center"; c.fillText(p.t, p.x, p.y - p.a * 20); c.globalAlpha = 1; });
+      seHud(c, "🌸 Fleur " + Math.min(fl + 1, m.p) + "/" + m.p, Math.round(maxP * 100) + " %");
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* IMPOSTEUR 2 — Contamination (m.p = taille de la grille, ex. 5 → 5×5)
+     Touche une plante pour la contaminer : elle contamine ses voisines toutes
+     les ~1,4 s. Le jardinier asperge (signal bleu 0,7 s) et nettoie une plante
+     à la fois. L'orchidée du centre résiste : 3 touches rapprochées.
+     Il faut TOUTES les plantes contaminées en même temps (45 s max). */
+  contamination(z, m, prog, ok) {
+    const N = Math.max(3, m.p | 0), W = 320, cs = Math.floor(280 / N), ox = (W - N * cs) / 2, oy = 44, H = oy + N * cs + 14, TMAX = 45, SPREAD = 1.4;
+    const [cv, c] = seCanvas(z, W, H), mid = Math.floor(N / 2);
+    const hint = el("div", "mnMiHint", "Contamine toutes les plantes en même temps, même l’orchidée"); z.appendChild(hint);
+    const EMO = ["🌿", "🪴", "🌱", "☘️"];
+    let g, spores = [], gard, cible, pause = 0, fin = 0, tps = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    function init() {
+      g = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => ({ inf: false, t: 0, e: EMO[Math.floor(Math.random() * EMO.length)], orch: x === mid && y === mid, taps: 0, tt: 0 })));
+      spores = []; gard = 2.2; cible = null; tps = 0; prog(0);
+    }
+    init();
+    const total = N * N, comptes = () => { let k = 0; g.forEach(r => r.forEach(t => { if (t.inf) k++; })); return k; };
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (pause || fin) return;
+      const [x, y] = sePos(cv, e, W, H), cx = Math.floor((x - ox) / cs), cy = Math.floor((y - oy) / cs);
+      if (cx < 0 || cy < 0 || cx >= N || cy >= N) return;
+      const t = g[cy][cx];
+      if (t.inf) return;
+      if (t.orch) { t.taps++; t.tt = 0; if (t.taps >= 3) { t.inf = true; t.t = 0; t.taps = 0; } }
+      else { t.inf = true; t.t = 0; }
+    });
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      spores.forEach(s => { s.y -= 24 * dt; s.x += s.vx * dt; s.a += dt * 1.1; }); spores = spores.filter(s => s.a < 1);
+      if (pause) { pause -= dt; if (pause <= 0) { pause = 0; init(); hint.textContent = "Contamine toutes les plantes en même temps, même l’orchidée"; } }
+      else if (!fin) {
+        tps += dt;
+        const nouv = [];
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          const t = g[y][x];
+          if (t.orch && !t.inf) { t.tt += dt; if (t.tt > 1.2) t.taps = 0; }
+          if (!t.inf) continue;
+          t.t += dt;
+          if (Math.random() < dt * 3) spores.push({ x: ox + x * cs + cs / 2 + seRnd(-14, 14), y: oy + y * cs + cs / 2, vx: seRnd(-6, 6), a: 0 });
+          if (t.t >= SPREAD) { t.t = 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < N && ny < N && !g[ny][nx].inf && !g[ny][nx].orch) nouv.push(g[ny][nx]); }); }
+        }
+        nouv.forEach(t => { t.inf = true; t.t = 0; });
+        gard -= dt;
+        if (gard <= 0 && !cible) {
+          const inf = []; g.forEach((r, y) => r.forEach((t, x) => { if (t.inf) inf.push([x, y, t]); }));
+          if (inf.length) {
+            const orc = inf.find(q => q[2].orch);
+            cible = (orc && Math.random() < .35) ? orc : inf[Math.floor(Math.random() * inf.length)]; cible.push(.7);
+          } else gard = .6;
+        }
+        if (cible) { cible[3] -= dt; if (cible[3] <= 0) { cible[2].inf = false; cible[2].t = 0; cible[2].taps = 0; cible = null; gard = 1.5; } }
+        const k = comptes(); prog(k / total);
+        if (k >= total) { fin = .001; hint.textContent = "Tout le jardin est contaminé !"; }
+        else if (tps >= TMAX) { pause = 1.4; hint.textContent = "Trop lent ! Le jardinier a tout nettoyé…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      seFond(c, W, H, time, false);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const t = g[y][x], px = ox + x * cs, py = oy + y * cs;
+        c.fillStyle = t.inf ? "#6a3f86" : "#4f9a62"; c.beginPath(); c.roundRect ? c.roundRect(px + 3, py + 3, cs - 6, cs - 6, 10) : c.rect(px + 3, py + 3, cs - 6, cs - 6); c.fill();
+        if (t.inf) { c.fillStyle = "rgba(170,255,120,.18)"; c.fillRect(px + 3, py + 3, cs - 6, cs - 6); }
+        c.strokeStyle = t.orch ? "#ffd54a" : "rgba(255,255,255,.25)"; c.lineWidth = t.orch ? 3 : 1.5; c.beginPath(); c.roundRect ? c.roundRect(px + 3, py + 3, cs - 6, cs - 6, 10) : c.rect(px + 3, py + 3, cs - 6, cs - 6); c.stroke();
+        c.font = (t.orch ? cs * .7 : cs * .56) + "px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.globalAlpha = t.inf ? .8 : 1; c.fillText(t.orch ? "🌸" : t.e, px + cs / 2, py + cs / 2 + 2); c.globalAlpha = 1;
+        if (t.inf) { c.strokeStyle = "rgba(190,255,140,.9)"; c.lineWidth = 3; c.beginPath(); c.arc(px + cs / 2, py + cs / 2, cs * .42, -1.57, -1.57 + Math.min(1, t.t / SPREAD) * 6.28); c.stroke(); }
+        if (t.orch && !t.inf && t.taps > 0) { c.fillStyle = "#ffd54a"; c.font = "800 13px sans-serif"; c.fillText("●".repeat(t.taps) + "○".repeat(3 - t.taps), px + cs / 2, py + cs - 8); }
+        if (cible && cible[2] === t) { c.fillStyle = "rgba(80,170,255,.4)"; c.fillRect(px + 3, py + 3, cs - 6, cs - 6); c.font = "22px serif"; c.fillText("💦", px + cs / 2, py + 10); }
+      }
+      spores.forEach(s => { c.fillStyle = "rgba(190,255,140," + (1 - s.a) + ")"; c.beginPath(); c.arc(s.x, s.y, 2.5, 0, 7); c.fill(); });
+      seHud(c, "☠️ " + comptes() + "/" + total, "⏱ " + Math.max(0, Math.ceil(TMAX - tps)) + " s");
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 1 — Éclosion à la lueur de lune (m.p = secondes de lumière, ex. 12)
+     Ton doigt est un rayon de lune : garde-le sur le bourgeon fantôme qui
+     dérive pour le faire éclore. Des nuages le cachent par moments. */
+  eclosion(z, m, prog, ok) {
+    const W = 320, H = 320, R = 46, [cv, c] = seCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Pose le doigt et suis le bourgeon avec le rayon de lune"); z.appendChild(hint);
+    let rx = W / 2, ry = H / 2, down = false, bloom = 0, bx = 0, by = 0, clouds = [], nuage = 2.5, parts = [], fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    const budPos = t => [160 + 100 * Math.sin(t * .7) + 30 * Math.sin(t * 1.9), 170 + 70 * Math.sin(t * .9 + 1) + 20 * Math.sin(t * 2.3)];
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; [rx, ry] = sePos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => { if (down) [rx, ry] = sePos(cv, e, W, H); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      const sp = 1 + .5 * bloom / m.p;
+      [bx, by] = budPos(time * sp);
+      nuage -= dt;
+      if (nuage <= 0) { nuage = seRnd(2.6, 3.8); const dr = Math.random() < .5; clouds.push({ x: dr ? -70 : W + 70, y: seRnd(100, 250), vx: (dr ? 1 : -1) * seRnd(40, 60) }); }
+      clouds.forEach(k => { k.x += k.vx * dt; }); clouds = clouds.filter(k => k.x > -90 && k.x < W + 90);
+      parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.a += dt * 1.5; }); parts = parts.filter(p => p.a < 1);
+      if (!fin) {
+        const dedans = down && Math.hypot(bx - rx, by - ry) < R;
+        if (dedans) { bloom += dt; if (Math.random() < dt * 14) parts.push({ x: bx, y: by, vx: seRnd(-30, 30), vy: seRnd(-40, -10), a: 0 }); }
+        else bloom = Math.max(0, bloom - dt * .5);
+        prog(bloom / m.p);
+        if (bloom >= m.p) { fin = .001; hint.textContent = "La fleur fantôme éclot !"; }
+      } else { fin += dt; if (fin > 1) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      seFond(c, W, H, time, true);
+      c.fillStyle = "rgba(255,246,210,.9)"; c.beginPath(); c.arc(W - 46, 44, 20, 0, 7); c.fill();
+      {
+        c.fillStyle = "rgba(210,225,255," + (down ? .1 : .04) + ")"; c.beginPath(); c.moveTo(W - 46, 44); c.lineTo(rx - R, ry); c.lineTo(rx + R, ry); c.fill();
+        const g = c.createRadialGradient(rx, ry, 4, rx, ry, R); g.addColorStop(0, down ? "rgba(235,240,255,.55)" : "rgba(235,240,255,.2)"); g.addColorStop(1, "rgba(235,240,255,0)");
+        c.fillStyle = g; c.beginPath(); c.arc(rx, ry, R, 0, 7); c.fill();
+        c.strokeStyle = down ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.3)"; c.lineWidth = 2; c.beginPath(); c.arc(rx, ry, R, 0, 7); c.stroke();
+      }
+      const o = fin ? 1 : bloom / m.p;
+      const gl = c.createRadialGradient(bx, by, 4, bx, by, 38); gl.addColorStop(0, "rgba(190,150,255," + (.25 + o * .5) + ")"); gl.addColorStop(1, "rgba(190,150,255,0)");
+      c.fillStyle = gl; c.beginPath(); c.arc(bx, by, 38, 0, 7); c.fill();
+      c.strokeStyle = "#7ac49a"; c.lineWidth = 3; c.beginPath(); c.moveTo(bx, by + 8); c.quadraticCurveTo(bx - 6, by + 24, bx, by + 36); c.stroke();
+      seFleur(c, bx, by, 22 + o * 10, o, ["#e6d0ff", "#a070e0"]);
+      parts.forEach(p => { c.fillStyle = "rgba(230,215,255," + (1 - p.a) + ")"; c.beginPath(); c.arc(p.x, p.y, 2.5, 0, 7); c.fill(); });
+      clouds.forEach(k => {
+        c.fillStyle = "rgba(55,60,110,.97)";
+        [[-30, 4, 26], [-8, -8, 30], [18, -2, 28], [38, 6, 22], [0, 10, 30]].forEach(([dx, dy, r]) => { c.beginPath(); c.arc(k.x + dx, k.y + dy, r, 0, 7); c.fill(); });
+      });
+      seHud(c, "🌙 " + bloom.toFixed(1) + " / " + m.p + " s", down ? "" : "touche l’écran", true);
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  },
+
+  /* MORT 2 — Disperser le pollen (m.p = nb de fleurs à faire éclore, ex. 4)
+     Ton doigt souffle : le pollen est repoussé loin de lui. Amène-le sur les
+     fleurs fermées (7 grains chacune). Le pollen qui tombe au sol est perdu. */
+  pollen(z, m, prog, ok) {
+    const W = 320, H = 320, NEED = 7, SUPPLY = 70, [cv, c] = seCanvas(z, W, H);
+    const hint = el("div", "mnMiHint", "Souffle avec ton doigt pour pousser le pollen vers les fleurs"); z.appendChild(hint);
+    let ps, fleurs, emis, perdu, bx = -99, by = -99, down = false, em, pops = [], pause = 0, fin = 0, time = 0, last = performance.now(), raf = 0, vivant = true;
+    function init() {
+      ps = []; emis = 0; perdu = 0; em = 0; pops = []; prog(0);
+      fleurs = [];
+      for (let k = 0; k < m.p; k++) {
+        let x, y, t = 0;
+        do { x = seRnd(40, W - 40); y = seRnd(130, 270); t++; } while (t < 80 && fleurs.some(f => Math.hypot(f.x - x, f.y - y) < 80));
+        fleurs.push({ x, y, n: 0, ouvert: false });
+      }
+    }
+    init();
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); down = true; [bx, by] = sePos(cv, e, W, H); });
+    cv.addEventListener("pointermove", e => { if (down) [bx, by] = sePos(cv, e, W, H); });
+    const lache = () => { down = false; };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    (function tick(now) {
+      if (!vivant) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+      pops.forEach(p => { p.a += dt * 1.5; }); pops = pops.filter(p => p.a < 1);
+      if (pause) { pause -= dt; if (pause <= 0) { pause = 0; init(); hint.textContent = "Souffle avec ton doigt pour pousser le pollen vers les fleurs"; } }
+      else if (!fin) {
+        em -= dt;
+        if (em <= 0 && emis < SUPPLY) { em = .3; emis++; ps.push({ x: W / 2 + seRnd(-16, 16), y: 66, vx: seRnd(-20, 20), vy: seRnd(10, 30) }); }
+        ps.forEach(p => {
+          p.vy += 24 * dt; p.vx += seRnd(-30, 30) * dt; p.vy += seRnd(-30, 30) * dt;
+          if (down) { const dx = p.x - bx, dy = p.y - by, d = Math.hypot(dx, dy); if (d < 110) { const f = (1 - d / 110) * 620; p.vx += dx / (d || 1) * f * dt; p.vy += dy / (d || 1) * f * dt; } }
+          const k = 1 - Math.min(.9, dt * 1.2); p.vx *= k; p.vy *= k;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          if (p.x < 4) { p.x = 4; p.vx = Math.abs(p.vx) * .5; } if (p.x > W - 4) { p.x = W - 4; p.vx = -Math.abs(p.vx) * .5; } if (p.y < 4) { p.y = 4; p.vy = Math.abs(p.vy) * .5; }
+          if (p.y > H - 22) { p.dead = true; perdu++; }
+          fleurs.forEach(f => { if (!p.dead && !f.ouvert && Math.hypot(p.x - f.x, p.y - f.y) < 26) { p.dead = true; f.n++; if (f.n >= NEED) { f.ouvert = true; pops.push({ x: f.x, y: f.y, a: 0, t: "✨" }); prog(fleurs.filter(q => q.ouvert).length / m.p); } } });
+        });
+        ps = ps.filter(p => !p.dead);
+        const ouv = fleurs.filter(f => f.ouvert).length, besoin = fleurs.reduce((s, f) => s + (f.ouvert ? 0 : NEED - f.n), 0);
+        if (ouv >= m.p) { fin = .001; hint.textContent = "Toute la serre est en fleurs !"; }
+        else if (besoin > ps.length + (SUPPLY - emis)) { pause = 1.5; hint.textContent = "Plus assez de pollen ! On recommence…"; }
+      } else { fin += dt; if (fin > .9) { vivant = false; prog(1); ok(); return; } }
+      /* dessin */
+      seFond(c, W, H, time, true);
+      c.fillStyle = "#1a1544"; c.fillRect(0, H - 22, W, 22);
+      const g0 = c.createRadialGradient(W / 2, 56, 4, W / 2, 56, 50); g0.addColorStop(0, "rgba(255,225,110,.7)"); g0.addColorStop(1, "rgba(255,225,110,0)");
+      c.fillStyle = g0; c.beginPath(); c.arc(W / 2, 56, 50, 0, 7); c.fill();
+      seFleur(c, W / 2, 52, 34, 1, ["#ff9ad5", "#c0338f"]);
+      fleurs.forEach(f => {
+        const o = f.ouvert ? 1 : f.n / NEED * .5;
+        if (f.ouvert) { const gg = c.createRadialGradient(f.x, f.y, 4, f.x, f.y, 44); gg.addColorStop(0, "rgba(255,230,140,.6)"); gg.addColorStop(1, "rgba(255,230,140,0)"); c.fillStyle = gg; c.beginPath(); c.arc(f.x, f.y, 44, 0, 7); c.fill(); }
+        c.strokeStyle = "#5fae7c"; c.lineWidth = 3; c.beginPath(); c.moveTo(f.x, f.y + 10); c.lineTo(f.x, f.y + 40); c.stroke();
+        seFleur(c, f.x, f.y, f.ouvert ? 30 : 22, o, f.ouvert ? ["#ffd0ea", "#e0509f"] : ["#cfc4e8", "#8a7ab8"]);
+        if (!f.ouvert) { c.strokeStyle = "#ffe27a"; c.lineWidth = 3; c.beginPath(); c.arc(f.x, f.y, 32, -1.57, -1.57 + f.n / NEED * 6.28); c.stroke(); }
+      });
+      ps.forEach(p => { c.fillStyle = "rgba(255,225,110,.35)"; c.beginPath(); c.arc(p.x, p.y, 6, 0, 7); c.fill(); c.fillStyle = "#ffe27a"; c.beginPath(); c.arc(p.x, p.y, 2.6, 0, 7); c.fill(); });
+      if (down) { for (let i = 0; i < 3; i++) { const r = ((time * 90 + i * 36) % 108); c.strokeStyle = "rgba(220,235,255," + (1 - r / 108) * .6 + ")"; c.lineWidth = 2; c.beginPath(); c.arc(bx, by, r, 0, 7); c.stroke(); } c.font = "26px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("💨", bx, by); }
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; c.font = (28 + p.a * 24) + "px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(p.t, p.x, p.y - p.a * 20); c.globalAlpha = 1; });
+      seHud(c, "🌸 " + fleurs.filter(f => f.ouvert).length + "/" + m.p, "pollen : " + (ps.length + SUPPLY - emis), true);
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    return () => { vivant = false; cancelAnimationFrame(raf); };
+  }
+};
+
+Object.keys(JEUX_SERRE).forEach(k => { JEUX[k] = JEUX_SERRE[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
