@@ -19,36 +19,36 @@ const ManoirMissions = (() => {
      Chaque catégorie a 2 variantes, alternées selon la mission du lieu. */
   const TACHES = [
     /* 0 · Le Repaire des Tapirs */ {
-      civil: [T("🥣", "Remplir l’auge", "hold", 3, "Verse la pitance jusqu’à ras bord."),
-              T("🧹", "Nettoyer l’enclos", "tap", 18, "Balaie la paille souillée.")],
-      imposteur: [T("🕳️", "Creuser un terrier", "tap", 20, "Gratte la terre pour y cacher une preuve."),
-                  T("🐾", "Brouiller les traces", "seq", 4, "Efface les empreintes une à une.")],
-      mort: [T("🌾", "Froisser la paille", "tap", 15, "Fais bruisser la paille comme un souffle."),
-             T("🌙", "Hanter l’enclos", "curseur", 3, "Glisse-toi dans le rêve des tapirs.")]
+      civil: [T("🥣", "Remplir l’auge", "auge", 3, "Verse la pitance jusqu’à ras bord."),
+              T("🧹", "Nettoyer l’enclos", "balai", 8, "Frotte la boue pour que l’enclos brille.")],
+      imposteur: [T("🕳️", "Creuser un terrier", "tunnel", 6, "Creuse un tunnel pour cacher une preuve."),
+                  T("🐾", "Brouiller les traces", "traces", 7, "Efface les empreintes avant d’être vu.")],
+      mort: [T("🌾", "Froisser la paille", "paille", 14, "Fais bruisser la paille comme un souffle."),
+             T("🌙", "Hanter l’enclos", "reve", 6, "Retrouve les paires dans le rêve des tapirs.")]
     },
     /* 1 · Le Temple du Jaguar */ {
-      civil: [T("🗿", "Aligner les glyphes", "ordre", 6, "Touche les glyphes dans l’ordre sacré."),
-              T("🔥", "Raviver le brasero", "hold", 3, "Maintiens la flamme sacrée.")],
-      imposteur: [T("🩸", "Graver un signe interdit", "seq", 5, "Reproduis le rituel du culte."),
-                  T("🗝️", "Forcer l’autel", "curseur", 3, "Crochète la serrure au bon moment.")],
-      mort: [T("🕯️", "Souffler les bougies", "tap", 16, "Fais vaciller les flammes du temple."),
-             T("👁️", "Réveiller l’idole", "seq", 4, "Murmure la séquence oubliée.")]
+      civil: [T("🗿", "Aligner les glyphes", "glyphes", 3, "Place les glyphes sacrés face au soleil."),
+              T("🔥", "Raviver le brasero", "brasero", 5, "Souffle sur la flamme, sans l’étouffer.")],
+      imposteur: [T("🩸", "Graver un signe interdit", "gravure", 3, "Reproduis le rituel du culte."),
+                  T("🗝️", "Forcer l’autel", "autel", 3, "Crochète l’autel anneau par anneau.")],
+      mort: [T("🕯️", "Souffler les bougies", "bougies", 16, "Fais vaciller les flammes du temple."),
+             T("👁️", "Réveiller l’idole", "idole", 3, "Fais battre le cœur de l’idole.")]
     },
     /* 2 · Le Sentier des Lianes */ {
-      civil: [T("🌿", "Tresser les lianes", "seq", 4, "Rejoue le nœud des explorateurs."),
-              T("🪢", "Renforcer la rampe", "tap", 20, "Serre les cordages.")],
-      imposteur: [T("✂️", "Couper une liane piège", "curseur", 3, "Tranche net, sans bruit."),
-                  T("🪤", "Poser un collet", "ordre", 6, "Arme le piège dans l’ordre.")],
-      mort: [T("🍃", "Faire frémir le feuillage", "tap", 18, "Agite les feuilles."),
-             T("🌫️", "Épaissir la brume", "hold", 3, "Souffle une brume glacée.")]
+      civil: [T("🌿", "Tresser les lianes", "tresse", 3, "Rejoue le nœud des explorateurs."),
+              T("🪢", "Renforcer la rampe", "cordage", 4, "Serre chaque nœud de la rampe.")],
+      imposteur: [T("✂️", "Couper une liane piège", "lianes", 3, "Tranche net, sans bruit."),
+                  T("🪤", "Poser un collet", "collet", 3, "Piège ta cible sur son chemin.")],
+      mort: [T("🍃", "Faire frémir le feuillage", "feuillage", 18, "Agite toutes les feuilles à la fois."),
+             T("🌫️", "Épaissir la brume", "brume", 60, "Souffle une brume glacée.")]
     },
     /* 3 · Le Camp de l’Explorateur */ {
-      civil: [T("🧭", "Calibrer la boussole", "curseur", 3, "Stoppe l’aiguille sur le nord."),
-              T("⛺", "Replier la tente", "ordre", 7, "Plie les pans dans l’ordre.")],
-      imposteur: [T("🗺️", "Falsifier la carte", "ordre", 7, "Modifie les repères sans te faire voir."),
-                  T("🔪", "Aiguiser la machette", "hold", 4, "Affûte la lame en douce.")],
-      mort: [T("📜", "Feuilleter le journal", "hold", 3, "Tourne les pages d’une main spectrale."),
-             T("🔦", "Faire clignoter la lampe", "seq", 4, "Envoie un signal depuis l’au-delà.")]
+      civil: [T("🧭", "Calibrer la boussole", "boussole", 3, "Garde l’aiguille sur le nord malgré les perturbations."),
+              T("⛺", "Replier la tente", "tente", 7, "Plie les pans dans le bon sens.")],
+      imposteur: [T("🗺️", "Falsifier la carte", "carte", 3, "Déplace les repères sans te faire voir."),
+                  T("🔪", "Aiguiser la machette", "machette", 6, "Affûte la lame en douce.")],
+      mort: [T("📜", "Feuilleter le journal", "journal", 3, "Tourne les pages d’une main spectrale."),
+             T("🔦", "Faire clignoter la lampe", "morse", 4, "Envoie un signal depuis l’au-delà.")]
     },
     /* 4 · La Serre aux Orchidées */ {
       civil: [T("✂️", "Tailler les feuilles mortes", "tailler", 12, "Coupe les feuilles mortes sans abîmer le reste."),
@@ -103,12 +103,12 @@ const ManoirMissions = (() => {
              T("🏹", "Fronde fantôme", "fronde", 5, "Lance des bananes sur les singes moqueurs.")]
     },
     /* 10 · La Grande Clairière */ {
-      civil: [T("🔥", "Allumer le feu de camp", "hold", 3, "Souffle sur les braises."),
-              T("🪵", "Empiler le bois", "tap", 18, "Range les bûches.")],
-      imposteur: [T("🪓", "Fendre du bois noir", "tap", 20, "Frappe fort et en silence."),
-                  T("🌀", "Tracer un cercle rituel", "ordre", 7, "Dessine les points du cercle.")],
-      mort: [T("✨", "Danser avec les lucioles", "seq", 4, "Suis leur ballet."),
-             T("🌙", "Veiller sous la lune", "hold", 3, "Reste immobile et lumineux.")]
+      civil: [T("🔥", "Allumer le feu de camp", "feu", 8, "Rassemble les étincelles sur le bois."),
+              T("🪵", "Empiler le bois", "bois", 6, "Range les bûches, les plus larges en bas.")],
+      imposteur: [T("🪓", "Fendre du bois noir", "fendre", 4, "Frappe fort et en silence."),
+                  T("🌀", "Tracer un cercle rituel", "cercle", 6, "Dessine le cercle de mémoire.")],
+      mort: [T("✨", "Danser avec les lucioles", "danse", 5, "Suis leur ballet dans l’ordre."),
+             T("🌙", "Veiller sous la lune", "veille", 3, "Respire au rythme de la lune.")]
     }
   ];
 
@@ -170,6 +170,36 @@ const ManoirMissions = (() => {
     t === "contamination" ? p * .8 :
     t === "eclosion" ? p * .9 :
     t === "pollen" ? p * 1.5 :
+    t === "auge" ? p * 1.8 :
+    t === "balai" ? p * .5 :
+    t === "tunnel" ? p * .5 + 2 :
+    t === "traces" ? p * 1.2 :
+    t === "paille" ? p * .9 :
+    t === "reve" ? p * 1.2 :
+    t === "glyphes" ? p * 1.2 :
+    t === "brasero" ? p * .9 :
+    t === "gravure" ? p * 2 :
+    t === "autel" ? p * 1.5 :
+    t === "bougies" ? p * .9 :
+    t === "idole" ? p * 4 :
+    t === "tresse" ? p * 2 :
+    t === "cordage" ? p * 1.5 :
+    t === "lianes" ? p * 2.5 :
+    t === "collet" ? p * 3 :
+    t === "feuillage" ? p * .15 :
+    t === "brume" ? p * .06 :
+    t === "boussole" ? p * .9 :
+    t === "tente" ? p * .7 :
+    t === "carte" ? p * 2 :
+    t === "machette" ? p * .4 :
+    t === "journal" ? p * 2 :
+    t === "morse" ? p * 3 :
+    t === "feu" ? p * .8 :
+    t === "bois" ? p * .7 :
+    t === "fendre" ? p * 1.3 :
+    t === "cercle" ? p * .6 + 3 :
+    t === "danse" ? p * 1.2 + 2 :
+    t === "veille" ? p * 2.8 :
     t === "hold" ? p * .85 :
     t === "tap" ? p * .12 :
     t === "seq" ? p * .6 + 1.2 :
@@ -3506,6 +3536,990 @@ const JEUX_SERRE = {
 };
 
 Object.keys(JEUX_SERRE).forEach(k => { JEUX[k] = JEUX_SERRE[k]; });
+
+const NV_CSS = `
+.nvCv{display:block;width:100%;max-width:340px;height:auto;border-radius:20px;border:2px solid rgba(255,255,255,.25);box-shadow:inset 0 0 40px rgba(0,0,0,.4);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.nvCv.nvHit,.nvCard.nvHit,.nvRow.nvHit{animation:mnShake .3s}
+.nvRow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:100%;align-items:center}
+.nvBtn{min-width:64px;padding:14px 10px;border-radius:18px;font-size:1.8rem;background:rgba(255,255,255,.14);color:#fff;border:2px solid rgba(255,255,255,.25);touch-action:manipulation}
+.nvBig{width:150px;height:150px;border-radius:50%;border:3px solid var(--c);background:radial-gradient(circle,rgba(255,255,255,.2),rgba(255,255,255,.04));font-size:3.4rem;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:transform .12s,filter .12s}
+.nvBar{position:relative;width:100%;height:26px;border-radius:13px;background:rgba(255,255,255,.12);overflow:hidden}
+.nvBar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c)}
+.nvBar b{position:absolute;top:0;bottom:0;background:rgba(255,255,255,.3);border-left:2px solid #fff;border-right:2px solid #fff;box-sizing:border-box}
+.nvCard{width:100%;min-height:150px;border-radius:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:4.5rem;touch-action:none;user-select:none;-webkit-user-select:none}
+`;
+let nvCssOk = false;
+function nvCss() {
+  if (nvCssOk) return; nvCssOk = true;
+  const s = document.createElement("style"); s.textContent = NV_CSS; document.head.appendChild(s);
+}
+const nvRnd = (a, b) => a + Math.random() * (b - a);
+const nvClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const nvHint = (z, t) => { const h = el("div", "mnMiHint", t); z.appendChild(h); return h; };
+const nvShake = e => { e.classList.remove("nvHit"); void e.offsetWidth; e.classList.add("nvHit"); };
+const nvNorm = a => ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+const nvDistSeg = (px, py, ax, ay, bx, by) => {
+  const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby || 1;
+  const t = nvClamp(((px - ax) * abx + (py - ay) * aby) / l2, 0, 1);
+  return Math.hypot(px - (ax + abx * t), py - (ay + aby * t));
+};
+function nvCanvas(z, W, H) {
+  nvCss();
+  const dpr = Math.min(2, window.devicePixelRatio || 1), cv = el("canvas", "nvCv");
+  cv.width = W * dpr; cv.height = H * dpr;
+  const c = cv.getContext("2d"); c.scale(dpr, dpr);
+  z.appendChild(cv);
+  return [cv, c];
+}
+const nvPos = (cv, e, W, H) => {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+};
+/* Boucle d'animation : f(dt) renvoie false pour s'arrêter. Renvoie la fonction d'arrêt. */
+function nvLoop(f) {
+  let vivant = true, raf = 0, last = performance.now();
+  const t = now => {
+    if (!vivant) return;
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (f(dt, now) === false) { vivant = false; return; }
+    raf = requestAnimationFrame(t);
+  };
+  raf = requestAnimationFrame(t);
+  return () => { vivant = false; cancelAnimationFrame(raf); };
+}
+/* Glisser-doigt sur un canvas : on.down(x,y) / on.move(x,y) / on.up() */
+function nvDrag(cv, W, H, on) {
+  let d = false;
+  cv.addEventListener("pointerdown", e => { e.preventDefault(); d = true; const [x, y] = nvPos(cv, e, W, H); if (on.down) on.down(x, y); });
+  cv.addEventListener("pointermove", e => { if (!d) return; const [x, y] = nvPos(cv, e, W, H); if (on.move) on.move(x, y); });
+  const up = () => { if (!d) return; d = false; if (on.up) on.up(); };
+  ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, up));
+}
+function nvFond(c, W, H, c1, c2) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, c1); g.addColorStop(1, c2);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+function nvHud(c, g, d) {
+  c.font = "800 15px sans-serif"; c.fillStyle = "#fff"; c.shadowColor = "#000"; c.shadowBlur = 4; c.textBaseline = "alphabetic";
+  c.textAlign = "left"; c.fillText(g, 12, 22);
+  c.textAlign = "right"; c.fillText(d || "", 308, 22); c.shadowBlur = 0;
+}
+function nvEmoji(c, e, x, y, s) { c.font = s + "px serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(e, x, y); }
+const nvCoeurs = (v, n) => "❤️".repeat(Math.max(0, v)) + "🖤".repeat(n - Math.max(0, v));
+
+const JEUX_RESTE = {
+
+  /* ══════════════════ 0 · LE REPAIRE DES TAPIRS ══════════════════ */
+
+  /* CIVIL 1 — Remplir l'auge (m.p = nb d'auges, ex. 3) : maintiens pour verser, lâche dans la zone verte */
+  auge(z, m, prog, ok) {
+    const W = 320, H = 290, [cv, c] = nvCanvas(z, W, H), TXT = "Maintiens pour verser, lâche quand c’est dans la zone verte", hint = nvHint(z, TXT);
+    let r = 0, niv = 0, down = false, etat = "jeu", pause = 0, fin = 0;
+    const zone = () => { const h = Math.max(.07, .17 - .03 * r); return [.8 - h / 2, .8 + h / 2]; };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); if (etat === "jeu") down = true; });
+    const lache = () => {
+      if (!down) return; down = false;
+      if (etat !== "jeu" || niv < .03) return;
+      const [a, b] = zone();
+      if (niv >= a && niv <= b) {
+        r++; prog(r / m.p); hint.textContent = "À ras bord !";
+        if (r >= m.p) { etat = "fin"; fin = .8; } else { etat = "ok"; pause = 1; }
+      } else { etat = "rate"; pause = 1.1; hint.textContent = niv < a ? "Pas assez rempli !" : "Trop plein, ça gaspille !"; nvShake(cv); }
+    };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => cv.addEventListener(k, lache));
+    return nvLoop(dt => {
+      if (etat === "fin") { fin -= dt; if (fin <= 0) { prog(1); ok(); return false; } }
+      else if (pause > 0) { pause -= dt; if (pause <= 0) { niv = 0; etat = "jeu"; hint.textContent = TXT; } }
+      else if (etat === "jeu" && down) {
+        niv += (.42 + .1 * r) * dt;
+        if (niv >= 1) { niv = 1; down = false; etat = "rate"; pause = 1.1; hint.textContent = "Ça déborde !"; nvShake(cv); }
+      }
+      nvFond(c, W, H, "#7da35a", "#37552e");
+      const tx = 50, tw = 220, ty = 196, th = 74, [a, b] = zone();
+      c.fillStyle = "#4a3320"; c.fillRect(tx - 8, ty - 6, tw + 16, th + 14);
+      c.fillStyle = "#2a1c10"; c.fillRect(tx, ty, tw, th);
+      c.fillStyle = "#c9964a"; c.fillRect(tx, ty + th * (1 - niv), tw, th * niv);
+      c.fillStyle = "rgba(76,217,100,.5)"; c.fillRect(tx - 6, ty + th * (1 - b), tw + 12, th * (b - a));
+      if (down && etat === "jeu") { c.fillStyle = "#d8ad62"; c.fillRect(158, 56, 5, ty + th * (1 - niv) - 56); }
+      nvEmoji(c, "🥣", 160, 44, 46); nvEmoji(c, "🐗", 288, 150, 40);
+      nvHud(c, "🥣 Auge " + Math.min(r + 1, m.p) + "/" + m.p, Math.round(niv * 100) + " %");
+      return true;
+    });
+  },
+
+  /* CIVIL 2 — Nettoyer l'enclos (m.p = nb de taches, ex. 8) : frotte la boue */
+  balai(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H); nvHint(z, "Frotte les taches de boue avec ton doigt");
+    const T = []; let t = 0;
+    while (T.length < m.p && t < 600) { t++; const x = nvRnd(40, W - 40), y = nvRnd(50, H - 40); if (T.every(o => Math.hypot(o.x - x, o.y - y) > 62)) T.push({ x, y, v: 0, s: nvRnd(.8, 1.2) }); }
+    let n = 0, fin = 0, fx = 0, fy = 0;
+    nvDrag(cv, W, H, {
+      down(x, y) { fx = x; fy = y; },
+      move(x, y) {
+        const d = Math.hypot(x - fx, y - fy); fx = x; fy = y;
+        T.forEach(q => { if (q.v < 1 && Math.hypot(q.x - x, q.y - y) < 34) { q.v = Math.min(1, q.v + d / 150); if (q.v >= 1) { n++; prog(n / T.length); if (n >= T.length) fin = .001; } } });
+      }
+    });
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#d9bb6a", "#a07f3c");
+      c.strokeStyle = "rgba(120,80,20,.25)"; c.lineWidth = 3;
+      for (let i = 0; i < 14; i++) { c.beginPath(); c.moveTo(10 + i * 24, 30); c.lineTo(24 + i * 24, 280); c.stroke(); }
+      T.forEach(q => { if (q.v < 1) { c.fillStyle = "rgba(70,42,20," + (.95 - q.v * .6) + ")"; c.beginPath(); c.ellipse(q.x, q.y, 28 * q.s * (1 - q.v * .8), 22 * q.s * (1 - q.v * .8), 0, 0, 7); c.fill(); } });
+      nvEmoji(c, "🐗", 288, 270, 38);
+      nvHud(c, "🧹 " + n + "/" + T.length, "");
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 1 — Creuser un terrier (m.p = nb de pierres, ex. 6) : trace un tunnel sans toucher les pierres */
+  tunnel(z, m, prog, ok) {
+    const W = 320, H = 300, A = [34, 44], B = [286, 262], [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Creuse de la pelle à la cachette sans toucher une pierre");
+    const S = []; let t = 0;
+    while (S.length < m.p && t < 600) { t++; const x = nvRnd(30, W - 30), y = nvRnd(30, H - 30); if (Math.hypot(x - A[0], y - A[1]) > 70 && Math.hypot(x - B[0], y - B[1]) > 70 && S.every(o => Math.hypot(o.x - x, o.y - y) > 62)) S.push({ x, y, r: nvRnd(16, 22) }); }
+    let trail = [], actif = false, fin = 0, flash = 0;
+    const rate = msg => { actif = false; trail = []; flash = 1; hint.textContent = msg; prog(0); };
+    nvDrag(cv, W, H, {
+      down(x, y) { if (fin) return; if (Math.hypot(x - A[0], y - A[1]) < 34) { actif = true; trail = [[x, y]]; hint.textContent = "Doucement…"; } },
+      move(x, y) {
+        if (!actif || fin) return;
+        trail.push([x, y]);
+        if (S.some(o => Math.hypot(o.x - x, o.y - y) < o.r + 5)) return rate("Tu as heurté une pierre !");
+        if (Math.hypot(x - B[0], y - B[1]) < 28) { actif = false; fin = .001; prog(1); hint.textContent = "Le terrier est creusé !"; }
+        else prog(nvClamp(((x - A[0]) + (y - A[1])) / ((B[0] - A[0]) + (B[1] - A[1])), 0, .95));
+      },
+      up() { if (actif) rate("Ne lève pas le doigt !"); }
+    });
+    return nvLoop(dt => {
+      flash = Math.max(0, flash - dt * 2.5);
+      if (fin) { fin += dt; if (fin > .7) { ok(); return false; } }
+      nvFond(c, W, H, "#6b4a2a", "#3a2814");
+      S.forEach(o => { const g = c.createRadialGradient(o.x - 5, o.y - 5, 3, o.x, o.y, o.r); g.addColorStop(0, "#9a9288"); g.addColorStop(1, "#4a443c"); c.fillStyle = g; c.beginPath(); c.arc(o.x, o.y, o.r, 0, 7); c.fill(); });
+      if (trail.length > 1) { c.strokeStyle = "#1d1208"; c.lineWidth = 12; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath(); trail.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); }
+      nvEmoji(c, "⛏️", A[0], A[1], 34); nvEmoji(c, "🕳️", B[0], B[1], 38);
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .4 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🕳️ Terrier", "");
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 2 — Brouiller les traces (m.p = nb d'empreintes, ex. 7) : efface avant que le tapir ne les voie */
+  traces(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Frotte chaque empreinte avant qu’on ne la voie");
+    let P = [], n = 0, vie = 3, sp = .6, fx = 0, fy = 0, fin = 0, rouge = 0;
+    nvDrag(cv, W, H, {
+      down(x, y) { fx = x; fy = y; },
+      move(x, y) {
+        const d = Math.hypot(x - fx, y - fy); fx = x; fy = y;
+        P.slice().forEach(p => { if (Math.hypot(p.x - x, p.y - y) < 34) { p.v += d / 120; if (p.v >= 1) { P.splice(P.indexOf(p), 1); n++; prog(n / m.p); if (n >= m.p) fin = .001; } } });
+      }
+    });
+    return nvLoop(dt => {
+      rouge = Math.max(0, rouge - dt * 2);
+      if (fin) { fin += dt; if (fin > .7) { prog(1); ok(); return false; } }
+      else {
+        sp -= dt;
+        if (sp <= 0 && P.length < 3 && n + P.length < m.p) {
+          sp = 1.1; let x, y, t = 0;
+          do { x = nvRnd(40, W - 40); y = nvRnd(50, H - 40); t++; } while (t < 40 && P.some(o => Math.hypot(o.x - x, o.y - y) < 70));
+          P.push({ x, y, v: 0, age: 0, a: nvRnd(-.6, .6) });
+        }
+        P.slice().forEach(p => { p.age += dt; if (p.age > 3.4) { P.splice(P.indexOf(p), 1); vie--; rouge = 1; hint.textContent = "Une trace a été vue !"; } });
+        if (vie <= 0) { P = []; n = 0; vie = 3; prog(0); sp = 1.2; hint.textContent = "Repéré ! On recommence…"; }
+      }
+      nvFond(c, W, H, "#8a6a3e", "#4a3a1e");
+      P.forEach(p => {
+        c.save(); c.globalAlpha = 1 - p.v * .85; c.translate(p.x, p.y); c.rotate(p.a); nvEmoji(c, "🐾", 0, 0, 40); c.restore();
+        c.strokeStyle = p.age > 2.4 ? "#ff5468" : "#ffc43d"; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 28, -1.57, -1.57 + p.age / 3.4 * 6.28); c.stroke();
+      });
+      nvEmoji(c, "🐗", 288, 270, 36);
+      if (rouge > 0) { c.fillStyle = "rgba(255,60,80," + rouge * .35 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🐾 " + n + "/" + m.p, nvCoeurs(vie, 3));
+      return true;
+    });
+  },
+
+  /* MORT 1 — Froisser la paille (m.p = durée en s, ex. 14) : touche les tas avant qu'ils retombent */
+  paille(z, m, prog, ok) {
+    return manche(z, m, prog, ok, {
+      h: 310, vies: 4, vieOn: "🌾", vieOff: "💨", poof: "✨",
+      hint: "Fais bruisser les tas de paille avant qu’ils ne retombent !",
+      init(sc) { sc.style.background = "radial-gradient(ellipse at 50% 30%,#d9bb6a 0,#a07f3c 55%,#4d3a1a 100%)"; sc.querySelectorAll(".crDeco").forEach(d => d.remove()); },
+      cadence: p => .9 - .35 * p,
+      creer(layer, sc, p) { const e = cible(layer, "🌾", true), d = 1.5 - .4 * p; e.style.left = rnd(12, 88) + "%"; e.style.top = rnd(24, 86) + "%"; return { el: e, dur: d }; },
+      rate(c) { poof(c, "💨"); }
+    });
+  },
+
+  /* MORT 2 — Hanter l'enclos (m.p = nb de paires, ex. 6) : mémory dans le rêve des tapirs */
+  reve(z, m, prog, ok) {
+    const E = ["🌙", "💤", "🌿", "🍃", "🐾", "⭐", "🌸", "🍄"].sort(() => Math.random() - .5).slice(0, Math.min(8, m.p));
+    const cartes = E.concat(E).sort(() => Math.random() - .5), g = el("div", "mnMiGrid"), tm = [];
+    let ouv = [], trouves = 0, busy = false;
+    const bs = cartes.map((e, i) => {
+      const b = el("button", "mnMiN", "❔"); b.style.padding = "12px 0";
+      b.addEventListener("pointerdown", ev => {
+        ev.preventDefault(); if (busy || b.disabled || ouv.includes(i)) return;
+        b.textContent = e; ouv.push(i);
+        if (ouv.length === 2) {
+          busy = true; const [a, d] = ouv;
+          if (cartes[a] === cartes[d]) {
+            bs[a].classList.add("ok"); bs[d].classList.add("ok"); bs[a].disabled = bs[d].disabled = true;
+            trouves++; prog(trouves / E.length); ouv = []; busy = false;
+            if (trouves >= E.length) tm.push(setTimeout(ok, 500));
+          } else tm.push(setTimeout(() => { bs[a].textContent = bs[d].textContent = "❔"; ouv = []; busy = false; }, 700));
+        }
+      });
+      g.appendChild(b); return b;
+    });
+    z.appendChild(g); nvHint(z, "Retrouve les paires pour te glisser dans leur rêve");
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* ══════════════════ 1 · LE TEMPLE DU JAGUAR ══════════════════ */
+
+  /* CIVIL 1 — Aligner les glyphes (m.p = nb d'anneaux, ex. 3) : place tous les 🐆 en haut */
+  glyphes(z, m, prog, ok) {
+    const W = 320, H = 310, CX = 160, CY = 168, [cv, c] = nvCanvas(z, W, H); nvHint(z, "Touche un anneau pour le tourner : place tous les 🐆 en haut");
+    const G = ["🗿", "🌀", "☀️", "🌙", "🔱", "👁️", "🐍", "🔥"], N = Math.min(3, m.p), R = [];
+    for (let k = 0; k < N; k++) {
+      const s = Math.floor(Math.random() * 8); let rot = Math.floor(Math.random() * 8); if ((s + rot) % 8 === 0) rot++;
+      R.push({ rad: 118 - k * 38, s, rot, ang: rot * Math.PI / 4, sl: Array.from({ length: 8 }, (_, i) => i === s ? "🐆" : G[Math.floor(Math.random() * G.length)]) });
+    }
+    const al = r => (r.s + r.rot) % 8 === 0;
+    let fin = 0;
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin) return;
+      const [x, y] = nvPos(cv, e, W, H), d = Math.hypot(x - CX, y - CY), r = R.find(q => Math.abs(d - q.rad) < 19);
+      if (r) { r.rot++; prog(R.filter(al).length / N); if (R.every(al)) fin = .001; }
+    });
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .9) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#4a4030", "#1a150f");
+      R.forEach(r => {
+        r.ang += (r.rot * Math.PI / 4 - r.ang) * Math.min(1, dt * 10);
+        c.strokeStyle = al(r) ? "#d9a93a" : "#6b5a44"; c.lineWidth = 36; c.beginPath(); c.arc(CX, CY, r.rad, 0, 7); c.stroke();
+        c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 2; c.beginPath(); c.arc(CX, CY, r.rad + 18, 0, 7); c.stroke();
+        r.sl.forEach((e, i) => { const a = -Math.PI / 2 + i * Math.PI / 4 + r.ang; nvEmoji(c, e, CX + Math.cos(a) * r.rad, CY + Math.sin(a) * r.rad, 24); });
+      });
+      c.fillStyle = "#ffc43d"; c.beginPath(); c.moveTo(CX - 10, 6); c.lineTo(CX + 10, 6); c.lineTo(CX, 26); c.fill();
+      nvEmoji(c, "🗿", CX, CY, 34);
+      return true;
+    });
+  },
+
+  /* CIVIL 2 — Raviver le brasero (m.p = secondes dans la zone, ex. 5) : tape pour souffler, ni trop ni trop peu */
+  brasero(z, m, prog, ok) {
+    nvCss();
+    const b = el("button", "nvBig", "🔥"), bar = el("div", "nvBar"), fi = el("i"), zn = el("b");
+    zn.style.left = "45%"; zn.style.width = "30%"; bar.appendChild(fi); bar.appendChild(zn);
+    z.appendChild(b); z.appendChild(bar);
+    const hint = nvHint(z, "Tape pour souffler : garde la flamme dans la zone claire");
+    let heat = .3, gain = 0, fin = 0;
+    b.addEventListener("pointerdown", e => { e.preventDefault(); if (!fin) heat = Math.min(1, heat + .13); });
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .7) { prog(1); ok(); return false; } return true; }
+      heat -= .2 * dt;
+      if (heat >= 1) { heat = .4; gain = 0; hint.textContent = "La flamme s’emballe ! On recommence…"; }
+      else if (heat <= 0) { heat = .3; gain = 0; hint.textContent = "Le brasero s’éteint ! On recommence…"; }
+      else if (heat >= .45 && heat <= .75) { gain += dt; hint.textContent = "Parfait, continue !"; if (gain >= m.p) { fin = .001; hint.textContent = "Le brasero est ravivé !"; } }
+      else hint.textContent = heat < .45 ? "Souffle plus !" : "Doucement, trop de vent !";
+      prog(gain / m.p); fi.style.width = heat * 100 + "%"; b.style.fontSize = (2.2 + heat * 2.4) + "rem";
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 1 — Graver un signe interdit (m.p = nb de signes, ex. 3) : suis le motif sans déraper */
+  gravure(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Suis le signe à la pointe du doigt, sans t’en écarter");
+    const SH = [
+      [[60, 230], [120, 70], [160, 200], [220, 70], [270, 230]],
+      [[70, 70], [250, 70], [250, 230], [110, 230], [110, 130], [200, 130]],
+      [[160, 60], [260, 230], [60, 230], [160, 60]],
+      [[60, 230], [60, 70], [160, 170], [260, 70], [260, 230]]
+    ].sort(() => Math.random() - .5);
+    let s = 0, poly, cps, idx = 0, actif = false, fin = 0, flash = 0;
+    function charge() {
+      poly = SH[s % SH.length]; cps = [];
+      for (let i = 1; i < poly.length; i++) {
+        const a = poly[i - 1], b = poly[i], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 12);
+        for (let k = 0; k < n; k++) cps.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+      }
+      cps.push(poly[poly.length - 1]); idx = 0; actif = false;
+    }
+    charge();
+    const dPoly = (x, y) => { let d = 1e9; for (let i = 1; i < poly.length; i++) d = Math.min(d, nvDistSeg(x, y, poly[i - 1][0], poly[i - 1][1], poly[i][0], poly[i][1])); return d; };
+    const rate = msg => { actif = false; idx = 0; flash = 1; hint.textContent = msg; };
+    nvDrag(cv, W, H, {
+      down(x, y) { if (fin) return; if (Math.hypot(x - cps[0][0], y - cps[0][1]) < 30) { actif = true; idx = 0; hint.textContent = "Grave…"; } },
+      move(x, y) {
+        if (!actif || fin) return;
+        if (dPoly(x, y) > 28) return rate("Tu as dérapé ! Reprends au début.");
+        while (idx < cps.length - 1 && Math.hypot(x - cps[idx + 1][0], y - cps[idx + 1][1]) < 22) idx++;
+        if (idx >= cps.length - 1) {
+          actif = false; s++; prog(s / m.p);
+          if (s >= m.p) { fin = .001; hint.textContent = "Le signe interdit est gravé…"; } else { charge(); hint.textContent = "Un autre signe…"; }
+        }
+      },
+      up() { if (actif) rate("Ne lève pas le doigt !"); }
+    });
+    return nvLoop(dt => {
+      flash = Math.max(0, flash - dt * 2.5);
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#4a3a3a", "#1c1414");
+      c.lineCap = "round"; c.lineJoin = "round";
+      c.strokeStyle = "rgba(255,255,255,.25)"; c.lineWidth = 6; c.setLineDash([4, 10]);
+      c.beginPath(); poly.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); c.setLineDash([]);
+      if (idx > 0) { c.strokeStyle = "#ff5468"; c.lineWidth = 7; c.shadowColor = "#ff5468"; c.shadowBlur = 12; c.beginPath(); for (let i = 0; i <= idx; i++) i ? c.lineTo(cps[i][0], cps[i][1]) : c.moveTo(cps[i][0], cps[i][1]); c.stroke(); c.shadowBlur = 0; }
+      const t = cps[Math.min(idx, cps.length - 1)];
+      c.fillStyle = actif ? "#fff" : "#ffc43d"; c.beginPath(); c.arc(t[0], t[1], 9, 0, 7); c.fill();
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .4 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🩸 Signe " + Math.min(s + 1, m.p) + "/" + m.p, "");
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 2 — Forcer l'autel (m.p = nb d'anneaux, ex. 3) : stoppe chaque anneau dans le secteur doré */
+  autel(z, m, prog, ok) {
+    const W = 320, H = 300, CX = 160, CY = 156, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Touche pour stopper chaque anneau dans le secteur doré");
+    const N = Math.min(4, m.p), R = Array.from({ length: N }, (_, k) => ({ rad: 112 - k * 28, a: nvRnd(0, 6.28), v: (k % 2 ? -1 : 1) * (1.7 + .45 * k), hw: .42 - .05 * k, lock: false }));
+    let k = 0, flash = 0, fin = 0;
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin) return;
+      const r = R[k];
+      if (Math.abs(nvNorm(r.a + Math.PI / 2)) < r.hw) {
+        r.lock = true; k++; prog(k / N);
+        if (k >= N) { fin = .001; hint.textContent = "Clac ! L’autel s’ouvre."; } else hint.textContent = "Anneau suivant…";
+      } else { flash = 1; k = 0; R.forEach(q => { q.lock = false; }); prog(0); hint.textContent = "Raté ! Le mécanisme se referme…"; }
+    });
+    return nvLoop(dt => {
+      flash = Math.max(0, flash - dt * 2.5);
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#3a2f40", "#15101c");
+      R.forEach((r, i) => {
+        if (!r.lock && !fin) r.a += r.v * dt;
+        c.strokeStyle = "rgba(255,255,255,.12)"; c.lineWidth = 22; c.beginPath(); c.arc(CX, CY, r.rad, 0, 7); c.stroke();
+        c.strokeStyle = i === k ? "rgba(255,200,60,.7)" : "rgba(255,200,60,.3)"; c.lineWidth = 24; c.beginPath(); c.arc(CX, CY, r.rad, -Math.PI / 2 - r.hw, -Math.PI / 2 + r.hw); c.stroke();
+        c.fillStyle = r.lock ? "#4cd964" : "#fff"; c.beginPath(); c.arc(CX + Math.cos(r.a) * r.rad, CY + Math.sin(r.a) * r.rad, 10, 0, 7); c.fill();
+      });
+      nvEmoji(c, "🗝️", CX, CY, 34);
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .4 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🗝️ Anneau " + Math.min(k + 1, N) + "/" + N, "");
+      return true;
+    });
+  },
+
+  /* MORT 1 — Souffler les bougies (m.p = durée en s, ex. 16) : les flammes montent, souffle-les avant le plafond */
+  bougies(z, m, prog, ok) {
+    return manche(z, m, prog, ok, {
+      h: 320, vies: 4, vieOn: "🕯️", vieOff: "💨", poof: "💨",
+      hint: "Souffle les flammes avant qu’elles n’atteignent le plafond !",
+      init(sc) { sc.style.background = "radial-gradient(ellipse at 50% 100%,#6a3f2a 0,#2f1c2c 55%,#120a1e 100%)"; sc.querySelectorAll(".crDeco").forEach(d => d.remove()); },
+      cadence: p => .85 - .3 * p,
+      creer(layer, sc, p) { const e = cible(layer, "🕯️", true), x = rnd(10, 90), d = 2.4 - .7 * p; venir(e, x, 108, x, -6, d); return { el: e, dur: d }; },
+      rate(c) { poof(c, "🔥"); }
+    });
+  },
+
+  /* MORT 2 — Réveiller l'idole (m.p = nb de manches, ex. 3) : reproduis le rythme (3, 4, 5 coups…) */
+  idole(z, m, prog, ok) {
+    nvCss();
+    const idol = el("div", "mnMiE", "🗿"), b = el("button", "nvBig", "👁️"); idol.style.fontSize = "5rem"; idol.style.transition = "transform .15s";
+    z.appendChild(idol); z.appendChild(b);
+    const info = nvHint(z, "Écoute le battement…"), tm = [], later = (f, d) => { tm.push(setTimeout(f, d)); };
+    let r = 0, n = 3, pat = [], taps = [], acc = false;
+    const flash = () => { b.style.transform = "scale(1.18)"; b.style.filter = "brightness(1.7)"; idol.style.transform = "scale(1.12)"; setTimeout(() => { b.style.transform = ""; b.style.filter = ""; idol.style.transform = ""; }, 170); };
+    function lancer() {
+      acc = false; taps = []; n = 3 + r; pat = Array.from({ length: n - 1 }, () => Math.random() < .5 ? .4 : .85);
+      info.textContent = "Écoute le battement de l’idole…";
+      let t = 700; later(() => { flash(); pqSon(330); }, t);
+      pat.forEach(d => { t += d * 1000; later(() => { flash(); pqSon(330); }, t); });
+      later(() => { acc = true; info.textContent = "À toi : reproduis le rythme (" + n + " coups)"; }, t + 600);
+    }
+    b.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (!acc) return;
+      const now = performance.now();
+      if (taps.length && now - taps[taps.length - 1] > 1700) taps = [];
+      taps.push(now); flash(); pqSon(520);
+      if (taps.length >= n) {
+        acc = false;
+        if (pat.every((d, i) => Math.abs((taps[i + 1] - taps[i]) / 1000 - d) < .25)) {
+          r++; prog(r / m.p); info.textContent = "L’idole s’éveille…";
+          if (r >= m.p) later(ok, 700); else later(lancer, 1100);
+        } else { info.textContent = "Mauvais rythme ! Elle le redit…"; later(lancer, 1200); }
+      }
+    });
+    lancer();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* ══════════════════ 2 · LE SENTIER DES LIANES ══════════════════ */
+
+  /* CIVIL 1 — Tresser les lianes (m.p = nb de tresses, ex. 3) : échange les brins voisins pour copier le modèle */
+  tresse(z, m, prog, ok) {
+    nvCss();
+    const COL = ["#ff5468", "#4cd964", "#4aa3ff", "#ffc43d"], EM = ["🟥", "🟩", "🟦", "🟨"];
+    const mod = el("div", "nvRow"), row = el("div", "nvRow"); row.style.gap = "6px";
+    z.appendChild(el("div", "mnMiHint", "Modèle à reproduire :")); z.appendChild(mod); z.appendChild(row);
+    const hint = nvHint(z, "Échange deux brins voisins pour tresser le modèle"), tm = [];
+    let r = 0, cur = [], tgt = [], busy = false;
+    const perm = N => Array.from({ length: N }, (_, i) => i).sort(() => Math.random() - .5);
+    function nouveau() {
+      const N = r >= 2 ? 4 : 3; tgt = perm(N);
+      do { cur = perm(N); } while (cur.every((v, i) => v === tgt[i]));
+      busy = false; rendu();
+    }
+    function rendu() {
+      mod.innerHTML = ""; row.innerHTML = "";
+      tgt.forEach(i => { const s = el("div", "", EM[i]); s.style.fontSize = "1.5rem"; mod.appendChild(s); });
+      cur.forEach((v, i) => {
+        const b = el("button", "nvBtn", ""); b.style.background = COL[v]; b.style.minWidth = "50px"; b.style.height = "64px"; b.style.padding = "0"; row.appendChild(b);
+        if (i < cur.length - 1) {
+          const sw = el("button", "nvBtn", "⇄"); sw.style.minWidth = "30px"; sw.style.padding = "10px 4px"; sw.style.fontSize = "1.2rem";
+          sw.addEventListener("pointerdown", e => { e.preventDefault(); if (busy) return; [cur[i], cur[i + 1]] = [cur[i + 1], cur[i]]; rendu(); verif(); });
+          row.appendChild(sw);
+        }
+      });
+    }
+    function verif() {
+      if (!cur.every((v, i) => v === tgt[i])) return;
+      busy = true; r++; prog(r / m.p); hint.textContent = "Belle tresse !";
+      tm.push(setTimeout(() => { if (r >= m.p) ok(); else { hint.textContent = "Une tresse de plus, avec plus de brins…"; nouveau(); } }, 800));
+    }
+    nouveau();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* CIVIL 2 — Renforcer la rampe (m.p = nb de nœuds, ex. 4) : tourne le doigt en cercle autour de chaque nœud */
+  cordage(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H); nvHint(z, "Tourne le doigt en cercle autour de chaque nœud pour le serrer");
+    const K = []; let t = 0;
+    while (K.length < m.p && t < 800) { t++; const x = nvRnd(55, W - 55), y = nvRnd(60, H - 50); if (K.every(o => Math.hypot(o.x - x, o.y - y) > 96)) K.push({ x, y, v: 0 }); }
+    let cur = null, la = 0, fin = 0, n = 0;
+    nvDrag(cv, W, H, {
+      down(x, y) { if (fin) return; cur = K.find(k => k.v < 1 && Math.hypot(k.x - x, k.y - y) < 62) || null; if (cur) la = Math.atan2(y - cur.y, x - cur.x); },
+      move(x, y) {
+        if (!cur) return;
+        if (Math.hypot(x - cur.x, y - cur.y) > 100) { cur = null; return; }
+        const a = Math.atan2(y - cur.y, x - cur.x), d = nvNorm(a - la); la = a;
+        if (Math.abs(d) < 1.3) cur.v = Math.min(1, cur.v + Math.abs(d) / (2 * Math.PI * 1.2));
+        if (cur.v >= 1) { cur = null; n++; prog(n / K.length); if (n >= K.length) fin = .001; }
+      },
+      up() { cur = null; }
+    });
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#3b5a34", "#1d3320");
+      c.strokeStyle = "#8a6a3a"; c.lineWidth = 9; c.lineCap = "round"; c.beginPath(); K.forEach((k, i) => i ? c.lineTo(k.x, k.y) : c.moveTo(k.x, k.y)); c.stroke();
+      K.forEach(k => {
+        c.fillStyle = k.v >= 1 ? "#4cd964" : "#c79a5b"; c.beginPath(); c.arc(k.x, k.y, 24 - k.v * 6, 0, 7); c.fill();
+        c.strokeStyle = "#ffe27a"; c.lineWidth = 4; c.beginPath(); c.arc(k.x, k.y, 32, -1.57, -1.57 + k.v * 6.28); c.stroke();
+        nvEmoji(c, "🪢", k.x, k.y, 26);
+      });
+      nvHud(c, "🪢 " + n + "/" + K.length, "");
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 1 — Couper une liane piège (m.p = nb de coupes, ex. 3) : tranche la liane au piège quand elle s'immobilise */
+  lianes(z, m, prog, ok) {
+    const W = 320, H = 300, L = 205, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Tranche la liane au piège quand elle s’immobilise au bout de sa course");
+    const V = [0, 1, 2, 3, 4].map(i => ({ x: 40 + i * 60, A: .3, w: nvRnd(1.3, 1.9), ph: nvRnd(0, 6) }));
+    let trap = 2, n = 0, vie = 3, time = 0, fin = 0, flash = 0;
+    const ang = v => v.A * Math.sin(v.w * time + v.ph), tip = v => { const a = ang(v); return [v.x + Math.sin(a) * L, Math.cos(a) * L]; };
+    const pret = v => Math.abs(ang(v)) > v.A * .8;
+    const nouvelle = () => { let t; do { t = Math.floor(Math.random() * 5); } while (t === trap); trap = t; V.forEach(v => { v.w = nvRnd(1.3, 2 + n * .25); v.ph = nvRnd(0, 6); }); };
+    const mal = msg => { vie--; flash = 1; hint.textContent = msg; if (vie <= 0) { vie = 3; n = 0; prog(0); hint.textContent = "Trop de bruit ! On recommence…"; } };
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin) return;
+      const [x, y] = nvPos(cv, e, W, H); let b = -1, bd = 40;
+      V.forEach((v, i) => { const [tx, ty] = tip(v), d = Math.hypot(tx - x, ty - y); if (d < bd) { bd = d; b = i; } });
+      if (b < 0) return;
+      if (b !== trap) return mal("Ce n’était pas la bonne liane !");
+      if (!pret(V[b])) return mal("Trop tôt : ça a fait du bruit !");
+      n++; prog(n / m.p); hint.textContent = "Coupée net !";
+      if (n >= m.p) fin = .001; else nouvelle();
+    });
+    return nvLoop(dt => {
+      time += dt; flash = Math.max(0, flash - dt * 2.5);
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#2f6a45", "#123420");
+      V.forEach((v, i) => {
+        const [tx, ty] = tip(v);
+        c.strokeStyle = "#3f9a52"; c.lineWidth = 6; c.lineCap = "round"; c.beginPath(); c.moveTo(v.x, 0); c.quadraticCurveTo(v.x + (tx - v.x) * .25, ty * .55, tx, ty); c.stroke();
+        if (i === trap) {
+          if (pret(v)) { c.strokeStyle = "#7affb0"; c.lineWidth = 4; c.beginPath(); c.arc(tx, ty, 26, 0, 7); c.stroke(); }
+          nvEmoji(c, "🪤", tx, ty, 34);
+        } else nvEmoji(c, "🍃", tx, ty, 30);
+      });
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .35 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "✂️ " + n + "/" + m.p, nvCoeurs(vie, 3));
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 2 — Poser un collet (m.p = nb de prises, ex. 3) : tape pour poser le collet sur le chemin de la cible */
+  collet(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Pose le collet sur son chemin, mais pas sous son nez !");
+    let n = 0, sn = null, time = 0, fin = 0, pops = [];
+    const pos = t => { const k = 1 + n * .22; return [160 + 118 * Math.sin(t * .8 * k), 150 + 80 * Math.sin(t * 1.3 * k + 1)]; };
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (fin || sn) return;
+      const [x, y] = nvPos(cv, e, W, H), [vx, vy] = pos(time);
+      if (Math.hypot(vx - x, vy - y) < 70) { hint.textContent = "Il t’a vu ! Pose-le plus loin de lui."; pops.push({ x, y, a: 0, t: "👀" }); return; }
+      sn = { x, y, age: 0 }; hint.textContent = "Le collet est posé… patience.";
+    });
+    return nvLoop(dt => {
+      time += dt; pops.forEach(p => { p.a += dt * 1.5; }); pops = pops.filter(p => p.a < 1);
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      else if (sn) {
+        sn.age += dt; const [vx, vy] = pos(time);
+        if (sn.age > .6 && Math.hypot(vx - sn.x, vy - sn.y) < 30) {
+          n++; prog(n / m.p); pops.push({ x: sn.x, y: sn.y, a: 0, t: "🪢" }); sn = null;
+          if (n >= m.p) { fin = .001; hint.textContent = "Il est pris !"; } else hint.textContent = "Pris ! Le suivant est plus rapide.";
+        } else if (sn.age > 10) { sn = null; hint.textContent = "Le collet s’est détendu, repose-le."; }
+      }
+      nvFond(c, W, H, "#5a8a42", "#2c5a2c");
+      c.strokeStyle = "rgba(255,255,255,.07)"; c.lineWidth = 16; c.beginPath(); for (let t = 0; t < 40; t += .2) { const [x, y] = pos(time + t - 10); t ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+      if (sn) { c.strokeStyle = sn.age > .6 ? "#ffe27a" : "rgba(255,255,255,.4)"; c.lineWidth = 3; c.beginPath(); c.arc(sn.x, sn.y, 22, 0, 7); c.stroke(); nvEmoji(c, "🪤", sn.x, sn.y, 30); }
+      const [vx, vy] = pos(time); nvEmoji(c, "🚶", vx, vy, 38);
+      pops.forEach(p => { c.globalAlpha = 1 - p.a; nvEmoji(c, p.t, p.x, p.y - p.a * 22, 28 + p.a * 20); c.globalAlpha = 1; });
+      nvHud(c, "🪤 " + n + "/" + m.p, "");
+      return true;
+    });
+  },
+
+  /* MORT 1 — Faire frémir le feuillage (m.p = nb de feuilles, ex. 18) : agite toutes les feuilles en même temps */
+  feuillage(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H); nvHint(z, "Passe le doigt sur toutes les feuilles : elles doivent frémir en même temps");
+    const F = []; let t = 0;
+    while (F.length < m.p && t < 1500) { t++; const x = nvRnd(26, W - 26), y = nvRnd(40, H - 24); if (F.every(o => Math.hypot(o.x - x, o.y - y) > 46)) F.push({ x, y, t: 0, r: nvRnd(0, 6) }); }
+    let fin = 0, time = 0;
+    const agite = (x, y) => F.forEach(f => { if (Math.hypot(f.x - x, f.y - y) < 32) f.t = 4.5; });
+    nvDrag(cv, W, H, { down: agite, move: agite });
+    return nvLoop(dt => {
+      time += dt;
+      F.forEach(f => { f.t = Math.max(0, f.t - dt); });
+      const k = F.filter(f => f.t > 0).length; prog(k / F.length);
+      if (!fin && k >= F.length) fin = .001;
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#1f5a3a", "#0d2a1c");
+      F.forEach(f => {
+        const s = f.t > 0 ? Math.sin(time * 25 + f.r) * .5 : 0;
+        c.save(); c.translate(f.x, f.y); c.rotate(s); if (f.t > 0) { c.shadowColor = "#7affb0"; c.shadowBlur = 14; } nvEmoji(c, "🍃", 0, 0, 34); c.restore();
+      });
+      nvHud(c, "🍃 " + k + "/" + F.length, "");
+      return true;
+    });
+  },
+
+  /* MORT 2 — Épaissir la brume (m.p = % de la clairière à couvrir, ex. 60) : souffle la brume avec le doigt */
+  brume(z, m, prog, ok) {
+    const W = 320, H = 300, CS = 20, GX = 16, GY = 15, [cv, c] = nvCanvas(z, W, H); nvHint(z, "Souffle la brume en passant le doigt sur la clairière");
+    const g = new Float32Array(GX * GY); let fin = 0, hold = 0, time = 0;
+    const verse = (x, y) => { for (let gy = 0; gy < GY; gy++) for (let gx = 0; gx < GX; gx++) if (Math.hypot((gx + .5) * CS - x, (gy + .5) * CS - y) < 42) g[gy * GX + gx] = Math.min(1, g[gy * GX + gx] + .5); };
+    nvDrag(cv, W, H, { down: verse, move: verse });
+    return nvLoop(dt => {
+      time += dt; let cnt = 0;
+      for (let i = 0; i < g.length; i++) { g[i] = Math.max(0, g[i] - .1 * dt); if (g[i] > .45) cnt++; }
+      const cover = cnt / g.length * 100; prog(cover / m.p);
+      if (!fin) { hold = cover >= m.p ? hold + dt : 0; if (hold > .5) fin = .001; }
+      else { fin += dt; if (fin > .7) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#243a52", "#0e1a2c");
+      c.fillStyle = "#1a3a2a"; for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(30 + i * 56, 250 + (i % 2) * 20, 30, 0, 7); c.fill(); }
+      for (let gy = 0; gy < GY; gy++) for (let gx = 0; gx < GX; gx++) { const v = g[gy * GX + gx]; if (v > .02) { c.fillStyle = "rgba(225,240,255," + v * .8 + ")"; c.fillRect(gx * CS, gy * CS, CS + 1, CS + 1); } }
+      nvHud(c, "🌫️ " + Math.round(cover) + " % / " + m.p + " %", "");
+      return true;
+    });
+  },
+
+  /* ══════════════════ 3 · LE CAMP DE L'EXPLORATEUR ══════════════════ */
+
+  /* CIVIL 1 — Calibrer la boussole (m.p = secondes sur le nord, ex. 3) : le champ magnétique dévie l'aiguille */
+  boussole(z, m, prog, ok) {
+    const W = 320, H = 300, CX = 160, CY = 150, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Tourne l’aiguille avec ton doigt : le nord dérive, suis-le !");
+    let fa = 1, down = false, gain = 0, time = 0, fin = 0;
+    const drift = t => .9 * Math.sin(.8 * t) + .5 * Math.sin(2.1 * t + 1);
+    nvDrag(cv, W, H, {
+      down(x, y) { down = true; fa = Math.atan2(y - CY, x - CX); },
+      move(x, y) { fa = Math.atan2(y - CY, x - CX); },
+      up() { down = false; }
+    });
+    return nvLoop(dt => {
+      time += dt;
+      const shown = fa + drift(time), err = nvNorm(shown + Math.PI / 2), bon = Math.abs(err) < .14 && down;
+      if (!fin) { gain = bon ? gain + dt : Math.max(0, gain - dt * .6); prog(gain / m.p); if (gain >= m.p) { fin = .001; hint.textContent = "Boussole calibrée !"; } }
+      else { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#3a4a5a", "#141c26");
+      c.strokeStyle = bon ? "#4cd964" : "#d9c08a"; c.lineWidth = 10; c.beginPath(); c.arc(CX, CY, 110, 0, 7); c.stroke();
+      c.fillStyle = "rgba(255,255,255,.06)"; c.beginPath(); c.arc(CX, CY, 104, 0, 7); c.fill();
+      c.fillStyle = "#ffc43d"; c.beginPath(); c.moveTo(CX - 9, CY - 122); c.lineTo(CX + 9, CY - 122); c.lineTo(CX, CY - 100); c.fill();
+      c.font = "800 18px sans-serif"; c.fillStyle = "#fff"; c.textAlign = "center"; c.fillText("N", CX, CY - 78); c.fillText("S", CX, CY + 92); c.fillText("E", CX + 86, CY + 6); c.fillText("O", CX - 86, CY + 6);
+      c.save(); c.translate(CX, CY); c.rotate(shown + Math.PI / 2);
+      c.fillStyle = "#ff5468"; c.beginPath(); c.moveTo(0, -88); c.lineTo(10, 0); c.lineTo(-10, 0); c.fill();
+      c.fillStyle = "#e8e8e8"; c.beginPath(); c.moveTo(0, 88); c.lineTo(10, 0); c.lineTo(-10, 0); c.fill(); c.restore();
+      c.fillStyle = "#222"; c.beginPath(); c.arc(CX, CY, 7, 0, 7); c.fill();
+      nvHud(c, "🧭 " + gain.toFixed(1) + " / " + m.p + " s", down ? "" : "touche l’écran");
+      return true;
+    });
+  },
+
+  /* CIVIL 2 — Replier la tente (m.p = nb de plis, ex. 7) : glisse dans le sens de la flèche */
+  tente(z, m, prog, ok) {
+    nvCss();
+    const AR = { h: "⬆️", b: "⬇️", g: "⬅️", d: "➡️" }, card = el("div", "nvCard", ""); z.appendChild(card);
+    const hint = nvHint(z, "Plie les pans de la tente en glissant dans le sens de la flèche"), tm = [];
+    let n = 0, dir = "", x0 = 0, y0 = 0, bas = false;
+    const T = "transform .15s,opacity .15s";
+    const nouvelle = () => {
+      let d; do { d = "hbgd"[Math.floor(Math.random() * 4)]; } while (d === dir);
+      dir = d; card.style.transition = "none"; card.style.transform = ""; card.style.opacity = "1"; card.textContent = AR[d]; void card.offsetWidth; card.style.transition = T;
+    };
+    card.addEventListener("pointerdown", e => { e.preventDefault(); bas = true; x0 = e.clientX; y0 = e.clientY; if (card.setPointerCapture) card.setPointerCapture(e.pointerId); });
+    card.addEventListener("pointerup", e => {
+      if (!bas) return; bas = false;
+      const dx = e.clientX - x0, dy = e.clientY - y0;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return;
+      const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "d" : "g") : (dy > 0 ? "b" : "h");
+      if (d === dir) {
+        n++; prog(n / m.p);
+        card.style.transform = "translate(" + (d === "d" ? 120 : d === "g" ? -120 : 0) + "px," + (d === "b" ? 120 : d === "h" ? -120 : 0) + "px)"; card.style.opacity = "0";
+        if (n >= m.p) tm.push(setTimeout(() => { card.style.transition = "none"; card.style.transform = ""; card.style.opacity = "1"; card.textContent = "⛺"; tm.push(setTimeout(ok, 500)); }, 180));
+        else tm.push(setTimeout(nouvelle, 180));
+      } else { nvShake(card); hint.textContent = "Pas dans ce sens !"; }
+    });
+    card.addEventListener("pointercancel", () => { bas = false; });
+    nouvelle();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* IMPOSTEUR 1 — Falsifier la carte (m.p = nb de repères, ex. 3) : déplace les repères sans être dans le faisceau */
+  carte(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Déplace les repères sur les croix, loin de la lampe du garde");
+    const N = Math.min(4, m.p), EM = ["⛰️", "🏕️", "💧", "🌴"].sort(() => Math.random() - .5).slice(0, N);
+    const M = EM.map((e, i) => ({ e, ox: 50 + i * 72, oy: 262, x: 50 + i * 72, y: 262, tx: 0, ty: 0, ok: false }));
+    M.forEach(q => { let t = 0, x, y; do { x = nvRnd(40, W - 40); y = nvRnd(90, 205); t++; } while (t < 80 && M.some(o => o !== q && o.tx && Math.hypot(o.tx - x, o.ty - y) < 64)); q.tx = x; q.ty = y; });
+    let cur = null, time = 0, fin = 0, flash = 0, n = 0;
+    const th = () => Math.sin(time * .9) * .85;
+    const dansCone = (x, y) => { const dx = x - 160; if (y <= 0) return false; return Math.abs(Math.atan2(dx, y) - th()) < .3 && Math.hypot(dx, y) < 330; };
+    nvDrag(cv, W, H, {
+      down(x, y) { if (fin) return; cur = M.find(q => !q.ok && Math.hypot(q.x - x, q.y - y) < 32) || null; },
+      move(x, y) { if (cur) { cur.x = x; cur.y = y; } },
+      up() {
+        if (!cur) return;
+        if (Math.hypot(cur.x - cur.tx, cur.y - cur.ty) < 28) { cur.ok = true; cur.x = cur.tx; cur.y = cur.ty; n++; prog(n / N); if (n >= N) { fin = .001; hint.textContent = "La carte est truquée !"; } }
+        else { cur.x = cur.ox; cur.y = cur.oy; }
+        cur = null;
+      }
+    });
+    return nvLoop(dt => {
+      time += dt; flash = Math.max(0, flash - dt * 2.5);
+      if (cur && dansCone(cur.x, cur.y)) { cur.x = cur.ox; cur.y = cur.oy; cur = null; flash = 1; hint.textContent = "Le garde t’a vu ! Le repère revient."; }
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#d8c08a", "#a88a52");
+      c.strokeStyle = "rgba(90,60,20,.3)"; c.lineWidth = 2; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(0, 60 + i * 40); c.lineTo(W, 70 + i * 40); c.stroke(); }
+      M.forEach(q => { if (!q.ok) { c.strokeStyle = "#b3262f"; c.lineWidth = 5; c.beginPath(); c.moveTo(q.tx - 11, q.ty - 11); c.lineTo(q.tx + 11, q.ty + 11); c.moveTo(q.tx + 11, q.ty - 11); c.lineTo(q.tx - 11, q.ty + 11); c.stroke(); } });
+      M.forEach(q => nvEmoji(c, q.e, q.x, q.y, 36));
+      const a = th(); c.fillStyle = "rgba(255,240,150,.28)"; c.beginPath(); c.moveTo(160, 0); c.lineTo(160 + Math.sin(a - .3) * 330, Math.cos(a - .3) * 330); c.lineTo(160 + Math.sin(a + .3) * 330, Math.cos(a + .3) * 330); c.fill();
+      nvEmoji(c, "🔦", 160, 8, 30);
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .35 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🗺️ " + n + "/" + N, "");
+      return true;
+    });
+  },
+
+  /* IMPOSTEUR 2 — Aiguiser la machette (m.p = nb de passes, ex. 6) : passes régulières, alternées */
+  machette(z, m, prog, ok) {
+    const W = 320, H = 300, X0 = 50, X1 = 270, Y = 160, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Passe la pierre d’un bout à l’autre de la lame, d’un geste régulier");
+    let n = 0, dir = 1, act = false, t0 = 0, fx = X0, fy = Y, flash = 0, fin = 0, sp = [];
+    const debut = () => dir > 0 ? X0 : X1, bout = () => dir > 0 ? X1 : X0;
+    nvDrag(cv, W, H, {
+      down(x, y) { if (fin) return; fx = x; fy = y; if (Math.abs(x - debut()) < 38 && Math.abs(y - Y) < 60) { act = true; t0 = performance.now(); hint.textContent = "Glisse…"; } },
+      move(x, y) {
+        fx = x; fy = y; if (!act) return;
+        if (Math.abs(y - Y) > 70) { act = false; hint.textContent = "Reste sur la lame !"; return; }
+        if (Math.abs(x - bout()) < 30) {
+          act = false; const d = (performance.now() - t0) / 1000;
+          if (d < .22) { flash = 1; hint.textContent = "Trop vite, ça grince !"; }
+          else if (d > .95) hint.textContent = "Trop lent, la lame ne mord pas.";
+          else {
+            n++; prog(n / m.p); dir = -dir;
+            for (let i = 0; i < 8; i++) sp.push({ x: bout(), y: Y, vx: nvRnd(-80, 80), vy: nvRnd(-120, -20), a: 0 });
+            if (n >= m.p) { fin = .001; hint.textContent = "La lame est affûtée !"; } else hint.textContent = "Bien ! Maintenant dans l’autre sens.";
+          }
+        }
+      },
+      up() { act = false; }
+    });
+    return nvLoop(dt => {
+      flash = Math.max(0, flash - dt * 2.5); sp.forEach(s => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 300 * dt; s.a += dt * 2; }); sp = sp.filter(s => s.a < 1);
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#4a4036", "#1c1712");
+      c.fillStyle = "#6b4423"; c.fillRect(30, Y + 16, 36, 26); c.fillRect(X0 - 34, Y - 12, 36, 24);
+      c.fillStyle = "#c8ccd2"; c.beginPath(); c.moveTo(X0, Y - 18); c.lineTo(X1, Y - 10); c.lineTo(X1 + 12, Y + 6); c.lineTo(X0, Y + 18); c.fill();
+      c.fillStyle = "rgba(255,255,255,.5)"; c.fillRect(X0 + 6, Y - 12, X1 - X0 - 20, 3);
+      c.fillStyle = "rgba(255,200,60,.5)"; c.beginPath(); c.arc(debut(), Y, 22, 0, 7); c.fill();
+      nvEmoji(c, dir > 0 ? "➡️" : "⬅️", (X0 + X1) / 2, Y + 60, 34);
+      nvEmoji(c, "🪨", nvClamp(fx, 20, 300), nvClamp(fy, 40, 270), 34);
+      sp.forEach(s => { c.fillStyle = "rgba(255,220,90," + (1 - s.a) + ")"; c.beginPath(); c.arc(s.x, s.y, 3, 0, 7); c.fill(); });
+      if (flash > 0) { c.fillStyle = "rgba(255,60,80," + flash * .3 + ")"; c.fillRect(0, 0, W, H); }
+      nvHud(c, "🔪 " + n + "/" + m.p, "");
+      return true;
+    });
+  },
+
+  /* MORT 1 — Feuilleter le journal (m.p = nb de pages à trouver, ex. 3) : trouve la page qui porte le symbole demandé */
+  journal(z, m, prog, ok) {
+    nvCss();
+    const EMO = ["🗝️", "🗺️", "🧭", "🔥", "🦜", "🐍", "💎", "⚓", "🪶", "🍃", "🕯️", "🦇"];
+    const top = el("div", "mnMiHint", ""), card = el("div", "nvCard", ""), row = el("div", "nvRow");
+    const prev = el("button", "nvBtn", "◀"), lire = el("button", "mnMiGo", "Lire"), next = el("button", "nvBtn", "▶");
+    row.appendChild(prev); row.appendChild(lire); row.appendChild(next);
+    z.appendChild(top); z.appendChild(card); z.appendChild(row);
+    const tm = [];
+    let pages = [], idx = 0, quoi = "", n = 0, x0 = 0, bas = false, busy = false;
+    const maj = () => { card.textContent = pages[idx]; top.textContent = "Page " + (idx + 1) + "/" + pages.length + " · cherche : " + quoi; };
+    function nouveau() {
+      pages = EMO.slice().sort(() => Math.random() - .5); let j; do { j = Math.floor(Math.random() * pages.length); } while (j === idx);
+      quoi = pages[j]; busy = false; maj();
+    }
+    const va = d => { if (busy) return; idx = (idx + d + pages.length) % pages.length; maj(); };
+    prev.addEventListener("pointerdown", e => { e.preventDefault(); va(-1); });
+    next.addEventListener("pointerdown", e => { e.preventDefault(); va(1); });
+    card.addEventListener("pointerdown", e => { e.preventDefault(); bas = true; x0 = e.clientX; });
+    card.addEventListener("pointerup", e => { if (!bas) return; bas = false; const dx = e.clientX - x0; if (Math.abs(dx) > 40) va(dx < 0 ? 1 : -1); });
+    lire.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (busy) return;
+      if (pages[idx] === quoi) {
+        n++; prog(n / m.p); busy = true; top.textContent = "Trouvé ! Les pages se mélangent…";
+        tm.push(setTimeout(() => { if (n >= m.p) ok(); else nouveau(); }, 900));
+      } else { nvShake(card); }
+    });
+    nouveau();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* MORT 2 — Faire clignoter la lampe (m.p = nb de messages, ex. 4) : reproduis le signal de l'explorateur */
+  morse(z, m, prog, ok) {
+    nvCss();
+    const seqEl = el("div", "mnMiT", ""), lamp = el("button", "nvBig", "🔦"); seqEl.style.minHeight = "1.6em"; seqEl.style.letterSpacing = ".25em";
+    z.appendChild(seqEl); z.appendChild(lamp);
+    const info = nvHint(z, "Observe le signal…"), tm = [], later = (f, d) => { tm.push(setTimeout(f, d)); };
+    let r = 0, n = 2, pat = [], rec = [], acc = false, t0 = 0, bas = false;
+    const on = v => { lamp.style.filter = v ? "brightness(2) drop-shadow(0 0 18px #ffe27a)" : ""; lamp.style.transform = v ? "scale(1.1)" : ""; };
+    function demo() {
+      acc = false; rec = []; n = 2 + r; pat = Array.from({ length: n }, () => Math.random() < .5 ? 0 : 1);
+      seqEl.textContent = ""; info.textContent = "Observe le signal de l’explorateur…";
+      let t = 800;
+      pat.forEach(s => { later(() => { on(true); seqEl.textContent += s ? "–" : "•"; }, t); t += s ? 700 : 220; later(() => on(false), t); t += 350; });
+      later(() => { acc = true; seqEl.textContent = "?"; info.textContent = "À toi : appui court = • · appui long = –"; }, t + 300);
+    }
+    lamp.addEventListener("pointerdown", e => { e.preventDefault(); if (!acc || bas) return; bas = true; t0 = performance.now(); on(true); });
+    const rel = () => {
+      if (!bas) return; bas = false; on(false);
+      rec.push(performance.now() - t0 > 400 ? 1 : 0); seqEl.textContent = rec.map(s => s ? "–" : "•").join(" ");
+      if (rec.length >= n) {
+        acc = false;
+        if (rec.every((s, i) => s === pat[i])) { r++; prog(r / m.p); info.textContent = "Message reçu !"; if (r >= m.p) later(ok, 700); else later(demo, 1100); }
+        else { info.textContent = "Signal brouillé… il recommence."; later(demo, 1200); }
+      }
+    };
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => lamp.addEventListener(k, rel));
+    demo();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* ══════════════════ 10 · LA GRANDE CLAIRIÈRE ══════════════════ */
+
+  /* CIVIL 1 — Allumer le feu de camp (m.p = nb d'étincelles, ex. 8) : glisse les étincelles sur le bois */
+  feu(z, m, prog, ok) {
+    nvCss(); crCss();
+    const sc = scene(z, 320); sc.style.background = "radial-gradient(ellipse at 50% 55%,#5a8a42 0,#2f5e2c 60%,#173a1e 100%)"; sc.querySelectorAll(".crDeco").forEach(d => d.remove());
+    const pile = el("div", "crHero", "🪵"); sc.appendChild(pile);
+    const hint = nvHint(z, "Glisse les étincelles sur le bois avant qu’elles ne s’éteignent");
+    const S = []; let n = 0, ratees = 0, sp = .5, fin = 0;
+    function etincelle() {
+      let x, y; do { x = nvRnd(10, 90); y = nvRnd(16, 82); } while (Math.hypot(x - 50, y - 54) < 24);
+      const e = el("div", "crSlot", "✨"); e.style.position = "absolute"; e.style.left = x + "%"; e.style.top = y + "%"; e.style.margin = "-35px 0 0 -35px"; e.style.zIndex = 4; sc.appendChild(e);
+      const s = { e, age: 0 }; S.push(s);
+      glisser(sc, e, "✨", (px, py, src) => {
+        if (!S.includes(s) || !dans(pile, px, py, 18)) return;
+        S.splice(S.indexOf(s), 1); src.remove(); n++; prog(n / m.p);
+        pile.textContent = n >= m.p / 2 ? "🔥" : "🪵"; hint.textContent = "🔥 " + n + "/" + m.p;
+        if (n >= m.p) fin = .001;
+      });
+    }
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } return true; }
+      sp -= dt;
+      if (sp <= 0 && S.length < 3 && n + S.length < m.p) { sp = 1; etincelle(); }
+      S.slice().forEach(s => {
+        s.age += dt; s.e.style.opacity = 1 - s.age / 3.6 * .7;
+        if (s.age > 3.6) {
+          S.splice(S.indexOf(s), 1); s.e.remove(); ratees++; hint.textContent = "Une étincelle s’est éteinte !";
+          if (ratees >= 3) { ratees = 0; n = 0; prog(0); pile.textContent = "🪵"; hint.textContent = "Le bois refroidit… on recommence."; }
+        }
+      });
+      return true;
+    });
+  },
+
+  /* CIVIL 2 — Empiler le bois (m.p = nb de bûches, ex. 6) : les plus larges en bas, sinon la pile s'écroule */
+  bois(z, m, prog, ok) {
+    nvCss();
+    const LAR = [200, 172, 144, 116, 88, 60].slice(0, Math.min(6, m.p)), K = .6;
+    const pile = el("div", "nvRow"), stock = el("div", "nvRow");
+    pile.style.flexDirection = "column-reverse"; pile.style.gap = "3px"; pile.style.minHeight = "140px"; pile.style.alignContent = "flex-start";
+    z.appendChild(pile); z.appendChild(stock);
+    const hint = nvHint(z, "Empile les bûches : les plus larges en bas !"), tm = [];
+    let rest = [], n = 0, busy = false;
+    const bu = w => { const b = el("button", "", ""); b.style.cssText = "height:22px;width:" + (w * K) + "px;border:0;border-radius:11px;background:linear-gradient(#a8743a,#6b4423);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);touch-action:manipulation"; return b; };
+    function monte() {
+      pile.innerHTML = ""; stock.innerHTML = ""; rest = LAR.slice(); n = 0; busy = false; prog(0);
+      LAR.slice().sort(() => Math.random() - .5).forEach(w => {
+        const b = bu(w);
+        b.addEventListener("pointerdown", e => {
+          e.preventDefault(); if (busy || !b.parentNode) return;
+          if (w === Math.max(...rest)) {
+            rest.splice(rest.indexOf(w), 1); b.remove(); const p = bu(w); pile.appendChild(p); n++; prog(n / LAR.length);
+            if (!rest.length) { busy = true; hint.textContent = "Beau tas de bois !"; tm.push(setTimeout(ok, 600)); }
+          } else { busy = true; nvShake(pile); hint.textContent = "La pile s’écroule ! On recommence…"; tm.push(setTimeout(() => { hint.textContent = "Empile les bûches : les plus larges en bas !"; monte(); }, 900)); }
+        });
+        stock.appendChild(b);
+      });
+    }
+    monte();
+    return () => tm.forEach(clearTimeout);
+  },
+
+  /* IMPOSTEUR 1 — Fendre du bois noir (m.p = nb de bûches, ex. 4) : frappe fort mais pas trop, 3 bruits = repéré */
+  fendre(z, m, prog, ok) {
+    nvCss();
+    const logE = el("div", "mnMiE", "🪵"), bar = el("div", "nvBar"), fi = el("i"), zn = el("b"), bruit = el("div", "mnMiHint", ""), b = el("button", "mnMiGo", "🪓 Maintiens, lâche pour frapper");
+    bar.appendChild(fi); bar.appendChild(zn); z.appendChild(logE); z.appendChild(bar); z.appendChild(bruit); z.appendChild(b);
+    const hint = nvHint(z, "Frappe fort… mais en silence : lâche dans la zone claire"), tm = [];
+    let n = 0, noise = 0, down = false, pw = 0, fin = 0;
+    const lo = () => .5 + .03 * n, hi = () => lo() + Math.max(.1, .2 - .03 * n);
+    const maj = () => { zn.style.left = lo() * 100 + "%"; zn.style.width = (hi() - lo()) * 100 + "%"; bruit.textContent = "Bruit : " + "🔊".repeat(noise) + "🔈".repeat(3 - noise); logE.textContent = "🪵".repeat(1); };
+    const lache = () => {
+      if (!down) return; down = false; const v = pw; pw = 0; fi.style.width = "0%";
+      if (fin) return;
+      if (v < lo()) hint.textContent = "Trop mou, la bûche n’a pas bougé.";
+      else if (v <= hi()) {
+        n++; prog(n / m.p); logE.textContent = "🪓";
+        if (n >= m.p) { fin = 1; hint.textContent = "Tout est fendu, sans un bruit."; tm.push(setTimeout(ok, 700)); } else { hint.textContent = "Chhh… parfait. Bûche suivante."; tm.push(setTimeout(maj, 500)); maj_zone(); }
+      } else {
+        noise++; hint.textContent = "BOUM ! Tout le monde a entendu."; nvShake(bar);
+        if (noise >= 3) { noise = 0; n = 0; prog(0); hint.textContent = "Repéré ! On recommence…"; }
+      }
+      maj_zone();
+    };
+    const maj_zone = () => { zn.style.left = lo() * 100 + "%"; zn.style.width = (hi() - lo()) * 100 + "%"; bruit.textContent = "Bruit : " + "🔊".repeat(noise) + "🔈".repeat(3 - noise); };
+    b.addEventListener("pointerdown", e => { e.preventDefault(); if (!fin) { down = true; pw = 0; } });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => b.addEventListener(k, lache));
+    maj_zone();
+    const stop = nvLoop(dt => {
+      if (down && !fin) { pw += (.8 + .15 * n) * dt; if (pw >= 1) { pw = 1; lache(); } fi.style.width = pw * 100 + "%"; }
+      return true;
+    });
+    return () => { stop(); tm.forEach(clearTimeout); };
+  },
+
+  /* IMPOSTEUR 2 — Tracer un cercle rituel (m.p = nb de points, ex. 6) : repose les points du cercle de mémoire */
+  cercle(z, m, prog, ok) {
+    const W = 320, H = 300, CX = 160, CY = 150, RR = 100, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Mémorise les points du cercle…");
+    const P = []; let guard = 0;
+    while (P.length < m.p && guard++ < 800) { const a = nvRnd(0, 6.283); if (P.every(q => Math.min(Math.abs(q.a - a), 6.283 - Math.abs(q.a - a)) > .6)) P.push({ a, x: CX + Math.cos(a) * RR, y: CY + Math.sin(a) * RR }); }
+    let phase = "voir", pt = 2.8, marks = [], fin = 0, time = 0;
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (phase !== "jouer" || fin) return;
+      const [x, y] = nvPos(cv, e, W, H); marks.push({ x, y }); prog(marks.length / P.length * .9);
+      if (marks.length >= P.length) {
+        const used = new Set(); let bon = true;
+        P.forEach(p => { let bi = -1, bd = 36; marks.forEach((q, i) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (!used.has(i) && d < bd) { bd = d; bi = i; } }); if (bi < 0) bon = false; else used.add(bi); });
+        if (bon) { fin = .001; prog(1); hint.textContent = "Le cercle est scellé !"; }
+        else { phase = "voir"; pt = 2.2; marks = []; prog(0); hint.textContent = "Pas tout à fait ! Regarde encore…"; }
+      }
+    });
+    return nvLoop(dt => {
+      time += dt;
+      if (fin) { fin += dt; if (fin > .9) { ok(); return false; } }
+      else if (phase === "voir") { pt -= dt; if (pt <= 0) { phase = "jouer"; hint.textContent = "Repose les " + P.length + " bougies sur le cercle, de mémoire"; } }
+      nvFond(c, W, H, "#2a2a4a", "#0e0e22");
+      c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 3; c.setLineDash([3, 9]); c.beginPath(); c.arc(CX, CY, RR, 0, 7); c.stroke(); c.setLineDash([]);
+      nvEmoji(c, "🌀", CX, CY, 34);
+      if (phase === "voir" || fin) P.forEach(p => { const g = c.createRadialGradient(p.x, p.y, 2, p.x, p.y, 28); g.addColorStop(0, "rgba(255,200,80,.9)"); g.addColorStop(1, "rgba(255,200,80,0)"); c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, 28, 0, 7); c.fill(); nvEmoji(c, "🕯️", p.x, p.y, 28); });
+      marks.forEach(q => nvEmoji(c, "🕯️", q.x, q.y, 28));
+      nvHud(c, "🕯️ " + marks.length + "/" + P.length, phase === "voir" ? "👀 regarde" : "à toi");
+      return true;
+    });
+  },
+
+  /* MORT 1 — Danser avec les lucioles (m.p = longueur de la danse, ex. 5) : traverse les lucioles dans l'ordre */
+  danse(z, m, prog, ok) {
+    const W = 320, H = 300, [cv, c] = nvCanvas(z, W, H), hint = nvHint(z, "Regarde l’ordre de la danse…");
+    const F = []; let t = 0;
+    while (F.length < 6 && t < 600) { t++; const x = nvRnd(36, W - 36), y = nvRnd(50, H - 36); if (F.every(o => Math.hypot(o.x - x, o.y - y) > 84)) F.push({ x, y, g: 0 }); }
+    const seq = []; for (let i = 0; i < m.p; i++) { let v; do { v = Math.floor(Math.random() * F.length); } while (i && v === seq[i - 1]); seq.push(v); }
+    const tm = [], later = (f, d) => { tm.push(setTimeout(f, d)); };
+    let nx = 0, acc = false, trail = [], actif = false, fin = 0, time = 0;
+    function demo() {
+      acc = false; actif = false; trail = []; nx = 0; prog(0); hint.textContent = "Regarde l’ordre de la danse…";
+      seq.forEach((s, k) => later(() => { F[s].g = 1; }, 800 + k * 700));
+      later(() => { acc = true; hint.textContent = "À toi : traverse les lucioles dans le même ordre"; }, 800 + seq.length * 700 + 300);
+    }
+    function check(x, y) {
+      const h = F.findIndex(f => Math.hypot(f.x - x, f.y - y) < 30); if (h < 0) return;
+      if (h === seq[nx]) { F[h].g = 1; nx++; prog(nx / seq.length); if (nx >= seq.length) { fin = .001; actif = false; hint.textContent = "Les lucioles dansent avec toi !"; } }
+      else if (nx === 0 || h !== seq[nx - 1]) { actif = false; acc = false; nx = 0; trail = []; hint.textContent = "Mauvaise luciole ! Regarde encore…"; later(demo, 1200); }
+    }
+    nvDrag(cv, W, H, {
+      down(x, y) { if (!acc || fin) return; actif = true; trail = [[x, y]]; nx = 0; check(x, y); },
+      move(x, y) { if (!actif) return; trail.push([x, y]); if (trail.length > 40) trail.shift(); check(x, y); },
+      up() { if (actif && !fin) { actif = false; nx = 0; trail = []; prog(0); hint.textContent = "Ne lève pas le doigt : recommence la danse"; } }
+    });
+    demo();
+    const stop = nvLoop(dt => {
+      time += dt;
+      if (fin) { fin += dt; if (fin > .9) { prog(1); ok(); return false; } }
+      nvFond(c, W, H, "#1a2a4a", "#0a0e22");
+      if (trail.length > 1) { c.strokeStyle = "rgba(190,150,255,.7)"; c.lineWidth = 4; c.lineCap = "round"; c.beginPath(); trail.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); }
+      F.forEach(f => {
+        f.g = Math.max(0, f.g - dt * 1.3); const r = 18 + f.g * 26 + Math.sin(time * 4 + f.x) * 2;
+        const g = c.createRadialGradient(f.x, f.y, 2, f.x, f.y, r); g.addColorStop(0, "rgba(255,240,140," + (.35 + f.g * .65) + ")"); g.addColorStop(1, "rgba(255,240,140,0)");
+        c.fillStyle = g; c.beginPath(); c.arc(f.x, f.y, r, 0, 7); c.fill(); nvEmoji(c, "✨", f.x, f.y, 20);
+      });
+      nvHud(c, "✨ " + nx + "/" + seq.length, acc ? "à toi" : "regarde");
+      return true;
+    });
+    return () => { stop(); tm.forEach(clearTimeout); };
+  },
+
+  /* MORT 2 — Veiller sous la lune (m.p = cycles de respiration, ex. 3) : maintiens quand la lune grandit, relâche quand elle rétrécit */
+  veille(z, m, prog, ok) {
+    nvCss();
+    const b = el("button", "nvBig", "🌙"); z.appendChild(b);
+    const hint = nvHint(z, "Inspire… maintiens appuyé");
+    let down = false, time = 0, sync = 0, fin = 0;
+    const CYC = 4, cible = m.p * 3;
+    b.addEventListener("pointerdown", e => { e.preventDefault(); down = true; });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(k => b.addEventListener(k, () => { down = false; }));
+    return nvLoop(dt => {
+      if (fin) { fin += dt; if (fin > .8) { prog(1); ok(); return false; } return true; }
+      time += dt;
+      const ph = time % CYC, inh = ph < CYC / 2, s = inh ? ph / (CYC / 2) : 1 - (ph - CYC / 2) / (CYC / 2);
+      const grace = ph < .35 || (ph >= CYC / 2 && ph < CYC / 2 + .35);
+      if (!grace && down === inh) sync += dt;
+      prog(sync / cible); if (sync >= cible) { fin = .001; hint.textContent = "Tu veilles en paix…"; return true; }
+      b.style.transform = "scale(" + (.7 + .6 * s) + ")";
+      b.style.boxShadow = down ? "0 0 30px rgba(180,220,255,.8)" : "none";
+      hint.textContent = inh ? "Inspire… maintiens appuyé" : "Expire… relâche";
+      return true;
+    });
+  }
+};
+Object.keys(JEUX_RESTE).forEach(k => { JEUX[k] = JEUX_RESTE[k]; });
 
   /* Ouvre le mini-jeu par-dessus la vue du téléphone.
      onFin() : mission réussie ; onFerme() : overlay fermé (toujours appelé). */
