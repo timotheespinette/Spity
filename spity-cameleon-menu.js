@@ -250,6 +250,7 @@ var MM_OPTIONS = [
       isolation:isolate;
       box-sizing:border-box;
       min-height:100%;
+      flex:1 0 auto;
       width:100%;
       padding:25px clamp(12px,3vw,40px) 25px;
       display:flex;
@@ -1246,7 +1247,7 @@ var MM_OPTIONS = [
 
     var scroll = root.scrollTop;
 
-    // Actualiser les onglets et leur couleur active
+    // Actualiser les onglets
     var anciensOnglets = q("mmTabs");
     if(anciensOnglets){
       anciensOnglets.replaceWith(dessinerOnglets());
@@ -1268,11 +1269,13 @@ var MM_OPTIONS = [
 
     content.appendChild(panel);
 
+    // Replacer le résumé et le bouton dans le conteneur principal
     var old = root.querySelector(".mm-summary");
     if(old) old.remove();
 
-    root.appendChild(panneauResume());
-
+    var wrap = root.querySelector(".mmw");
+    wrap.appendChild(panneauResume());
+  
     root.scrollTop = scroll;
   }
 
