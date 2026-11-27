@@ -93,7 +93,7 @@ const ManoirMissions = (() => {
     },
     /* 9 · Le Pont des Singes */
     {
-      civil: [T("🪢", "Retendre les cordes", "cordes", 5, "Garde les deux cordes tendues, ni trop ni trop peu."),
+      civil: [T("🪢", "Retendre les cordes", "cordes", 7, "Garde les deux cordes tendues, ni trop ni trop peu."),
               T("🍌", "Trier les bananes", "bananes", 12, "Mûres à droite, pourries à gauche, vertes en haut.")],
       imposteur: [T("🪚", "Scier la planche", "scie", 6, "Scie à rythme régulier sans réveiller les singes."),
                   T("🛢️", "Huiler les planches", "huile", 90, "Étale l’huile partout, mais cache-toi du garde.")],
