@@ -108,8 +108,6 @@ st.textContent = `
 .mnCamZ{padding:12px 8px;border-radius:14px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.09);color:#fff;font-weight:800}
 .mnCamZ.on{border-color:#ff3b47;background:rgba(255,59,71,.25)}
 .mnCamZ:disabled{opacity:.4}
-.mnPts{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:999px;font-weight:900;color:#ffe08a;background:rgba(5,10,8,.62);border:1.5px solid rgba(255,224,138,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none;letter-spacing:.04em;transition:transform .2s}
-.mnPts.up{transform:translateX(-50%) scale(1.25)}
 .mnMissionB{background:linear-gradient(145deg,#2fb7a8,#146b63)}
 .mnShopB{background:linear-gradient(145deg,#f2c230,#b97f00);color:#241800}
 .mnShopPanel{position:absolute;inset:0;z-index:7;display:none;flex-direction:column;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 20px) 16px 24px;box-sizing:border-box;background:rgba(5,10,8,.94);color:#fff;overflow-y:auto}
@@ -741,8 +739,6 @@ function telStart(m){
   T.btnShop.onclick=function(){T.shopOuvert=!T.shopOuvert;T.stick=null;T.cleShop=""};
   T.shopPanel=h("div","mnShopPanel");
   r.appendChild(T.shopPanel);
-  T.pts=h("div","mnPts","★ 0");
-  r.appendChild(T.pts);
   T.alertEl=h("div","mnAlerte");
   r.appendChild(T.alertEl);
   T.statutEl=h("div","mnStatut");
@@ -829,7 +825,7 @@ function majPanneauCam(){
     p.appendChild(h("h3","","CAM "+(slot+1)));
     var grid=h("div","mnCamGrid");
     zones.forEach(function(z,idx){
-      if(!z.nom){
+      if(!z.nom || /^Zone \d+$/i.test(z.nom)){
         var dedans=(M.pieces||[]).filter(function(pc){
           return pc[0]>=z.x && pc[0]<=z.x+z.l && pc[1]>=z.y && pc[1]<=z.y+z.h;
         }).map(function(pc){return pc[2]});
@@ -1420,11 +1416,6 @@ function telRecevoir(m){
       T.alertEl.style.display="block";
       T.alertEl.textContent="🚨 ALERTE · "+m.alerte.reste+" s · "+m.alerte.faits+"/"+m.alerte.requis;
     }else T.alertEl.style.display="none";
-    T.pts.textContent="★ "+T.points;
-    if(T.points>ancienPts){
-      T.pts.classList.add("up");
-      setTimeout(function(){if(T&&T.pts)T.pts.classList.remove("up")},250);
-    }
     T.camDot.className="mnCam"+(m.phase==="jeu"&&m.cam===2?" r":(m.phase==="jeu"&&m.cam===1?" o":""));
     var nomPiece = "";
     if (m.phase === "jeu" && !T.tunnel && M.pieces) {
