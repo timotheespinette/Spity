@@ -429,11 +429,11 @@ const Moteur = (() => {
       if(max>0 && max>passes && premiers.length===1){
         const j=e.joueurs[premiers[0]];
         if(j){
-          const r=MM_ROLES.find(x=>x.id===j.role)||{};
           elimine={
             id:j.id,
             pseudo:j.pseudo,
-            role:r.nom||j.role
+            camp:C.revelerCamp?j.camp:null,
+            role:C.revelerCamp?(j.camp==='cultiste'?'Cultiste':'Invité'):null
           };
         }
       }
